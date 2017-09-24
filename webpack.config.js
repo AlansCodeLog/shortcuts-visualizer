@@ -90,11 +90,11 @@ var config = {
 if (env == "dev") {
    config.entry = ["./src/example"]
    config.module.rules[0].use[1].options.quiet = true
-   config.devtool = "cheap-module-eval-source-map"
+   config.devtool = false
    config.devServer = {
       contentBase: path.resolve(__dirname, "./src"),
       hot: true,
-      compress:true,
+      // compress:true,
       //open: true,
       openPage: "", 
       inline:true

@@ -1,5 +1,110 @@
 #app {
    width: 100%;
    height:100%;
-   background:lightgray
+   font-family: sans-serif;
+}
+.background {
+   background: #E1E1E1;
+   width: 100%;
+   height: 100vh;
+   position: fixed;
+   z-index: -100;
+   top: 0
+}
+body {
+   margin:0;
+}
+input[type=checkbox] {
+ transform: scale(1.5) translate(3px, 0);
+}
+label {
+   font-size: 1.1rem;
+}
+input[type=checkbox]:checked ~ .background, input[type=checkbox]:checked ~ label, input[type=checkbox]:checked ~ .key-row {
+   background: #2C2C2C;
+   color:white;
+}
+.key-row {
+   padding: 5px;
+   max-width: 1400px;
+   display: flex;
+   flex-wrap: nowrap; 
+   height:50px;
+   color:black;
+}
+
+.key { 
+   flex: 50px 0 0;
+   height: 50px;
+   margin: 0 5px;
+   border-radius: 2px;
+   box-shadow: 0px 1px 2px 2px rgba(0,0,0,0.7);
+   .label-row1 {
+      margin:5px;
+      // font-weight: bold;
+      // font-size: 0.9rem;
+      overflow: hidden;
+   }
+   // .shrink {
+   //    font-size:0.8rem;
+   // }
+}
+
+.space-before {
+   margin-left: 45px; 
+}
+.none {
+   background:none;
+}
+.vertical {
+   height:110px;
+}
+
+.space {
+   flex: 360px 0 0;
+}
+.huge {
+   flex: 140px 0 0;
+}
+.large {
+ flex: 110px 0 0;
+}
+.medium {
+   flex: 80px 0 0;
+}
+.small {
+   flex: 60px 0 0;
+}
+
+@media (min-width: 1430px) {
+   .key-row {
+      max-width: 3000px;
+      // background:red;
+      height:70px;
+   }
+   .vertical {
+      height:150px;
+   }
+   .space-before {
+      margin-left: 58px; 
+   }
+   .key { 
+      flex: 70px 0 0;
+      height:70px;
+   }
+   .space {
+      flex: 500px 0 0;
+   }
+   .huge {
+      flex: 190px 0 0;
+   }
+   .large {
+    flex: 150px 0 0;
+   }
+   .medium {
+      flex: 110px 0 0;
+   }
+   .small {
+      flex: 80px 0 0;
+   }
 }
