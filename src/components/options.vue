@@ -1,12 +1,12 @@
 <template>
    <div class="options">
       <div class="option">
-         <input id="button-theme" type="checkbox" v-model="theme_dark" @change="change()"/>
+         <input id="button-theme" type="checkbox" v-bind:value="theme_dark" @change="change('theme_dark', $event)"/>
          <label for="button-theme">Dark/White Theme</label>
       </div>
       <div class="option">
          <label for="mode-select">Mode:</label>
-         <select id="mode-select" v-model="mode" @input="change()">
+         <select id="mode-select" v-bind:value="mode" @input="change('mode', $event)">
             <option v-for="keymode in modes" :key="keymode">{{keymode}}</option>
          </select>
       </div>
@@ -24,7 +24,8 @@ export default {
       }
    },
    methods: {
-      change() {
+      change(key,e) {
+         this[key] = e.target.value
          this.$emit("input", {theme_dark: this.theme_dark, mode: this.mode})
       }
    },

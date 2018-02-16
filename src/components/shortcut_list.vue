@@ -20,11 +20,22 @@ export default {
       }
    },
    computed: {
+      none_mods() {
+         let keys = []
+         Object.keys(this.keymap).filter(keyname => {
+            if (!this.mod_codes.includes(keyname) && this.keymap[keyname].toggle == false) {
+               keys.push(keyname)
+            }
+         })
+         return keys
+      },
       shortcuts_active () {
          return this.shortcuts.filter(entry => {
-            if (_.difference(entry._shortcut[0], this.keymap_active).length == 0) {
+            console.log(_.difference(entry._shortcut[0], this.keymap_active).filter(keyname => {return !this.none_mods.includes(keyname)}).length);
+            if (_.difference(entry._shortcut[0], this.keymap_active).filter(keyname => {return !this.none_mods.includes(keyname)}).length == 0) {
                return entry
             }
+            // return entry
          })
       },
       keymap_active () {

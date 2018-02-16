@@ -565,6 +565,7 @@ const keys = {
    },
    Lcontrol: {
       identifier: "ControlLeft",
+      RL: true,
       alternatives: ["lctrl"],
       classes:["key", "modifiers"],
       label: {
@@ -574,6 +575,7 @@ const keys = {
    },
    Rcontrol: {
       identifier: "ControlRight",
+      RL: true,
       alternatives: ["rctrl"],
       classes:["key", "modifiers"],
       label: {
@@ -591,6 +593,7 @@ const keys = {
    },
    Lsuper: {
       identifier: "MetaLeft",
+      RL: true,
       alternatives: ["oskey"],
       classes:["key", "modifiers"],
       label: {
@@ -600,6 +603,7 @@ const keys = {
    },
    Rsuper: {
       identifier: "MetaRight",
+      RL: true,
       alternatives: ["oskey"],
       classes:["key", "modifiers"],
       label: {
@@ -627,6 +631,7 @@ const keys = {
    },
    Lalt: {
       identifier: "AltLeft",
+      RL: true,
       classes:["key", "modifiers"],
       label: {
          text: "Alt",
@@ -635,6 +640,7 @@ const keys = {
    },
    Ralt: {
       identifier: "AltRight",
+      RL: true,
       classes:["key", "modifiers"],
       label: {
          text: "Alt",
