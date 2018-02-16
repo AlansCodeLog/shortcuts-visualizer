@@ -17,7 +17,8 @@ Eventually it would be nice to support some way to import/export them, at least 
 [ ] Colors
 [ ] Chained Shortcuts / Shortcut Chords (e.g. VS Code you can do `Ctrl+K Ctrl+[` where `Ctrl+K` just adds a listener to `Ctrl+[` which then triggers a command)
 [~] Shortcut List
-[ ] Show Active Shortcuts
+[~] Show Active Shortcuts
+[ ] Show shortcuts on top of keys.
 [ ] Custom Modifier Keys (e.g. use Tab as a modifier, or disable Shift, like for a text editor)
 [ ] Program Contexts
 [ ] Drag/Drop Bin w/ Search

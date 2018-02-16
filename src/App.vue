@@ -16,6 +16,10 @@
          :layout="layout"
          @input="change('keymap', $event)"
       ></Keys>
+      <ShortcutList
+         :keymap="keymap"
+         :shortcuts="shortcuts"
+      ></ShortcutList>
    </div>
 </template>
 
@@ -32,6 +36,7 @@ import * as _ from "lodash"
 
 let keymap = {}
 let keynames = {}
+//create keymap and keynames
 Object.keys(keys).map(keyname=>{
    let key = keys[keyname]
    if ((typeof key.label == 'undefined' || key.ignore == true)
@@ -56,14 +61,27 @@ Object.keys(keys).map(keyname=>{
          }
       }) 
 })
-console.log(keynames);
 let shortcuts_list = shortcuts.map(entry => {
    entry._shortcut = entry.shortcut.split(" ")
-   entry._shortcut = entry._shortcut.map(key => {
-      key = key.split(/(\+|-)(?=\1|[\s\S])/gm)
+   entry._shortcut = entry._shortcut.map(keyset => {
+      let keys = keyset.replace(/(\+|-)(?=\1|[\s\S])/gm, "==BREAK==").split("==BREAK==")
+      keys = keys.map(key=> {
+         let match = false
+         key = key.toLowerCase()
+         Object.keys(keynames).map(identifier => {
+            let keyname = keynames[identifier]
+            if (keyname.includes(key)) {
+               key = identifier
+               match = true
+            }
+         })
+         if (match == false) {throw "Unknown key: " + key}
+         return key
+      })
+      return _.pull(keys, '==BREAK==');
    })
    entry.chained = entry._shortcut.length > 1 ? true : false
-   return 
+   return entry
 })
 
 export default {
@@ -90,7 +108,8 @@ export default {
    },
    components: {
       Keys,
-      Options
+      Options,
+      ShortcutList
    },
    mounted() {
       let mods_unknown = true
