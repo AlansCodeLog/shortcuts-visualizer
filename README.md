@@ -8,6 +8,8 @@ Eventually it would be nice to support some way to import/export them, at least 
 
 ## Status/TODOs
 
+![Current State](./docs/images/current_state.png)
+
 [x] Responsive Keyboard CSS
 [ ] Responsive Text Size
 [x] Base Key Object

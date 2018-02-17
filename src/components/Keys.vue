@@ -51,96 +51,28 @@
             </div>
          </div>
       </div>
-      <div class="shortcuts">
-         <div class="entry"
-            v-for="shortcut of shortcuts_active" :key="shortcut.shortcut+shortcut.command"
-         >
-            <div>{{shortcut.shortcut}}</div>
-            <div>{{shortcut.command}}</div>
-         </div>
-         {{keymap_active}}
+      <div class="status">
+         <div v-if="chain.in_chain">Waiting on chain: {{normalize(chain.start, true).join("+")}}</div>
+         <div v-if="chain.warning">No chained shortcut {{normalize(chain.last, true).join("+")}} {{normalize(chain.warning, true).join("+")}}</div>
+         <div v-if="keymap_active.length > 0">Pressed: {{normalize(keymap_active, true).join("+")}}</div>
       </div>
    </div>
 </template>
 
 <script>
-
 export default {
    name: 'Keys',
-   props: ["options", "layout", "keys", "keymap", "shortcuts", "mod_codes", "chain"],
+   props: ["layout", "keys", "keymap", "keymap_active", "chain", "normalize", "mod_codes"],
+   components: {
+   },
    data() {
       return {
          endkey: false
       }
    },
    computed: {
-      none_mods() {
-         let keys = []
-         Object.keys(this.keymap).filter(keyname => {
-            if (!this.mod_codes.includes(keyname) && this.keymap[keyname].toggle == false) {
-               keys.push(keyname)
-            }
-         })
-         return keys
-      },
-      shortcuts_active () {
-         return this.shortcuts.filter(entry => {
-            if (!this.chain.in_chain && !entry.chained) {
-               if (entry.chain_start && entry._shortcut[0].length == this.keymap_active.length && _.difference(entry._shortcut[0], this.keymap_active).length == 0) {
-                  this.$emit("chained", {in_chain: true, start: [...this.keymap_active], shortcut: entry.shortcut})
-               }
-               let extras = _.difference(entry._shortcut[0], this.keymap_active).filter(keyname => {
-                  let none_mod = !this.none_mods.includes(keyname)
-                  if (none_mod) {
-                     return true
-                  }
-               })
-               if (extras.length > 0) {
-                  return false
-               }
-               let condition = _.difference(this.keymap_active, entry._shortcut[0]).filter(keyname => {
-                     let in_shortcut = entry._shortcut[0].includes(keyname)
-                     if (!in_shortcut) {
-                        return true
-                     }
-                  })
-               if (condition.length == 0) {
-                  return entry
-               }
-            } else if (this.chain.in_chain && entry.chained) {
-               let extras = _.difference(entry._shortcut[1], this.keymap_active).filter(keyname => {
-                  let none_mod = !this.none_mods.includes(keyname)
-                  if (none_mod) {
-                     return true
-                  }
-               })
-               if (extras.length > 0) {
-                  return false
-               }
-               let condition = _.difference(this.keymap_active, entry._shortcut[1]).filter(keyname => {
-                     let in_shortcut = entry._shortcut[1].includes(keyname)
-                     if (!in_shortcut) {
-                        return true
-                     }
-                  })
-               if (condition.length == 0) {
-                  return entry
-               }
-            } else {
-               console.log("wtf");
-            }
-         })
-      },
-      keymap_active () {
-         return Object.keys(this.keymap).filter(identifier => {
-            let key = this.keymap[identifier];
-            return key.active
-         })
-      },
-      none_mods_in_active () {
-         return _.intersection(this.keymap_active, this.none_mods)
-      }
    }
+
 }
 </script>
 

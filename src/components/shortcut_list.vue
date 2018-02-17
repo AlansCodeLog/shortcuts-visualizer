@@ -1,49 +1,40 @@
 <template>
    <div class="shortcuts">
-      <div class="entry"
-         v-for="shortcut of shortcuts_active" :key="shortcut.shortcut+shortcut.command"
-      >
-         <div>{{shortcut.shortcut}}</div>
-         <div>{{shortcut.command}}</div>
+      <div class="container">
+         <div class="entry-header">
+            <div>Edit</div>
+            <div>Shortcut</div>
+            <div>Command</div>
+         </div>
+         <div class="entry"
+            v-for="shortcut of shortcuts_active" :key="shortcut.shortcut+shortcut.command"
+         >
+            <input v-bind:value="shortcut.shortcut" @input="update_shortcuts($event)"/>
+            <div>
+               {{normalize(shortcut._shortcut[0], true).join("+")}}
+               {{shortcut._shortcut.length == 2 ? normalize(shortcut._shortcut[1], true).join("+") : ""}}
+               </div>
+            <div>{{shortcut.command}}</div>
+         </div>
       </div>
-      {{keymap_active}}
    </div>
 </template>
 
 <script>
 export default {
    name: 'Shortcuts',
-   props: ["keymap", "shortcuts"],
+   props: ["shortcuts_active", "normalize"],
    data () {
       return {
          
       }
    },
+   methods: {
+      update_shortcuts($event) {
+         this.$emit("edit", $event.target.value)
+      }
+   },
    computed: {
-      none_mods() {
-         let keys = []
-         Object.keys(this.keymap).filter(keyname => {
-            if (!this.mod_codes.includes(keyname) && this.keymap[keyname].toggle == false) {
-               keys.push(keyname)
-            }
-         })
-         return keys
-      },
-      shortcuts_active () {
-         return this.shortcuts.filter(entry => {
-            console.log(_.difference(entry._shortcut[0], this.keymap_active).filter(keyname => {return !this.none_mods.includes(keyname)}).length);
-            if (_.difference(entry._shortcut[0], this.keymap_active).filter(keyname => {return !this.none_mods.includes(keyname)}).length == 0) {
-               return entry
-            }
-            // return entry
-         })
-      },
-      keymap_active () {
-         return Object.keys(this.keymap).filter(identifier => {
-            let key = this.keymap[identifier];
-            return key.active
-         })
-      }  
    },
    created() {
       
@@ -51,8 +42,29 @@ export default {
 }
 </script>
 <style lang="scss" scoped>
-.entry {
-   display: flex;
-   justify-content: space-around
+
+@import "../settings/theme.scss";
+
+.shortcuts {
+   padding: 30px;
+}
+.container {
+   border: 3px solid rgba(0,0,0,0.5);
+   .entry, .entry-header {
+      display: flex;
+      div {
+         flex: 0 0 50%;
+         padding: 1em;
+      }
+      & > div:nth-child(2) {
+         border-left: 3px solid rgba(0,0,0,0.5);
+      }
+   }
+   .entry-header {
+      font-weight: bold;
+   }
+   &::after {
+      content: "";
+   }
 }
 </style>

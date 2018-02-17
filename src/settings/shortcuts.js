@@ -17,7 +17,7 @@ const shortcuts = [
    //    command: "Chain"
    // },
    {
-      shortcut: "ctrl+s ctrl+a",
+      shortcut: "ctrl+s a",
       command: "Chain2"
    }
 ]

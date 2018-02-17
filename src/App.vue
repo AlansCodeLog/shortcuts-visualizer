@@ -9,29 +9,29 @@
          @input="change('options', $event)"
       ></Options>
       <Keys
-         :options="options"
-         :modes="modes"
          :keys="keys"
          :keymap="keymap"
+         :keymap_active="keymap_active"
+         :shortcuts_active="shortcuts_active"
          :layout="layout"
-         :shortcuts="shortcuts"
          :chain="chain"
          :mod_codes="mod_codes"
+         :normalize="normalize"
          @input="change('keymap', $event)"
          @chained="chained($event)"
       ></Keys>
-      <!-- <ShortcutList
-         :keymap="keymap"
-         :shortcuts="shortcuts"
-      ></ShortcutList> -->
-      <div v-if="chain.in_chain">Waiting on chain: {{chain.shortcut}}</div>
+      <ShortcutsList
+         :shortcuts_active="shortcuts_active"
+         :normalize="normalize"
+         @edit="update_shortcut($event)"
+      ></ShortcutsList>
    </div>
 </template>
 
 <script>
 import Keys from "./components/keys"
 import Options from "./components/options"
-import ShortcutList from "./components/shortcut_list"
+import ShortcutsList from "./components/shortcut_list"
 
 import {layout} from "./settings/layout.js"
 import {keys} from "./settings/keys.js"
@@ -56,19 +56,10 @@ Object.keys(keys).map(keyname=> {
       toggle: typeof key.toggle !== "undefined" ? key.toggle : false,
       active: false,
       chain_active: false,
-      RL: typeof key.RL == "undefined" ? false : key.RL
+      RL: typeof key.RL == "undefined" ? false : key.RL,
+      name: typeof key.name !== "undefined" ? key.name : key.label.text.toLowerCase().replace(" ", "")
    }
-   key.alternatives = typeof key.alternatives == "undefined" ? [] : key.alternatives
    key.label.subtext = typeof key.label !== "undefined" && typeof key.label.subtext !== "undefined" ? key.label.subtext : ""
-
-   let keynames_list = [key.label.text.toLowerCase(), key.label.subtext.toLowerCase(), keyname.toLowerCase(),key.identifier.toLowerCase(), ...key.alternatives]
-
-   keynames_list = _.uniq(keynames_list)
-   keynames[key.identifier] = keynames_list.filter(keyname => {
-         if (keyname !== "") {
-            return keyname.replace(/(\s)+/g, "")
-         }
-      }) 
 })
 let to_add = []
 let shortcuts_list = shortcuts.map(entry => {
@@ -80,9 +71,9 @@ let shortcuts_list = shortcuts.map(entry => {
       keys = keys.map(key=> {
          let match = false
          key = key.toLowerCase()
-         Object.keys(keynames).map(identifier => {
-            let keyname = keynames[identifier]
-            if (keyname.includes(key)) {
+         Object.keys(keymap).map(identifier => {
+            let key_set = keymap[identifier]
+            if (key_set.name == key) {
                key = identifier
                match = true
             }
@@ -117,6 +108,11 @@ shortcuts_list = [...shortcuts_list, ...to_add]
 
 export default {
    name: 'App',
+   components: {
+      Keys,
+      Options,
+      ShortcutsList
+   },
    data() {
       return {
          options: {
@@ -128,34 +124,156 @@ export default {
          keymap: keymap,
          modes: ["As Pressed", "Toggle Modifiers", "Toggle All"],
          mod_codes: ["ControlLeft", "ControlRight", "ShiftRight", "ShiftLeft", "AltRight", "AltLeft"],
+         modifiers_order: ["ctrl", "shift", "alt"],
          special_states: ["CapsLock", "NumLock", "ScrollLock"],
          shortcuts: shortcuts_list,
          chain: {
             //allow: true,
             in_chain: false,
             start: [],
-            shortcut: ""
+            last: [],
+            warning: false,
          }
       }
+   },
+   computed: {
+      none_mods() {
+         let keys = []
+         Object.keys(this.keymap).filter(keyname => {
+            if (!this.mod_codes.includes(keyname) && this.keymap[keyname].toggle == false) {
+               keys.push(keyname)
+            }
+         })
+         return keys
+      },
+      shortcuts_active () {
+         return this.shortcuts.filter(entry => {
+            if (!this.chain.in_chain && !entry.chained) {
+               if (entry.chain_start && entry._shortcut[0].length == this.keymap_active.length && _.difference(entry._shortcut[0], this.keymap_active).length == 0) {
+                  this.chained({in_chain: true, start: [...this.keymap_active], shortcut: entry.shortcut, warning: false})
+               }
+               let extras = _.difference(entry._shortcut[0], this.keymap_active).filter(keyname => {
+                  let none_mod = !this.none_mods.includes(keyname)
+                  if (none_mod) {
+                     return true
+                  }
+               })
+               if (extras.length > 0) {
+                  return false
+               }
+               let condition = _.difference(this.keymap_active, entry._shortcut[0]).filter(keyname => {
+                     let in_shortcut = entry._shortcut[0].includes(keyname)
+                     if (!in_shortcut) {
+                        return true
+                     }
+                  })
+               if (condition.length == 0) {
+                  return entry
+               }
+            } else if (this.chain.in_chain && entry.chained) {
+               let extras = _.difference(entry._shortcut[1], this.keymap_active).filter(keyname => {
+                  let none_mod = !this.none_mods.includes(keyname)
+                  if (none_mod) {
+                     return true
+                  }
+               })
+               if (extras.length > 0) {
+                  return false
+               }
+               let condition = _.difference(this.keymap_active, entry._shortcut[1]).filter(keyname => {
+                     let in_shortcut = entry._shortcut[1].includes(keyname)
+                     if (!in_shortcut) {
+                        return true
+                     }
+                  })
+               if (condition.length == 0) {
+                  return entry
+               }
+            } else {
+               console.log("here");
+               return false
+            }
+         })
+      },
+      keymap_active () {
+         return Object.keys(this.keymap).filter(identifier => {
+            let key = this.keymap[identifier];
+            return key.active
+         })
+      },
+      none_mods_in_active () {
+         return _.intersection(this.keymap_active, this.none_mods)
+      },
    },
    methods: {
       change (key, data) {
          this[key] = data
       },
       chained (data) {
-         this.chain.in_chain = data.in_chain
-         this.chain.start = data.start
-         this.chain.shortcut = data.shortcut
-         for (let key of this.chain.start) {
-            this.keymap[key].active = false
-            this.keymap[key].chain_active = true
+         this.chain = {...this.chain, ...data}
+         if (this.chain.in_chain == true) {
+            for (let key of this.chain.start) {
+               this.keymap[key].active = false
+               this.keymap[key].chain_active = true
+            }
+         } else {
+            for (let key of this.keymap_active) {
+               this.keymap[key].active = false
+               this.keymap[key].chain_active = false
+            }
+            for (let key of this.chain.start) {
+               this.keymap[key].active = false
+               this.keymap[key].chain_active = false
+            }
+            this.chain.last = [...this.chain.start]
+            this.chain.start = []
+            this.chain.shortcut = ""
+            setTimeout(() => {
+               this.chain.warning = false
+            }, 1000);
          }
-      }  
+         console.log("end");
+         this.$forceUpdate();
+      },
+      shortcut_edit(value) {
+      },
+      normalize (identifiers, capitalize) {
+         if (identifiers.length == 0) {return []}
+         let keys = identifiers.map(keyname => {
+            return this.keymap[keyname].name
+         })
+         keys = _.uniq(keys)
+         let mods = this.mod_codes.map(keyname => {
+            return this.keymap[keyname].name
+         })
+         let keys_mods = keys.filter(key => mods.includes(key)).sort((a,b)=>{
+            return this.modifiers_order.indexOf(a) - this.modifiers_order.indexOf(b)
+         })
+         let keys_none_mods = _.xor(keys, keys_mods)
+         keys = [...keys_mods, ...keys_none_mods]
+         if (capitalize) {
+            keys = keys.map(key => {
+               let newkey
+               for (let keyname in this.keymap) {
+                  let key_set = this.keymap[keyname]
+                  if (key == key_set.character.toLowerCase()) {
+                     return key_set.character
+                  }
+               }
+               throw "Can't find key character "+ key +" when normalizing."
+            })
+         }
+         return keys
+      },
    },
-   components: {
-      Keys,
-      Options,
-      ShortcutList
+   watch: {
+      "keymap_active" (newactive) {
+         if (this.chain.in_chain) {
+            if (newactive.length > 1 && this.shortcuts_active.length == 0 && _.difference(newactive, this.mod_codes).length !== 0) {
+               this.chained({in_chain: false, warning: [...newactive]})
+            }
+         }
+      }
    },
    mounted() {
       let mods_unknown = true
@@ -225,7 +343,7 @@ export default {
          }
          this.$emit("input", this.keymap)
       })
-   }
+   },
 }
 </script>
 
