@@ -16,6 +16,7 @@
          :layout="layout"
          :chain="chain"
          :mod_codes="mod_codes"
+         :none_mods="none_mods"
          :normalize="normalize"
          @keydown="keydown($event)"
          @keyup="keyup($event)"
@@ -58,7 +59,8 @@ Object.keys(keys).map(keyname=> {
       active: false,
       chain_active: false,
       RL: typeof key.RL == "undefined" ? false : key.RL,
-      name: typeof key.name !== "undefined" ? key.name : key.label.text.toLowerCase().replace(" ", "")
+      name: typeof key.name !== "undefined" ? key.name : key.label.text.toLowerCase().replace(" ", ""),
+      ignore: typeof key.ignore == "undefined" ? false : key.ignore,
    }
    key.label.subtext = typeof key.label !== "undefined" && typeof key.label.subtext !== "undefined" ? key.label.subtext : ""
 })

@@ -23,12 +23,7 @@
             ]"
          >
             <div
-               :class="[
-               keys[key].classes.indexOf('flexspace') !== -1
-               || keys[key].classes.indexOf('blank') !== -1
-                  ? ''
-                  : 'dec'
-               ]"
+               :class="[keys[key].ignore ? '' : 'dec']"
             >
                <div
                   v-if="
@@ -45,8 +40,11 @@
                   v-if="
                      !mod_codes.includes(key)
                      && !keys[key].toggle
+                     && !keys[key].ignore
+                     && typeof active_keys[keys[key].identifier] !== 'undefined'
                   "
                >
+                  <div>{{active_keys[keys[key].identifier].command}}</div>
                </div>
             </div>
          </div>
@@ -62,16 +60,46 @@
 <script>
 export default {
    name: 'Keys',
-   props: ["layout", "keys", "keymap", "keymap_active", "chain", "normalize", "mod_codes"],
+   props: ["layout", "keys", "keymap", "keymap_active", "chain", "normalize", "mod_codes", "shortcuts_active", "none_mods"],
    components: {
    },
    data() {
       return {
-         endkey: false
+         endkey: false,
+         // active_keys: {}
       }
    },
-   methods: {
-   }
+   computed: {
+      active_keys () {
+         let active_keys = {}
+         this.shortcuts_active.map(entry => {
+            if (this.chain.in_chain && entry.chained) {
+               let intersect = _.intersection(entry._shortcut[1], this.none_mods)
+               if (intersect.length == 1) {
+                  // if (typeof active_keys[(intersect.join(""))] == "undefined") {
+                  //    active_keys[intersect.join("")] = []
+                  // }
+
+                  active_keys[(intersect.join(""))] = entry
+               } else if (intersect.length > 1){
+                  throw "Invalid shortcut"
+               }
+            } else {
+               let intersect = _.intersection(entry._shortcut[0], this.none_mods)
+               if (intersect.length == 1) {
+                  // if (typeof active_keys[(intersect.join(""))] == "undefined") {
+                  //    active_keys[intersect.join("")] = []
+                  // }
+
+                  active_keys[(intersect.join(""))] = entry
+               } else if (intersect.length > 1){
+                  throw "Invalid shortcut"
+               }
+            }
+         })
+         return active_keys
+      }
+   },
 
 }
 </script>
@@ -79,6 +107,26 @@ export default {
 <style lang="scss" scoped>
 
 @import "../settings/theme.scss";
+
+.active-shortcuts {
+   position: absolute;
+   top:1.7em;
+   bottom: 0;
+   left: 0;
+   right:0;
+   // word-break: break-all;
+   font-size: 0.9em;
+   display: flex;
+   justify-content: center;
+   align-items: center;
+   border: 2px solid rgb(0, 0, 116);
+   background: rgb(46, 46, 71);
+   & > div {
+      text-align: center;
+   // //    word-break: break-all;
+   // //    margin: 1px;
+   }
+}
 
 .pressed > .dec {
    border-color: $pressed-color !important;

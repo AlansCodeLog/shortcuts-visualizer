@@ -8,7 +8,7 @@ Eventually it would be nice to support some way to import/export them, at least 
 
 ## Status/TODOs
 
-![Current State](./docs/images/current_state.png)
+![Current State](./docs/images/current_state.gif)
 
 - [x] Responsive Keyboard CSS
 - [ ] Responsive Text Size
@@ -21,11 +21,11 @@ Eventually it would be nice to support some way to import/export them, at least 
 - [x] Shortcut List
 - [x] Show Active Shortcuts
 - [x] Editing shortcuts
-- [ ] Show active shortcuts on top of keys.
+- [~] Show active shortcuts on top of keys.
 - [~] Custom Modifier Keys (e.g. use Tab as a modifier, or disable Shift, like for a text editor)
 - [ ] Program Contexts
 - [ ] Drag/Drop Bin w/ Search
-- [ ] Polishing
+- [ ] Polishing/Clean/Beta
 - [ ] Demo
 - [ ] Documentation
 - [ ] Custom Remaps (e.g. Capslock = Ctrl + Alt + Shift)
