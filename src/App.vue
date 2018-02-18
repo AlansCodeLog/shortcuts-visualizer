@@ -23,7 +23,7 @@
          @chained="chained($event)"
       ></Keys>
       <ShortcutsList
-         :shortcuts_active="shortcuts_active"
+         :shortcuts_active="shortcuts_list_active"
          :normalize="normalize"
          @edit="shortcut_edit($event)"
       ></ShortcutsList>
@@ -142,6 +142,7 @@ export default {
             warning: false,
          },
          shortcuts_active: [],
+         shortcuts_list_active: [],
          mods_unknown: true
       }
    },
@@ -197,8 +198,8 @@ export default {
          let index = this.shortcuts.findIndex(entry => entry.shortcut == oldshortcut && entry.command == oldcommand)
          let newentry = {shortcut: newshortcut, command: newcommand}
          this.$set(this.shortcuts, index, create_shortcut_entry(newentry))
-         this.get_shortcuts_active()
-
+         this.shortcuts_active = this.get_shortcuts_active(true)
+         this.shortcuts_list_active = this.get_shortcuts_active()
       },
       normalize (identifiers, capitalize) {
          if (identifiers.length == 0) {return []}
@@ -228,19 +229,19 @@ export default {
          }
          return keys
       },
-      get_shortcuts_active () {
-         this.shortcuts_active = this.shortcuts.filter(entry => {
+      get_shortcuts_active (show_unpressed_modifiers = false) {
+         return this.shortcuts.filter(entry => {
             if (!this.chain.in_chain && !entry.chained) {
                if (entry.chain_start && entry._shortcut[0].length == this.keymap_active.length && _.difference(entry._shortcut[0], this.keymap_active).length == 0) {
                   this.chained({in_chain: true, start: [...this.keymap_active], shortcut: entry.shortcut, warning: false})
                }
                let extras = _.difference(entry._shortcut[0], this.keymap_active).filter(keyname => {
-                  let none_mod = !this.none_mods.includes(keyname)
-                  if (none_mod) {
+                  let is_mod = !this.none_mods.includes(keyname)
+                  if (is_mod) {
                      return true
                   }
                })
-               if (extras.length > 0) {
+               if (extras.length > 0 && show_unpressed_modifiers) {
                   return false
                }
                let condition = _.difference(this.keymap_active, entry._shortcut[0]).filter(keyname => {
@@ -249,17 +250,18 @@ export default {
                         return true
                      }
                   })
-               if (condition.length == 0) {
-                  return entry
+               if (condition.length !== 0) {
+                  return false
                }
+               return true
             } else if (this.chain.in_chain && entry.chained) {
                let extras = _.difference(entry._shortcut[1], this.keymap_active).filter(keyname => {
-                  let none_mod = !this.none_mods.includes(keyname)
-                  if (none_mod) {
+                  let is_mod = !this.none_mods.includes(keyname)
+                  if (is_mod) {
                      return true
                   }
                })
-               if (extras.length > 0) {
+               if (extras.length > 0 && show_unpressed_modifiers) {
                   return false
                }
                let condition = _.difference(this.keymap_active, entry._shortcut[1]).filter(keyname => {
@@ -268,9 +270,10 @@ export default {
                         return true
                      }
                   })
-               if (condition.length == 0) {
-                  return entry
+               if (condition.length !== 0) {
+                  return false
                }
+               return true
             } else {
                return false
             }
@@ -350,7 +353,8 @@ export default {
                this.chained({in_chain: false, warning: [...newactive]})
             }
          }
-         this.get_shortcuts_active()
+         this.shortcuts_active = this.get_shortcuts_active(true)
+         this.shortcuts_list_active = this.get_shortcuts_active()
       },
    },
    mounted() {
