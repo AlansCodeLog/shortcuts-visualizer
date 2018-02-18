@@ -1,7 +1,7 @@
 <template>
    <div
       id="app"
-      :class="[{keyboard: true}, options.theme_dark ? 'background-dark' : 'background-light']"
+      :class="[options.theme_dark ? 'background-dark' : 'background-light']"
    >
       <Options
          :options="options"
@@ -17,13 +17,14 @@
          :chain="chain"
          :mod_codes="mod_codes"
          :normalize="normalize"
-         @input="change('keymap', $event)"
+         @keydown="keydown($event)"
+         @keyup="keyup($event)"
          @chained="chained($event)"
       ></Keys>
       <ShortcutsList
          :shortcuts_active="shortcuts_active"
          :normalize="normalize"
-         @edit="update_shortcut($event)"
+         @edit="shortcut_edit($event)"
       ></ShortcutsList>
    </div>
 </template>
@@ -63,6 +64,9 @@ Object.keys(keys).map(keyname=> {
 })
 let to_add = []
 let shortcuts_list = shortcuts.map(entry => {
+   return create_shortcut_entry(entry)
+})
+function create_shortcut_entry (entry) {
    entry.shortcut = entry.shortcut.split(" ")
    entry._shortcut = entry.shortcut.map((keyset, index) => {
       let keys = keyset.replace(/(\+|-)(?=\1|[\s\S])/gm, "==BREAK==").split("==BREAK==")
@@ -102,8 +106,9 @@ let shortcuts_list = shortcuts.map(entry => {
       to_add.push({command:"Chain Start", chain_start: true, chained:false, _shortcut: [entry._shortcut[0]], shortcut: shortcut})
    }
    entry.shortcut = entry.shortcut.join(" ")
+   entry.editing = false
    return entry
-})
+}
 shortcuts_list = [...shortcuts_list, ...to_add]
 
 export default {
@@ -134,7 +139,8 @@ export default {
             last: [],
             warning: false,
          },
-         shortcuts_active: []
+         shortcuts_active: [],
+         mods_unknown: true
       }
    },
    computed: {
@@ -185,7 +191,12 @@ export default {
             }, 1000);
          }
       },
-      shortcut_edit(value) {
+      shortcut_edit({oldshortcut, newshortcut, oldcommand, newcommand}) {
+         let index = this.shortcuts.findIndex(entry => entry.shortcut == oldshortcut && entry.command == oldcommand)
+         let newentry = {shortcut: newshortcut, command: newcommand}
+         this.$set(this.shortcuts, index, create_shortcut_entry(newentry))
+         this.get_shortcuts_active()
+
       },
       normalize (identifiers, capitalize) {
          if (identifiers.length == 0) {return []}
@@ -263,20 +274,7 @@ export default {
             }
          })
       },
-   },
-   watch: {
-      "keymap_active" (newactive, oldactive) {
-         if (this.chain.in_chain) {
-            if (newactive.length > 1 && this.shortcuts_active.length == 0 && _.difference(newactive, this.mod_codes).length !== 0) {
-               this.chained({in_chain: false, warning: [...newactive]})
-            }
-         }
-         this.get_shortcuts_active()
-      },
-   },
-   mounted() {
-      let mods_unknown = true
-      document.addEventListener("keydown", (e) => {
+      keydown (e) {
          let identifier = e.code
          e.preventDefault()
          e.stopPropagation()
@@ -291,11 +289,11 @@ export default {
          } else {
             this.keymap[identifier].active = this.keymap[identifier].toggle ? !this.keymap[identifier].active : true
          }
-         if (mods_unknown) {
+         if (this.mods_unknown) {
             this.keymap["CapsLock"].active = e.getModifierState("CapsLock")
             this.keymap["NumLock"].active = e.getModifierState("NumLock")
             this.keymap["ScrollLock"].active = e.getModifierState("ScrollLock")
-            mods_unknown = false
+            this.mods_unknown = false
          } else if (this.special_states.includes(identifier)) {
             this.keymap[identifier].active = e.getModifierState(identifier)
          }
@@ -307,8 +305,8 @@ export default {
             }
          }
          this.$emit("input", this.keymap)
-      })
-      document.addEventListener("keyup", (e) => {
+      },
+      keyup (e) {
          let identifier = e.code
          e.preventDefault()
          e.stopPropagation()
@@ -324,11 +322,11 @@ export default {
                }
             } else if (this.options.mode !== "Toggle All") {
             }
-            if (mods_unknown) {
+            if (this.mods_unknown) {
                this.keymap["CapsLock"].active = e.getModifierState("CapsLock")
                this.keymap["NumLock"].active = e.getModifierState("NumLock")
                this.keymap["ScrollLock"].active = e.getModifierState("ScrollLock")
-               mods_unknown = false
+               this.mods_unknown = false
             } else if (this.special_states.includes(identifier)) {
                this.keymap[identifier].active = e.getModifierState(identifier)
             }
@@ -341,7 +339,19 @@ export default {
             }
          }
          this.$emit("input", this.keymap)
-      })
+      }
+   },
+   watch: {
+      "keymap_active" (newactive, oldactive) {
+         if (this.chain.in_chain) {
+            if (newactive.length > 1 && this.shortcuts_active.length == 0 && _.difference(newactive, this.mod_codes).length !== 0) {
+               this.chained({in_chain: false, warning: [...newactive]})
+            }
+         }
+         this.get_shortcuts_active()
+      },
+   },
+   mounted() {
    },
 }
 </script>

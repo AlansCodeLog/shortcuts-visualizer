@@ -12,10 +12,10 @@ const shortcuts = [
    //    shortcut: "ctrl+shift+s",
    //    command: "Test"
    // },
-   // {
-   //    shortcut: "ctrl+s t",
-   //    command: "Chain"
-   // },
+   {
+      shortcut: "ctrl+s t",
+      command: "Chain"
+   },
    {
       shortcut: "ctrl+s a",
       command: "Chain2"

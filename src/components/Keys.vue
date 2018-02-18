@@ -1,5 +1,5 @@
 <template>
-   <div class="keyboard">
+   <div class="keyboard" tabIndex="1" @keydown="$emit('keydown', $event)">
       <div
          :class="['key-row', row.length == 0 ? 'empty-row': '']"
          v-for="(row, rindex) of layout"
@@ -70,7 +70,7 @@ export default {
          endkey: false
       }
    },
-   computed: {
+   methods: {
    }
 
 }
