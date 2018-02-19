@@ -2,878 +2,656 @@ const keys = {
    a: {
       identifier:"KeyA",
 		classes:["key"],
-      label: {
-         text: "A",
-         classes: []
-      }
+      character: "A",
+		
    },
    b: {
       identifier:"KeyB",
 		classes:["key"],
-      label: {
-         text: "B",
-         classes: []
-      }
+      character: "B",
+		
    },
    c: {
       identifier:"KeyC",
 		classes:["key"],
-      label: {
-         text: "C",
-         classes: []
-      }
+      character: "C",
+		
    },
    d: {
       identifier:"KeyD",
 		classes:["key"],
-      label: {
-         text: "D",
-         classes: []
-      }
+      character: "D",
+		
    },
    e: {
       identifier:"KeyE",
 		classes:["key"],
-      label: {
-         text: "E",
-         classes: []
-      }
+      character: "E",
+		
    },
    f: {
       identifier:"KeyF",
 		classes:["key"],
-      label: {
-         text: "F",
-         classes: []
-      }
+      character: "F",
+		
    },
    g: {
       identifier:"KeyG",
 		classes:["key"],
-      label: {
-         text: "G",
-         classes: []
-      }
+      character: "G",
+		
    },
    h: {
       identifier:"KeyH",
 		classes:["key"],
-      label: {
-         text: "H",
-         classes: []
-      }
+      character: "H",
+		
    },
    i: {
       identifier:"KeyI",
 		classes:["key"],
-      label: {
-         text: "I",
-         classes: []
-      }
+      character: "I",
+		
    },
    j: {
       identifier:"KeyJ",
 		classes:["key"],
-      label: {
-         text: "J",
-         classes: []
-      }
+      character: "J",
+		
    },
    k: {
       identifier:"KeyK",
 		classes:["key"],
-      label: {
-         text: "K",
-         classes: []
-      }
+      character: "K",
+		
    },
    l: {
       identifier:"KeyL",
 		classes:["key"],
-      label: {
-         text: "L",
-         classes: []
-      }
+      character: "L",
+		
    },
    m: {
       identifier:"KeyM",
 		classes:["key"],
-      label: {
-         text: "M",
-         classes: []
-      }
+      character: "M",
+		
    },
    n: {
       identifier:"KeyN",
 		classes:["key"],
-      label: {
-         text: "N",
-         classes: []
-      }
+      character: "N",
+		
    },
    o: {
       identifier:"KeyO",
 		classes:["key"],
-      label: {
-         text: "O",
-         classes: []
-      }
+      character: "O",
+		
    },
    p: {
       identifier:"KeyP",
 		classes:["key"],
-      label: {
-         text: "P",
-         classes: []
-      }
+      character: "P",
+		
    },
    q: {
       identifier:"KeyQ",
 		classes:["key"],
-      label: {
-         text: "Q",
-         classes: []
-      }
+      character: "Q",
+		
    },
    r: {
       identifier:"KeyR",
 		classes:["key"],
-      label: {
-         text: "R",
-         classes: []
-      }
+      character: "R",
+		
    },
    s: {
       identifier:"KeyS",
 		classes:["key"],
-      label: {
-         text: "S",
-         classes: []
-      }
+      character: "S",
+		
    },
    t: {
       identifier:"KeyT",
 		classes:["key"],
-      label: {
-         text: "T",
-         classes: []
-      }
+      character: "T",
+		
    },
    u: {
       identifier:"KeyU",
 		classes:["key"],
-      label: {
-         text: "U",
-         classes: []
-      }
+      character: "U",
+		
    },
    v: {
       identifier:"KeyV",
 		classes:["key"],
-      label: {
-         text: "V",
-         classes: []
-      }
+      character: "V",
+		
    },
    w: {
       identifier:"KeyW",
 		classes:["key"],
-      label: {
-         text: "W",
-         classes: []
-      }
+      character: "W",
+		
    },
    x: {
       identifier:"KeyX",
 		classes:["key"],
-      label: {
-         text: "X",
-         classes: []
-      }
+      character: "X",
+		
    },
    y: {
       identifier:"KeyY",
 		classes:["key"],
-      label: {
-         text: "Y",
-         classes: []
-      }
+      character: "Y",
+		
    },
    z: {
       identifier:"KeyZ",
 		classes:["key"],
-      label: {
-         text: "Z",
-         classes: []
-      }
+      character: "Z",
+		
    },
    backquote: {
       identifier:"Backquote",
 		classes:["key"],
-      label: {
-         text: "`",
-         subtext:"~",
-         classes: []
-      }
+      character : "`",
+      
    },
    comma: {
       identifier:"Comma",
 		classes:["key"],
-      label: {
-         text: ",",
-         subtext:"<",
-         classes: []
-      }
+      character: ",",
+      
    },
    period: {
       identifier:"Period",
 		classes:["key"],
-      label: {
-         text: ".",
-         subtext:">",
-         classes: []
-      }
+      character: ".",
+      
    },
    slash: {
       identifier:"Slash",
 		classes:["key"],
-      label: {
-         text: "/",
-         subtext: "?",
-         classes: []
-      }
+      character: "/",
+      
    },
    quote: {
       identifier:"Quote",
 		classes:["key"],
-      label: {
-         text: "\'",
-         subtext: "\"",
-         classes: []
-      }
+      character: "\'",
+      
    },
    backslash: {
       identifier:"Backslash",
 		classes:["key", "small"],
-      label: {
-         text: "\\",
-         subtext: "|",
-         classes: []
-      }
+      character: "\\",
+      
    },
    Rbracket: {
       identifier:"BracketRight",
 		classes:["key"],
-      label: {
-         text: "]",
-         subtext:"}",
-         classes: []
-      }
+      character: "]",
+      
    },
    Lbracket: {
       identifier:"BracketLeft",
 		classes:["key"],
-      label: {
-         text: "[",
-         subtext:"{",
-         classes: []
-      }
+      character: "[",
+      
    },
    semicolon: {
       identifier:"SemiColon",
 		classes:["key"],
-      label: {
-         text: ";",
-         subtext:":",
-         classes: []
-      }
+      character: ";",
+      
    },
    num1: {
       identifier:"Digit1",
 		classes:["key"],
-      label: {
-         text: "1",
-         classes: []
-      }
+      character: "1",
+		
    },
    num2: {
       identifier:"Digit2",
 		classes:["key"],
-      label: {
-         text: "2",
-         classes: []
-      }
+      character: "2",
+		
    },
    num3: {
       identifier:"Digit3",
 		classes:["key"],
-      label: {
-         text: "3",
-         classes: []
-      }
+      character: "3",
+		
    },
    num4: {
       identifier:"Digit4",
 		classes:["key"],
-      label: {
-         text: "4",
-         classes: []
-      }
+      character: "4",
+		
    },
    num5: {
       identifier:"Digit5",
 		classes:["key"],
-      label: {
-         text: "5",
-         classes: []
-      }
+      character: "5",
+		
    },
    num6: {
       identifier:"Digit6",
 		classes:["key"],
-      label: {
-         text: "6",
-         classes: []
-      }
+      character: "6",
+		
    },
    num7: {
       identifier:"Digit7",
 		classes:["key"],
-      label: {
-         text: "7",
-         classes: []
-      }
+      character: "7",
+		
    },
    num8: {
       identifier:"Digit8",
 		classes:["key"],
-      label: {
-         text: "8",
-         classes: []
-      }
+      character: "8",
+		
    },
    num9: {
       identifier:"Digit9",
 		classes:["key"],
-      label: {
-         text: "9",
-         classes: []
-      }
+      character: "9",
+		
    },
    num0: {
       identifier:"Digit0",
 		classes:["key"],
-      label: {
-         text: "0",
-         classes: []
-      }
+      character: "0",
+		
    },
    minus: {
       identifier:"Minus",
 		classes:["key"],
-      label: {
-         text: "-",
-         subtext:"_",
-         classes: []
-      }
+      character: "-",
+      
    },
    equal: {
       identifier:"Equal",
 		classes:["key"],
-      label: {
-         text: "=",
-         subtext:"+",
-         classes: []
-      }
+      character: "=",
+      
    },
    backspace: {
       identifier:"Backspace",
 		classes:["key", "medium"],
-      label: {
-         text: "Backspace",
-         classes: []
-      }
+      character: "Backspace",
+		
    },
    insert: {
       identifier: "Insert",
 		classes:["key"],
-      label: {
-         text: "Insert",
-         classes: ["shrink"]
-      }
+      character: "Insert",
+		label_classes: ["shrink"]
    },
    home: {
       identifier: "Home",
 		classes:["key"],
-      label: {
-         text: "Home",
-         classes: ["shrink"]
-      }
+      character: "Home",
+		label_classes: ["shrink"]
    },
    pageup: {
       identifier: "PageUp",
 		classes:["key"],
-      label: {
-         text: "Page Up",
-         classes: ["shrink"]
-      }
+      character: "Page Up",
+		label_classes: ["shrink"]
    },
    pagedown: {
       identifier: "PageDown",
 		classes:["key"],
-      label: {
-         text: "Page Down",
-         classes: ["shrink"]
-      }
+      character: "Page Down",
+		label_classes: ["shrink"]
    },
    numlock: {
       identifier: "NumLock",
+      toggle: true,
 		classes:["key"],
-      label: {
-         text: "Num Lock",
-         classes: []
-      }
+      character: "Num Lock",
    },
    numpad1: {
       identifier:"Numpad1",
 		classes:["key"],
-      label: {
-         text: "1",
-         classes: []
-      }
+      character: "1",
+		
    },
    numpad2: {
       identifier:"Numpad2",
 		classes:["key"],
-      label: {
-         text: "2",
-         classes: []
-      }
+      character: "2",
+		
    },
    numpad3: {
       identifier:"Numpad3",
 		classes:["key"],
-      label: {
-         text: "3",
-         classes: []
-      }
+      character: "3",
+		
    },
    numpad4: {
       identifier:"Numpad4",
 		classes:["key"],
-      label: {
-         text: "4",
-         classes: []
-      }
+      character: "4",
+		
    },
    numpad5: {
       identifier:"Numpad5",
 		classes:["key"],
-      label: {
-         text: "5",
-         classes: []
-      }
+      character: "5",
+		
    },
    numpad6: {
       identifier:"Numpad6",
 		classes:["key"],
-      label: {
-         text: "6",
-         classes: []
-      }
+      character: "6",
+		
    },
    numpad7: {
       identifier:"Numpad7",
 		classes:["key"],
-      label: {
-         text: "7",
-         classes: []
-      }
+      character: "7",
+		
    },
    numpad8: {
       identifier:"Numpad8",
 		classes:["key"],
-      label: {
-         text: "8",
-         classes: []
-      }
+      character: "8",
+		
    },
    numpad9: {
       identifier:"Numpad9",
 		classes:["key"],
-      label: {
-         text: "9",
-         classes: []
-      }
+      character: "9",
+		
    },
    numpad0: {
       identifier:"Numpad0",
 		classes:["key", "medium"],
-      label: {
-         text: "0",
-         classes: []
-      }
+      character: "0",
+		
    },
    numpaddecimal: {
       identifier:"NumpadDecimal",
 		classes:["key"],
-      label: {
-         text: ".",
-         subtext: "Del",
-         classes: []
-      }
+      character: ".",
+      
    },
    numpadenter: {
       identifier: "NumpadEnter",
 		classes:["key", "vertical"],
-      label: {
-         text: "Enter",
-         classes: []
-      }
+      character: "Enter",
+		
    },
    numpaddivide: {
       identifier: "NumpadDivide",
 		classes:["key"],
-      label: {
-         text: "/",
-         classes: []
-      }
+      character: "/",
+		
    },
    numpadmultiply: {
       identifier:"NumpadMultiply",
 		classes:["key"],
-      label: {
-         text: "*",
-         classes: []
-      }
+      character: "*",
+		
    },
    numpadadd: {
       identifier:"NumpadAdd",
 		classes:["key", "vertical"],
-      label: {
-         text: "+",
-         classes: []
-      }
+      character: "+",
+		
    },
    numpadsubtract: {
       identifier:"NumpadSubtract",
 		classes:["key"],
-      label: {
-         text: "-",
-         classes: []
-      }
+      character: "-",
+		
    },
    Lcontrol: {
       identifier: "ControlLeft",
       RL: true,
+      is_modifier: true,
       classes:["key", "modifiers"],
-      label: {
-         text: "Ctrl",
-         classes: []
-      }
+      character: "Ctrl",
+		
    },
    Rcontrol: {
       identifier: "ControlRight",
       RL: true,
+      is_modifier: true,
       classes:["key", "modifiers"],
-      label: {
-         text: "Ctrl",
-         classes: []
-      }
+      character: "Ctrl",
+		
    },
    menu: {
       identifier: "ContextMenu",
       classes:["key", "modifiers"],
-      label: {
-         text: "Menu",
-         classes: []
-      }
+      character: "Menu",
+		
    },
    Lsuper: {
       identifier: "MetaLeft",
       RL: true,
       classes:["key", "modifiers"],
-      label: {
-         text: "Super",
-         classes: []
-      }
+      character: "Super",
+		
    },
    Rsuper: {
       identifier: "MetaRight",
       RL: true,
       classes:["key", "modifiers"],
-      label: {
-         text: "Super",
-         classes: []
-      }
+      character: "Super",
+		
    },
    Rshift: {
       identifier: "ShiftRight",
       RL: true,
+      is_modifier: true,
       classes:["key", "huge"],
-      label: {
-         text: "Shift",
-         classes: []
-      }
+      character: "Shift",
+		
    },
    Lshift: {
       identifier: "ShiftLeft",
       RL: true,
+      is_modifier: true,
       classes:["key", "medium-large"],
-      label: {
-         text: "Shift",
-         classes: []
-      }
+      character: "Shift",
+		
    },
    Lalt: {
       identifier: "AltLeft",
       RL: true,
+      is_modifier: true,
       classes:["key", "modifiers"],
-      label: {
-         text: "Alt",
-         classes: []
-      }
+      character: "Alt",
+		
    },
    Ralt: {
       identifier: "AltRight",
       RL: true,
+      is_modifier: true,
       classes:["key", "modifiers"],
-      label: {
-         text: "Alt",
-         classes: []
-      }
+      character: "Alt",
+		
    },
    enter: {
       identifier: "Enter",
 		classes:["key", "medium-large"],
-      label: {
-         text: "Enter",
-         classes: []
-      }
+      character: "Enter",
+		
    },
    end: {
       identifier: "End",
 		classes:["key"],
-      label: {
-         text: "End",
-         classes: ["shrink"]
-      }
+      character: "End",
+		label_classes: ["shrink"]
    },
    delete: {
       identifier: "Delete",
 		classes:["key"],
-      label: {
-         text: "Del",
-         classes: ["shrink"]
-      }
+      character: "Del",
+		label_classes: ["shrink"]
    },
    space: {
       identifier: "Space",
 		classes:["key", "space"],
-      label: {
-         text: " ",
-      }
+      character: " ",
    },
    tab: {
       identifier: "Tab",
-      toggle: true,
+      fake_toggle: true,
 		classes:["key", "small"],
-      label: {
-         text: "Tab",
-      }
+      character: "Tab",
    },
    capslock: {
       identifier: "CapsLock",
+      toggle: true,
 		classes:["key", "medium-small"],
-      label: {
-         text: "Capslock",
-      }
+      character: "Capslock",
    },
    left: {
       identifier:"ArrowLeft",
 		classes:["key"],
-      label: {
-         text: "Left",
-         classes: []
-      }
+      character: "Left",
+		
    },
    down: {
       identifier: "ArrowDown",
 		classes:["key"],
-      label: {
-         text: "Down",
-         classes: []
-      }
+      character: "Down",
+		
    },
    right: {
       identifier: "ArrowRight",
 		classes:["key"],
-      label: {
-         text: "Right",
-         classes: []
-      }
+      character: "Right",
+		
    },
    up: {
       identifier: "ArrowUp",
 		classes:["key"],
-      label: {
-         text: "Up",
-         classes: []
-      }
+      character: "Up",
+		
    },
    escape: {
       identifier: "Escape",
 		classes:["key"],
-      label: {
-         text: "Esc",
-         classes: []
-      }
+      character: "Esc",
+		
    },
    f1: {
       identifier:"F1",
 		classes:["key"],
-      label: {
-         text: "F1",
-         classes: []
-      }
+      character: "F1",
+		
    },
    f2: {
       identifier:"F2",
 		classes:["key"],
-      label: {
-         text: "F2",
-         classes: []
-      }
+      character: "F2",
+		
    },
    f3: {
       identifier:"F3",
 		classes:["key"],
-      label: {
-         text: "F3",
-         classes: []
-      }
+      character: "F3",
+		
    },
    f4: {
       identifier:"F4",
 		classes:["key"],
-      label: {
-         text: "F4",
-         classes: []
-      }
+      character: "F4",
+		
    },
    f5: {
       identifier:"F5",
 		classes:["key"],
-      label: {
-         text: "F5",
-         classes: []
-      }
+      character: "F5",
+		
    },
    f6: {
       identifier:"F6",
 		classes:["key"],
-      label: {
-         text: "F6",
-         classes: []
-      }
+      character: "F6",
+		
    },
    f7: {
       identifier:"F7",
 		classes:["key"],
-      label: {
-         text: "F7",
-         classes: []
-      }
+      character: "F7",
+		
    },
    f8: {
       identifier:"F8",
 		classes:["key"],
-      label: {
-         text: "F8",
-         classes: []
-      }
+      character: "F8",
+		
    },
    f9: {
       identifier:"F9",
 		classes:["key"],
-      label: {
-         text: "F9",
-         classes: []
-      }
+      character: "F9",
+		
    },
    f10: {
       identifier:"F10",
 		classes:["key"],
-      label: {
-         text: "F10",
-         classes: []
-      }
+      character: "F10",
+		
    },
    f11: {
       identifier:"F11",
 		classes:["key"],
-      label: {
-         text: "F11",
-         classes: []
-      }
+      character: "F11",
+		
    },
    f12: {
       identifier:"F12",
 		classes:["key"],
-      label: {
-         text: "F12",
-         classes: []
-      }
+      character: "F12",
+		
    },
    printscreen: {
       identifier: "PrintScreen",
       nokeydown: true,
 		classes:["key"],
-      label: {
-         text: "Prt Scrn",
-         classes: ["shrink"]
-      }
+      character: "Prt Scrn",
+		label_classes: ["shrink"]
    },
    scrolllock: {
       identifier: "ScrollLock",
+      toggle: true,
 		classes:["key"],
-      label: {
-         text: "Scroll Lock",
-         classes: ["shrink"]
-      }
+      character: "Scroll Lock",
+		label_classes: ["shrink"]
    },
    pause: {
       identifier: "Pause",
 		classes:["key"],
-      label: {
-         text: "Pause",
-         subtext: "Break",
-         classes: ["shrink"]
-      }
+      character: "Pause",
+      label_classes: ["shrink"]
    },
    blank: {
       classes:["blank", "key"],
       ignore: true,
-      label: {
-         text: "",
-         classes: []
-      }
+		
    },
    flexspace: {
       classes:["flexspace"],
       ignore: true,
-      label: {
-         text: "",
-         classes: []
-      }
+		
    },
    spacer: {
       classes:["spacer"],
       ignore: true,
-      label: {
-         text: "",
-         classes: []
-      }
+		
    }
 }
 

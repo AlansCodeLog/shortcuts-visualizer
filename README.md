@@ -21,11 +21,11 @@ Eventually it would be nice to support some way to import/export them, at least 
 - [x] Shortcut List
 - [x] Show Active Shortcuts
 - [x] Editing shortcuts
-- [~] Show active shortcuts on top of keys.
+- [x] Show active shortcuts on top of keys.
 - [~] Custom Modifier Keys (e.g. use Tab as a modifier, or disable Shift, like for a text editor)
 - [ ] Program Contexts
 - [ ] Drag/Drop Bin w/ Search
-- [ ] Polishing/Clean/Beta
+- [~] Polishing/Clean/Beta
 - [ ] Demo
 - [ ] Documentation
 - [ ] Custom Remaps (e.g. Capslock = Ctrl + Alt + Shift)
@@ -36,14 +36,41 @@ Eventually it would be nice to support some way to import/export them, at least 
 # Notes 
 
 - Print Screen only fires on keyup so it has a timeout to set it off.
-- Caps/Scroll/Num Locks are `toggle: true` by default.
+- Caps/Scroll/Num Locks need to be `toggle: true`.
 - `toggle: true` overrides input mode.
-- If input mode is `toggle-modifers`, the modifiers that will toggle are: Ctrl, Shift, Alt. To add more (e.g. `tab`), set the key to `toggle: true`
+- If input mode is `toggle-modifers`, the modifiers that will toggle are: Ctrl, Shift, Alt.
 - The names of the keys do not matter so long as the identifier is correct (`e.code`). `e.keycode` isn't used because I found it inconsistent (`Enter == NumpadEnter`). `e.code` can also differentiate between L/R.
    - So the keys object keys can be changed to anything you want, as can the text, etc, and it only matters what those are named for the layout, it's the identifier that's being listened to to actually set the active classes.
-- Any key that shouldn't be ignored (e.g. blank keys just to fill layout) should not set a label property.
-- Shortcuts are matched against a list created from the key's label text. All lowercase, no spaces, empty names are discarded. Can be overridden by setting a name property.
+- Shortcuts are matched against a list created from the key's character property. All lowercase, no spaces, empty names are discarded. Can be overridden by setting a name property.
    - In a few rare cases this might be slightly confusing, specifically the super or oskey who's identifier is MetaRight/Left, while meta is sometimes shown on keyboard layouts where the menu key is. And I think meta is something else on macs?
+
+# Documentation Snippets
+
+## Keys Format
+```javascript
+   menu: { //keyname for layout
+      identifier: "", //event.code used to identify which key pressed
+      name: "menu", //do not specify right or left
+      character: "Menu", //label text
+      classes:["key", "modifiers"], //classes for layout
+      label_classes: [], //classes for key labels
+      RL: false, //if a key like Shift which is on both sides
+      ignore: false, //whether it's not really a key, and just a key for the layout
+      nokeydown: false, //whether the keydown event does not fire e.g. Print Screen doesn't fire a keydown, almost everything else does
+      toggle: false, //whether it's a native toggle key (so we can use event.getModifierState to get real state)
+      fake_toggle: //emulate key as toggle, overrides input mode
+      active: false, //internal property needed by program
+      chain_active: false, //internal property needed by program
+   }
+```
+
+The keymap function then creates a keymap from the keys for use internally. It excludes ignored keys, filling in any empty properties and changing the format to: 
+
+```javascript
+   [identifier]: {
+      //properties
+   }
+```
 
 ## Build Setup
 

@@ -28,18 +28,16 @@
                <div
                   v-if="
                      keys[key]
-                     && !(typeof keys[key].label == 'undefined'
-                        || keys[key].ignore == true)
+                     && !(keys[key].ignore == true)
                      "
-                  :class="[{label: true}, keys[key].label.classes]"
+                  :class="[{label: true}, keys[key].label_classes]"
                >
-                  {{keys[key].label.text}}
+                  {{keys[key].character}}
                </div>
                <div
                   class="active-shortcuts"
                   v-if="
-                     !mod_codes.includes(key)
-                     && !keys[key].toggle
+                     !key.is_modifier
                      && !keys[key].ignore
                      && typeof active_keys[keys[key].identifier] !== 'undefined'
                   "
@@ -60,7 +58,7 @@
 <script>
 export default {
    name: 'Keys',
-   props: ["layout", "keys", "keymap", "keymap_active", "chain", "normalize", "mod_codes", "shortcuts_active", "none_mods"],
+   props: ["layout", "keys", "keymap", "keymap_active", "chain", "normalize", "shortcuts_active"],
    components: {
    },
    data() {
@@ -74,23 +72,15 @@ export default {
          let active_keys = {}
          this.shortcuts_active.map(entry => {
             if (this.chain.in_chain && entry.chained) {
-               let intersect = _.intersection(entry._shortcut[1], this.none_mods)
+               let intersect = entry._shortcut[1].filter(identifier => !this.keymap[identifier].is_modifier)
                if (intersect.length == 1) {
-                  // if (typeof active_keys[(intersect.join(""))] == "undefined") {
-                  //    active_keys[intersect.join("")] = []
-                  // }
-
                   active_keys[(intersect.join(""))] = entry
                } else if (intersect.length > 1){
                   throw "Invalid shortcut"
                }
             } else {
-               let intersect = _.intersection(entry._shortcut[0], this.none_mods)
+               let intersect = entry._shortcut[0].filter(identifier => !this.keymap[identifier].is_modifier)
                if (intersect.length == 1) {
-                  // if (typeof active_keys[(intersect.join(""))] == "undefined") {
-                  //    active_keys[intersect.join("")] = []
-                  // }
-
                   active_keys[(intersect.join(""))] = entry
                } else if (intersect.length > 1){
                   throw "Invalid shortcut"
@@ -123,8 +113,6 @@ export default {
    background: rgb(46, 46, 71);
    & > div {
       text-align: center;
-   // //    word-break: break-all;
-   // //    margin: 1px;
    }
 }
 

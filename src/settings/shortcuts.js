@@ -5,7 +5,7 @@ const shortcuts = [
    },
    {
       shortcut: "ctrl+s",
-      command: "Test",
+      command: "Custom Chain Text",
       chain_start: true,
    },
    {
@@ -14,11 +14,11 @@ const shortcuts = [
    },
    {
       shortcut: "ctrl+s t",
-      command: "Chain"
+      command: "Chain T"
    },
    {
       shortcut: "ctrl+s a",
-      command: "Chain2"
+      command: "Chain A"
    }
 ]
 
