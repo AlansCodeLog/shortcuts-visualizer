@@ -91,11 +91,11 @@ function _normalize (modifiers_order, modifiers_names, keymap, identifiers, capi
 }
 export const normalize = _normalize
 
-export function create_shortcut_entry (entry, shortcuts_list, keymap, modifiers_order, modifiers_names) {
-   entry.shortcut = entry.shortcut.split(" ")
-   entry._shortcut = entry.shortcut.map((keyset, index) => {
+function _keys_from_text(shortcut, keymap, modifiers_order, modifiers_names) {
+   shortcut = shortcut.split(" ").filter(entry => entry !== "")
+   let _shortcut = shortcut.map((keyset, index) => {
       let keys = keyset.replace(/(\+|-)(?=\1|[\s\S])/gm, "==BREAK==").split("==BREAK==")
-      entry.shortcut[index] = _.pull(keys, '==BREAK==').join("+")
+      shortcut[index] = _.pull(keys, '==BREAK==').join("+")
       let RL = []
       keys = keys.map(key=> {
          let match = false
@@ -124,23 +124,36 @@ export function create_shortcut_entry (entry, shortcuts_list, keymap, modifiers_
       }
       return _.pull(keys, '==BREAK==');
    })
+   shortcut = [_normalize(modifiers_order, modifiers_names, keymap, _shortcut[0], true).join("+")]
+   if (_shortcut.length > 1) {
+      shortcut.push(_normalize(modifiers_order, modifiers_names, keymap, _shortcut[1], true).join("+"))
+   }
+   return {shortcut: shortcut.join(" "), _shortcut: _shortcut, original: shortcut}
+}
+
+export const keys_from_text = _keys_from_text
+
+export function create_shortcut_entry (entry, shortcuts_list, keymap, modifiers_order, modifiers_names, editing = false, check_exists = true) {
+   let {shortcut, _shortcut, original} = _keys_from_text(entry.shortcut, keymap, modifiers_order, modifiers_names)
+   entry.shortcut = shortcut
+   entry._shortcut = _shortcut
    //check it doesn't already exist
-   shortcuts_list.map(existing_entry => {
-      if (_.isEqual(existing_entry._shortcut, entry._shortcut)) {
-         //TODO allow context exception
-         throw new Error("Shortcut '" + entry.shortcut.join(" ") + "' (command: " + entry.command +") already exists: '" + existing_entry.shortcut + "' (command: " + entry.command)+")"
-      }
-   })
+   if (check_exists) {
+      shortcuts_list.map(existing_entry => {
+         if (_.isEqual(existing_entry._shortcut, entry._shortcut)) {
+            //TODO allow context exception
+            throw new Error("Shortcut '" + entry.shortcut.join(" ") + "' (command: " + entry.command +") already exists: '" + existing_entry.shortcut + "' (command: " + entry.command)+")"
+         }
+      })
+   }
    //handle chains
    entry.chained = entry._shortcut.length > 1 ? true : false
    entry.chain_start = typeof entry.chain_start !== "undefined" ? entry.chain_start : false
-
    //check for shortcuts that override chain start or change text
    if (entry.chained) {
-      let shortcut = entry.shortcut.join(" ").replace(" "+entry.shortcut[1], "")//TODO normalize
       let newentry = {command:"Chain Start", chain_start: true, chained:false, _shortcut: [entry._shortcut[0]], shortcut: shortcut}
       let exists = shortcuts_list.findIndex(entry => {
-         if (entry.shortcut == newentry.shortcut) {
+         if (_.isEqual(entry._shortcut[0], newentry._shortcut[0])) {
             if (entry.chain_start == newentry.chain_start) {
                return true
             } else {
@@ -148,15 +161,12 @@ export function create_shortcut_entry (entry, shortcuts_list, keymap, modifiers_
             }
          }
       })
+      console.log(exists);
       exists = exists == -1 ? false : true
       if (!exists) {
          shortcuts_list.push(newentry)
       }
-      let text_second_part = _normalize(modifiers_order, modifiers_names, keymap, entry._shortcut[1], true)
    }
-   let text_first_part = _normalize(modifiers_order, modifiers_names, keymap, entry._shortcut[0], true)
-   let text_second_part = text_second_part || [""]
-   entry.shortcut = text_first_part.join("+") + " " + text_second_part.join("+")
    entry.editing = false
    return entry
 }

@@ -21,8 +21,10 @@
          @chained="chained($event)"
       ></Keys>
       <ShortcutsList
+         :shortcuts="shortcuts"
          :shortcuts_active="shortcuts_list_active"
          :normalize="normalize"
+         :options="options"
          @edit="shortcut_edit($event)"
       ></ShortcutsList>
    </div>
@@ -38,7 +40,7 @@ import {keys} from "./settings/keys.js"
 import {shortcuts as settings_shortcuts} from "./settings/shortcuts.js"
 
 import * as _ from "lodash"
-import {find_extra_modifiers, find_extra_keys_pressed, chain_in_active, get_shortcuts_active, create_shortcut_entry, create_shortcuts_list, create_keymap, normalize} from "./helpers/helpers"
+import {find_extra_modifiers, find_extra_keys_pressed, chain_in_active, get_shortcuts_active, create_shortcut_entry, create_shortcuts_list, create_keymap, normalize, keys_from_text} from "./helpers/helpers"
 
 let keymap = create_keymap(keys)
 let modifiers_names = _.uniq(Object.keys(keymap).filter(identifier => keymap[identifier].is_modifier).map(identifier => keymap[identifier].name))
@@ -58,6 +60,7 @@ export default {
          options: {
             mode: "Toggle All",
             theme_dark: true,
+            accept_on_blur: false,
          },
          layout: layout,
          keys: keys,
@@ -118,10 +121,12 @@ export default {
             }, 1000);
          }
       },
-      shortcut_edit({oldshortcut, newshortcut, oldcommand, newcommand}) {
-         let index = this.shortcuts.findIndex(entry => entry.shortcut == oldshortcut && entry.command == oldcommand)
+      shortcut_edit({old_shortcut, newshortcut, oldcommand, newcommand}) {
+         let index = this.shortcuts.findIndex(entry => entry._shortcut == old_shortcut && entry.command == oldcommand)
          let newentry = {shortcut: newshortcut, command: newcommand}
-         this.$set(this.shortcuts, index, create_shortcut_entry(newentry))
+         let checkexists = _.isEqual(keys_from_text(newshortcut, this.keymap, this.modifiers_order, this.modifiers_names)._shortcut, old_shortcut) ? false : true
+         let newentries = create_shortcut_entry (newentry, this.shortcuts, this.keymap, this.modifiers_order, this.modifiers_names, true, checkexists)
+         this.shortcuts.splice(index, 1, newentries)
       },
       normalize (identifiers, capitalize) {
          return normalize(this.modifiers_order, this.modifiers_names, this.keymap, identifiers, capitalize)
