@@ -243,6 +243,9 @@ export default {
 
 body {
    margin:0;
+}
+
+#app {
    font-family: Arial, sans-serif;
 }
 </style>

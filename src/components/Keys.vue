@@ -97,10 +97,12 @@ export default {
 <style lang="scss" scoped>
 
 @import "../settings/theme.scss";
-
+.keyboard {
+   font-size: $keyboard-font-size;
+}
 .active-shortcuts {
    position: absolute;
-   top:1.7em;
+   top:$keyboard-font-size * 1.3;
    bottom: 0;
    left: 0;
    right:0;
@@ -109,7 +111,7 @@ export default {
    display: flex;
    justify-content: center;
    align-items: center;
-   border: 2px solid rgb(0, 0, 116);
+   border: (0.1 * $keyboard-font-size) solid rgb(0, 0, 116);
    background: rgb(46, 46, 71);
    & > div {
       text-align: center;
@@ -158,7 +160,7 @@ export default {
       overflow: hidden;
    }
    .shrink {
-      font-size:0.8rem;
+      font-size:0.8em;
    }
    .dec {
       position:absolute;

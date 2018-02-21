@@ -11,7 +11,8 @@ Eventually it would be nice to support some way to import/export them, at least 
 ![Current State](./docs/images/current_state.gif)
 
 - [x] Responsive Keyboard CSS
-- [ ] Responsive Text Size
+- [x] Responsive Text Size
+- [x] Responsive Everything (relative to window only)
 - [x] Base Key Object
 - [x] Flexible Layout
 - [x] Simple Key Detection

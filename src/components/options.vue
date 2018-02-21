@@ -38,8 +38,18 @@ export default {
 </script>
 <style lang="scss" scoped>
 
+@import "../settings/theme.scss";
+
 input[type="checkbox"] {
    transform: scale(1.5);
+   // margin: 0.1em;
+   margin:0 0.2em;
+   vertical-align: -0.1em;
+   @media (max-width: $regular-media-query){
+      transform: scale($regular-shrink-amount*1.5);
+      vertical-align: -0.15em;
+      // margin: $regular-shrink-amount * 0.1em;
+   }
 }
 
 .options {
@@ -49,6 +59,10 @@ input[type="checkbox"] {
    padding: 20px 0;
    display: flex;
    align-items: center;
+   font-size: $regular-font-size;
+   @media (max-width: $regular-media-query){
+      font-size: $regular-shrink-amount * $regular-font-size;
+   }
    .option {
       margin: 0 1em;
    }

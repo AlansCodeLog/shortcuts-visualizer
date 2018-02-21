@@ -140,6 +140,10 @@ export default {
 .shortcuts {
    padding: 30px;
    margin: 0 auto;
+   font-size: $regular-font-size;
+   @media (max-width: $regular-media-query){
+      font-size: $regular-shrink-amount * $regular-font-size;
+   }
 }
 .container {
    border: 1px solid rgba(0,0,0,0.5);
@@ -158,10 +162,10 @@ export default {
          // flex: 1 1 33%;
          padding: 0.3em;
          overflow: hidden;
+         white-space: nowrap;
       }
       & > div > div {
          display: inline-block;
-         word-wrap: none;
          width:100%;
       }
    }
@@ -182,7 +186,7 @@ export default {
       }
    }
    .edit {
-      flex: 1 0 3em;
+      flex: 1 0 2em;
       order: 1;
       display: flex;
       justify-content: space-around;
