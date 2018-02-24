@@ -6,6 +6,7 @@ export function find_extra_modifiers(shortcut_entry, pressed_keys, keymap) {
          return true
       }
    })
+   
 }
 export function find_extra_keys_pressed(shortcut_entry, pressed_keys) {
    return _.difference(pressed_keys, shortcut_entry).filter(identifier => {//the order of difference matters
@@ -20,6 +21,7 @@ export function get_shortcuts_active (shortcuts, pressed_keys, chain_state, keym
       if (!chain_state.in_chain && !entry.chained) {
          let extra_modifiers_in_shortcut = find_extra_modifiers(entry._shortcut[0], pressed_keys, keymap)
          let extra_keys_pressed = find_extra_keys_pressed(entry._shortcut[0], pressed_keys)
+         
          if (extra_modifiers_in_shortcut.length > 0 && !show_unpressed_modifiers) {
             return false
          }
@@ -28,16 +30,29 @@ export function get_shortcuts_active (shortcuts, pressed_keys, chain_state, keym
          }
          return true
       } else if (!chain_state.in_chain) {
-         let extra_keys_pressed = find_extra_keys_pressed(entry._shortcut[1], pressed_keys)
-         if (extra_keys_pressed == 0 && !show_unpressed_modifiers) {
-            return true
+         if (!show_unpressed_modifiers) {
+            let extra_modifiers_in_shortcut = find_extra_modifiers(entry._shortcut[0], pressed_keys, keymap)
+            let extra_keys_pressed = find_extra_keys_pressed(entry._shortcut[0], pressed_keys)
+            if (extra_modifiers_in_shortcut.length > 0) {
+               return false
+            }
+            if (extra_keys_pressed.length !== 0) {
+               return false
+            }
+         } else {
+            let extra_keys_pressed = find_extra_keys_pressed(entry._shortcut[1], pressed_keys)
+            if (extra_keys_pressed == 0) {
+               return true
+            }
          }
       } else if (chain_state.in_chain && entry.chained) {
+         //TODO this is almost same check as first
          let extra_modifiers_in_shortcut = find_extra_modifiers(entry._shortcut[1], pressed_keys, keymap)
+         let extra_keys_pressed = find_extra_keys_pressed(entry._shortcut[1], pressed_keys)
+         
          if (extra_modifiers_in_shortcut.length > 0 && !show_unpressed_modifiers) {
             return false
          }
-         let extra_keys_pressed = find_extra_keys_pressed(entry._shortcut[1], pressed_keys)
          if (extra_keys_pressed.length !== 0) {
             return false
          }
@@ -151,23 +166,26 @@ export function create_shortcut_entry (entry, shortcuts_list, keymap, modifiers_
    entry.chain_start = typeof entry.chain_start !== "undefined" ? entry.chain_start : false
    //check for shortcuts that override chain start or change text
    if (entry.chained) {
-      let newentry = {command:"Chain Start", chain_start: true, chained:false, _shortcut: [entry._shortcut[0]], shortcut: shortcut}
+      let newentry = {command:"Chain Start", chain_start: true, chained:false, _shortcut: [entry._shortcut[0]], shortcut: _normalize(modifiers_order, modifiers_names, keymap, entry._shortcut[0], true).join("+")}
       let exists = shortcuts_list.findIndex(entry => {
          if (_.isEqual(entry._shortcut[0], newentry._shortcut[0])) {
             if (entry.chain_start == newentry.chain_start) {
                return true
             } else {
-               throw new Error("Shortcut " + newentry.shortcut + "' (command: " + entry.command +") is the start of a chain. It cannot be overwritten. If you'd like to just change the command text, chain_start must be set to true for the shortcut.")
+               if (!editing) {
+                  throw new Error("Shortcut " + entry.shortcut.join(" ") + "' (command: " + entry.command +") is the start of a chain. It cannot be overwritten. If you'd like to just change the command text, chain_start must be set to true for the shortcut.")
+               }
             }
          }
       })
-      console.log(exists);
       exists = exists == -1 ? false : true
       if (!exists) {
          shortcuts_list.push(newentry)
       }
    }
+   
    entry.editing = false
+   
    return entry
 }
 
@@ -203,6 +221,7 @@ export function create_keymap (keys) {
          active: false,
          chain_active: false,
       }
+      
    })
    return keymap
 }

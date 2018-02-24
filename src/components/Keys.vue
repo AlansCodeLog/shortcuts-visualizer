@@ -56,9 +56,11 @@
 </template>
 
 <script>
+import dragula from "dragula"
+import {keys_from_text, normalize} from "../helpers/helpers"
 export default {
    name: 'Keys',
-   props: ["layout", "keys", "keymap", "keymap_active", "chain", "normalize", "shortcuts_active"],
+   props: ["layout", "keys", "keymap", "keymap_active", "chain", "normalize", "shortcuts_active", "pressed", "modifiers_order", "modifiers_names", "shortcuts"],
    components: {
    },
    data() {
@@ -90,6 +92,96 @@ export default {
          return active_keys
       }
    },
+   mounted() {
+      let container_keys = document.querySelectorAll(".dec")
+      
+      let drake = dragula([...container_keys], {
+         revertOnSpill: true,
+         isContainer: function (el) {
+            return el.classList.contains(".dec")
+         },
+         moves: function (el, source, handle, sibling) {
+            // return handle.classList.contains("active-shortcuts")
+            return true
+         },
+         accepts: (el, target, source, sibling) => {
+            if (!this.chain.in_chain) {
+               let key = target.querySelector(".label").innerText
+               key = keys_from_text(key, this.keymap, this.modifiers_order, this.modifiers_names)._shortcut[0][0]
+               let combo = [key, ...this.keymap_active]
+               let existing = this.shortcuts_active.findIndex(entry => {
+                  return entry._shortcut[0].includes(key) 
+               })
+               let exists = existing == -1 ? false : true
+               if (exists) {
+                  let target_entry = this.shortcuts_active[existing]
+                  if (target_entry.chain_start) {
+                     return false
+                  } else {
+                     return true
+                  }
+               } else {
+                  return true
+               }
+            } else {
+               return true
+            }
+         },
+      })
+      drake
+      .on("drop", (el, target, source, sibling)=> {
+         let key = target.querySelector(".label").innerText
+         key = keys_from_text(key, this.keymap, this.modifiers_order, this.modifiers_names)._shortcut[0][0]
+         let combo = [key, ...this.keymap_active]
+
+         let oldkey = source.querySelector(".label").innerText
+         oldkey =  keys_from_text(oldkey, this.keymap, this.modifiers_order, this.modifiers_names)._shortcut[0][0]
+         
+         let oldentry = this.shortcuts_active.filter(entry => {
+            return entry._shortcut[0].includes(oldkey) 
+         })[0]
+         
+         let change = {
+            old_shortcut: oldentry._shortcut,
+            newshortcut: normalize(this.modifiers_order, this.modifiers_names, this.keymap, combo, true).join("+"),
+            oldcommand: oldentry.command,
+            newcommand: oldentry.command,
+            }
+         if (oldentry.chained) {
+            change.newshortcut = change.newshortcut+" "+normalize(this.modifiers_order, this.modifiers_names, this.keymap, oldentry._shortcut[1], true).join("+")
+         }
+         this.$emit("edit", change)
+         if (oldentry.chain_start) {
+            let chains = this.shortcuts.filter(entry => {
+               if (entry.chained && _.xor(oldentry._shortcut[0], entry._shortcut[0]).length == 0) {
+                  return entry
+               }
+            })
+            console.log(chains)
+            
+            for (let entry of chains) {
+               let _oldentry = {...entry}
+               
+               let _newshortcut = change.newshortcut + " " + normalize(this.modifiers_order, this.modifiers_names, this.keymap, _oldentry._shortcut[1], true).join("+")
+
+               let otherchange = {
+                  old_shortcut: _oldentry._shortcut,
+                  newshortcut: _newshortcut,
+                  oldcommand: _oldentry.command,
+                  newcommand: _oldentry.command,
+               }
+               console.log(otherchange);
+               
+               this.$emit("edit", otherchange)
+            }
+         }
+         drake.cancel()
+         el.remove()
+         
+         this.$nextTick(()=> {this.$forceUpdate()})
+      })
+
+   }
 
 }
 </script>
@@ -97,138 +189,142 @@ export default {
 <style lang="scss" scoped>
 
 @import "../settings/theme.scss";
+
 .keyboard {
    font-size: $keyboard-font-size;
-}
-.active-shortcuts {
-   position: absolute;
-   top:$keyboard-font-size * 1.3;
-   bottom: 0;
-   left: 0;
-   right:0;
-   // word-break: break-all;
-   font-size: 0.9em;
-   display: flex;
-   justify-content: center;
-   align-items: center;
-   border: (0.1 * $keyboard-font-size) solid rgb(0, 0, 116);
-   background: rgb(46, 46, 71);
-   & > div {
-      text-align: center;
+   .active-shortcuts {
+      cursor: pointer;
+      position: absolute;
+      top:$keyboard-font-size * 1.3;
+      bottom: 0;
+      left: 0;
+      right:0;
+      // word-break: break-all;
+      font-size: 0.9em;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border: (0.1 * $keyboard-font-size) solid rgb(0, 0, 116);
+      background: rgb(46, 46, 71);
+      & > div {
+         text-align: center;
+         user-select: none;
+      }
    }
-}
-
-.pressed > .dec {
-   border-color: $pressed-color !important;
-}
-.chain-pressed > .dec::before {
-   content: "";
-   position: absolute;
-   top:-$cap-spacing;
-   bottom:-$cap-spacing;
-   left:-$cap-spacing;
-   right:-$cap-spacing;
-   border-color: mix($chain-pressed-color,rgba(0,0,0,0), 50%) !important;
-   border-style: dotted;
-}
-
-.key-row {
-   // height: $base_size;
-   padding-bottom: $base-size;
-   height:0;
-   display:flex;
-   flex-wrap: wrap;
-   & > * {
-      flex-grow: 0;
-      flex-shrink: 0;
+   .pressed > .dec {
+      border-color: $pressed-color !important;
    }
-}
-
-.empty-row {
-   padding-bottom: $base-size/2;
-}
-
-.key { 
-   width: $base-size;
-   // height: 100%;
-   // border-radius: 2px;
-   box-sizing: border-box;
-   padding-bottom: $base-size;
-   position:relative;
-   .label {
-      margin:5%;
-      overflow: hidden;
+   .chain-pressed > .dec::before {
+      content: "";
+      position: absolute;
+      top:-$cap-spacing;
+      bottom:-$cap-spacing;
+      left:-$cap-spacing;
+      right:-$cap-spacing;
+      border-color: mix($chain-pressed-color,rgba(0,0,0,0), 50%) !important;
+      border-style: dotted;
    }
-   .shrink {
-      font-size:0.8em;
+
+   .key-row {
+      // height: $base_size;
+      padding-bottom: $base-size;
+      height:0;
+      display:flex;
+      flex-wrap: wrap;
+      & > * {
+         flex-grow: 0;
+         flex-shrink: 0;
+      }
    }
-   .dec {
-      position:absolute;
-      right: $cap-spacing;
-      top: $cap-spacing;
-      width: calc(100% - #{$cap-spacing*2});
-      height: calc(100% - #{$cap-spacing*2});
+
+   .empty-row {
+      padding-bottom: $base-size/2;
+   }
+
+   .key { 
+      width: $base-size;
+      // height: 100%;
+      // border-radius: 2px;
       box-sizing: border-box;
-      box-shadow: $cap-box-shadow;
+      padding-bottom: $base-size;
+      position:relative;
+      .label {
+         margin:5%;
+         overflow: hidden;
+         user-select: none;
+      }
+      .shrink {
+         font-size:0.8em;
+      }
+      .dec {
+         position:absolute;
+         right: $cap-spacing;
+         top: $cap-spacing;
+         width: calc(100% - #{$cap-spacing*2});
+         height: calc(100% - #{$cap-spacing*2});
+         box-sizing: border-box;
+         box-shadow: $cap-box-shadow;
+      }
+   }
+
+   .five {
+      width:5%;
+      &:nth-child(odd) {
+         background:green;
+      }
+      &:nth-child(even) {
+         background:blue;
+      }
+   }
+
+   .blank {
+      background:none;
+      box-shadow:none;
+   }
+
+   .spacer {
+      padding-bottom: $base-size;
+      width: 0.666 * $base_size;
+   }
+
+   .flexspace {
+      padding-bottom: $base-size;
+      flex:1 1 auto;
+   }
+
+   .vertical {
+      padding-bottom: 2 * $base_size;
+   }
+
+   .space {
+      // width:360px;
+      width: 6.25 * $base_size;
+   }
+   .modifiers {
+      // width:60px;
+      width: 1.25 * $base_size;
+   }
+   .small {
+      // width:60px;
+      width: 1.5 * $base_size;
+   }
+   .medium-small {
+      // width:80px;
+      width: 1.75 * $base_size;
+   }
+   .medium {
+      // width:80px;
+      width: 2 * $base_size;
+   }
+   .medium-large {
+      width: 2.25 * $base_size;
+      // width:110px;
+   }
+   .huge {
+      // width:140px;
+      width: 2.75 * $base_size;
    }
 }
 
-.five {
-   width:5%;
-   &:nth-child(odd) {
-      background:green;
-   }
-   &:nth-child(even) {
-      background:blue;
-   }
-}
-
-.blank {
-   background:none;
-   box-shadow:none;
-}
-
-.spacer {
-   padding-bottom: $base-size;
-   width: 0.666 * $base_size;
-}
-
-.flexspace {
-   padding-bottom: $base-size;
-   flex:1 1 auto;
-}
-
-.vertical {
-   padding-bottom: 2 * $base_size;
-}
-
-.space {
-   // width:360px;
-   width: 6.25 * $base_size;
-}
-.modifiers {
-   // width:60px;
-   width: 1.25 * $base_size;
-}
-.small {
-   // width:60px;
-   width: 1.5 * $base_size;
-}
-.medium-small {
-   // width:80px;
-   width: 1.75 * $base_size;
-}
-.medium {
-   // width:80px;
-   width: 2 * $base_size;
-}
-.medium-large {
-   width: 2.25 * $base_size;
-   // width:110px;
-}
-.huge {
-   // width:140px;
-   width: 2.75 * $base_size;
-}
 </style>
 

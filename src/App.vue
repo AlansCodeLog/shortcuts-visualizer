@@ -16,9 +16,13 @@
          :layout="layout"
          :chain="chain"
          :normalize="normalize"
+         :modifiers_names="modifiers_names"
+         :modifiers_order="modifiers_order"
+         :shortcuts="shortcuts"
          @keydown="keydown($event)"
          @keyup="keyup($event)"
          @chained="chained($event)"
+         @edit="shortcut_edit($event)"
       ></Keys>
       <ShortcutsList
          :shortcuts="shortcuts"
@@ -86,11 +90,11 @@ export default {
             return key.active
          })
       },
-      shortcuts_active (show_unpressed_modifiers = false) {
-         return get_shortcuts_active (this.shortcuts, this.keymap_active, this.chain, this.keymap, show_unpressed_modifiers)
+      shortcuts_active () {
+         return get_shortcuts_active (this.shortcuts, this.keymap_active, this.chain, this.keymap, false)
       },
-      shortcuts_list_active (show_unpressed_modifiers = true) {
-         return get_shortcuts_active (this.shortcuts, this.keymap_active, this.chain, this.keymap, show_unpressed_modifiers)
+      shortcuts_list_active () {
+         return get_shortcuts_active (this.shortcuts, this.keymap_active, this.chain, this.keymap, true)
       },
    },
    methods: {
@@ -125,8 +129,13 @@ export default {
          let index = this.shortcuts.findIndex(entry => entry._shortcut == old_shortcut && entry.command == oldcommand)
          let newentry = {shortcut: newshortcut, command: newcommand}
          let checkexists = _.isEqual(keys_from_text(newshortcut, this.keymap, this.modifiers_order, this.modifiers_names)._shortcut, old_shortcut) ? false : true
-         let newentries = create_shortcut_entry (newentry, this.shortcuts, this.keymap, this.modifiers_order, this.modifiers_names, true, checkexists)
-         this.shortcuts.splice(index, 1, newentries)
+         
+         newentry = create_shortcut_entry (newentry, this.shortcuts, this.keymap, this.modifiers_order, this.modifiers_names, true, checkexists)
+
+         console.log(newentry)
+         
+         
+         this.shortcuts.splice(index, 1, newentry)
       },
       normalize (identifiers, capitalize) {
          return normalize(this.modifiers_order, this.modifiers_names, this.keymap, identifiers, capitalize)
@@ -154,7 +163,7 @@ export default {
          } else if (this.keymap[identifier].toggle) {
             this.keymap[identifier].active = e.getModifierState(identifier)
          }
-         if (keymap[identifier].RL = true) {
+         if (keymap[identifier].RL == true) {
             if (identifier.indexOf("Right") !== -1) {
                this.keymap[identifier.replace("Right", "Left")].active = this.keymap[identifier].active
             } else {
@@ -188,7 +197,7 @@ export default {
                this.keymap[identifier].active = e.getModifierState(identifier)
             }
          }
-         if (keymap[identifier].RL = true) {
+         if (keymap[identifier].RL == true) {
             if (identifier.indexOf("Right") !== -1) {
                this.keymap[identifier.replace("Right", "Left")].active = this.keymap[identifier].active
             } else {
@@ -248,4 +257,5 @@ body {
 #app {
    font-family: Arial, sans-serif;
 }
+
 </style>

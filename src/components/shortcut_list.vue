@@ -72,6 +72,8 @@
 </template>
 
 <script>
+
+import dragula from "dragula"
 export default {
    name: 'Shortcuts',
    props: ["shortcuts", "shortcuts_active", "normalize", "options"],
@@ -128,8 +130,12 @@ export default {
    },
    computed: {
    },
-   created() {
-      
+   mounted() {
+      // let containers = document.querySelectorAll(".entry .shortcut")
+      // dragula(containers).on("drag", (element)=> {
+      //    console.log(element)
+         
+      // })
    },
 }
 </script>
