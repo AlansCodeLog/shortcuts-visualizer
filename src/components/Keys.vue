@@ -142,39 +142,16 @@ export default {
          })[0]
          
          let change = {
-            old_shortcut: oldentry._shortcut,
-            newshortcut: normalize(combo, this).join("+"),
-            oldcommand: oldentry.command,
-            newcommand: oldentry.command,
+            old_entry: oldentry,
+            new_entry: {
+               shortcut: normalize(combo, this).join("+"),
+               command: oldentry.command,
+               }
             }
          if (oldentry.chained) {
-            change.newshortcut = change.newshortcut+" "+normalize(oldentry._shortcut[1], this).join("+")
+            change.new_entry.shortcut = change.new_entry.newshortcut+" "+normalize(oldentry._shortcut[1], this).join("+")
          }
          this.$emit("edit", change)
-         if (oldentry.chain_start) {
-            let chains = this.shortcuts.filter(entry => {
-               if (entry.chained && _.xor(oldentry._shortcut[0], entry._shortcut[0]).length == 0) {
-                  return entry
-               }
-            })
-            console.log(chains)
-            
-            for (let entry of chains) {
-               let _oldentry = {...entry}
-               
-               let _newshortcut = change.newshortcut + " " + normalize(_oldentry._shortcut[1], this).join("+")
-
-               let otherchange = {
-                  old_shortcut: _oldentry._shortcut,
-                  newshortcut: _newshortcut,
-                  oldcommand: _oldentry.command,
-                  newcommand: _oldentry.command,
-               }
-               console.log(otherchange);
-               
-               this.$emit("edit", otherchange)
-            }
-         }
          drake.cancel()
          el.remove()
          

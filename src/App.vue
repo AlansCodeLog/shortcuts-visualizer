@@ -129,24 +129,57 @@ export default {
          new_entry._shortcut = keys_from_text(new_entry.shortcut, this)._shortcut
          let index = this.shortcuts.findIndex(entry => entry.shortcut == old_entry.shortcut) //todo same context
          let checkexists = _.isEqual(new_entry._shortcut, old_entry._shortcut) ? false : true
+         //if we changed a chain start to a new chain start, create_shortcut won't know that
+         
+         if (old_entry.chain_start && new_entry._shortcut.length == 1) {
+            new_entry.chain_start = true
+         }
+
 
          //remove old one first, else create_shortcut_entry will say it's a duplicate
          this.shortcuts.splice(index, 1)
-         new_entry = create_shortcut_entry (new_entry, this, undefined, checkexists, true)
 
-         this.shortcuts.push(new_entry)
+         new_entry = create_shortcut_entry (new_entry, this, undefined, checkexists, true, true)
          
+         this.shortcuts.push(new_entry)
+
          //if the old entry was chained, we might have to do some cleanup
          if (old_entry.chained) {
             let index_chain_start = this.shortcuts.findIndex(entry => entry.chain_start && _.xor(entry._shortcut[0],old_entry._shortcut[0]).length == 0)
-            let chain_count = this.shortcuts.reduce((count, entry) => {
-               if (!entry.chain_start && _.xor(entry._shortcut[0], old_entry._shortcut[0]).length == 0) {
-                  return count + 1
-               } else {return count + 0}
-            }, 0)
-            //if there are no other chains dependent on chain start, remove it
-            if (chain_count == 0) {
-               this.shortcuts.splice(index_chain_start, 1)
+            //sometimes the chain start might not exist because we just changed it
+            if (index_chain_start !== -1) {
+               let chain_count = this.shortcuts.reduce((count, entry) => {
+                  if (!entry.chain_start && _.xor(entry._shortcut[0], old_entry._shortcut[0]).length == 0) {
+                     return count + 1
+                  } else {return count + 0}
+               }, 0)
+               //if there are no other chains dependent on chain start, remove it
+               if (chain_count == 0) {
+                  this.shortcuts.splice(index_chain_start, 1)
+               }
+            }
+         }
+         if (old_entry.chain_start) {
+            let chains = this.shortcuts.filter(entry => {
+               if (entry.chained && _.xor(old_entry._shortcut[0], entry._shortcut[0]).length == 0) {
+                  return entry
+               }
+            })
+            
+            for (let entry of chains) {
+               let _oldentry = {...entry}
+               
+               let _newshortcut = new_entry.shortcut + " " + normalize(_oldentry._shortcut[1], this).join("+")
+               
+               let otherchange = {
+                  old_entry: _oldentry,
+                  new_entry: {
+                     shortcut: _newshortcut,
+                     command: _oldentry.command,
+                  }
+               }
+               
+               this.shortcut_edit(otherchange)
             }
          }
       },
@@ -224,7 +257,8 @@ export default {
       "keymap_active" (newactive, oldactive) { //checks chain state
          if (this.chain.in_chain) {
             let none_modifiers_pressed = newactive.filter(identifier => !this.keymap[identifier].is_modifier).length > 0 ? true : false
-            if (newactive.length > 1 && this.shortcuts_active.length == 0 && none_modifiers_pressed) {
+            //is there are keys being pressed that aren't modifiers that have not shortcuts
+            if (newactive.length > 0 && none_modifiers_pressed && this.shortcuts_active.length == 0) {
                this.chained({in_chain: false, warning: [...newactive]})
             }
          } else {

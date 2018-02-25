@@ -42,10 +42,13 @@ export function get_shortcuts_active (shortcuts, pressed_keys, chain_state, keym
                return false
             }
          } else {
-            let extra_keys_pressed = find_extra_keys_pressed(entry._shortcut[1], p)
-            if (extra_keys_pressed == 0) {
+            // let extra_keys_pressed = find_extra_keys_pressed(entry._shortcut[1], p)
+            // let extra_modifiers_in_shortcut = find_extra_modifiers(entry._shortcut[1], p)
+            // console.log(extra_keys_pressed, extra_modifiers_in_shortcut)
+            
+            // if (extra_keys_pressed == 0) {
                return true
-            }
+            // }
          }
       } else if (chain_state.in_chain && entry.chained) {
          //TODO this is almost same check as first
@@ -202,21 +205,26 @@ export function create_shortcuts_list (settings_shortcuts, keymap, modifiers_ord
    return shortcuts
 }
 
-export function create_shortcut_entry (entry, _this, {shortcuts, keymap, modifiers_order, modifiers_names} = {}, check_exists = false, editing = false) {
+export function create_shortcut_entry (entry, _this, {shortcuts, keymap, modifiers_order, modifiers_names} = {}, check_exists = false, editing = false, existing_entry = false) {
    //setting variables from this when there's no need to override variables
    if (typeof _this !== "undefined") {
       var {shortcuts, keymap, modifiers_order, modifiers_names} = _this
    }
-   // spread results from _keys_from_text
-   let {shortcut, _shortcut} = _keys_from_text(entry.shortcut, undefined, {keymap, modifiers_order, modifiers_names})
-   //add to our shortcut entry
-   entry.shortcut = shortcut
-   entry._shortcut = _shortcut
+   if (!existing_entry) {
+      
+      // spread results from _keys_from_text
+      var {shortcut, _shortcut} = _keys_from_text(entry.shortcut, undefined, {keymap, modifiers_order, modifiers_names})
+      //add to our shortcut entry
+      entry.shortcut = shortcut
+      entry._shortcut = _shortcut
+   } //else they already exist
+
    //check if chained or start of chain
    entry.chained = entry._shortcut.length > 1 ? true : false
    entry.chain_start = typeof entry.chain_start !== "undefined" ? entry.chain_start : false
    
    if (check_exists) {
+      
       shortcuts.map(existing_entry => {
          if (existing_entry.shortcut == entry.shortcut) {
             //TODO allow context exception
@@ -260,8 +268,8 @@ export function create_shortcut_entry (entry, _this, {shortcuts, keymap, modifie
          shortcuts.push(new_entry)
       }
    }
-   //remove any existing chain starts so new one can be added
-   if (entry.chain_start) {
+   //remove any existing chain starts so replacement can be put
+   if (entry.chain_start && !editing) {
       let existing_index = shortcuts.findIndex(existing_entry => {
          if (existing_entry.shortcut.split(" ")[0] == entry.shortcut.split(" ")[0]) {
             if (existing_entry.chain_start == entry.chain_start) {

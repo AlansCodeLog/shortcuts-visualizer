@@ -6,10 +6,13 @@ I prefer to use a custom set of keyboard shortcuts for most of my programs, but 
 
 Eventually it would be nice to support some way to import/export them, at least for the most popular programs.
 
-## Status/TODOs
+## Status
+
+### Current State
 
 ![Current State](./docs/images/current_state.gif)
 
+### Todos
 - [x] Responsive Keyboard CSS
 - [x] Responsive Text Size
 - [x] Responsive Everything (relative to window only)
@@ -22,10 +25,14 @@ Eventually it would be nice to support some way to import/export them, at least 
 - [x] Shortcut List
 - [x] Show Active Shortcuts
 - [x] Editing shortcuts
+- [ ] Adding/Deleting Existing Shortcuts
 - [x] Show active shortcuts on top of keys.
 - [~] Custom Modifier Keys (e.g. use Tab as a modifier, or disable Shift, like for a text editor)
 - [ ] Program Contexts
-- [ ] Drag/Drop Bin w/ Search
+- [x] Drag/Drop
+- [ ] Drag/Drop Commands Bin w/ Search
+- [ ] Del Bin
+- [ ] Command Bin
 - [~] Polishing/Clean/Beta
 - [ ] Demo
 - [ ] Documentation
