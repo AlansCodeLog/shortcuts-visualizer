@@ -48,9 +48,9 @@
          </div>
       </div>
       <div class="status">
-         <div v-if="chain.in_chain">Waiting on chain: {{normalize(chain.start, true).join("+")}}</div>
-         <div v-if="chain.warning">No chained shortcut {{normalize(chain.last, true).join("+")}} {{normalize(chain.warning, true).join("+")}}</div>
-         <div v-if="keymap_active.length > 0">Pressed: {{normalize(keymap_active, true).join("+")}}</div>
+         <div v-if="chain.in_chain">Waiting on chain: {{normalize(chain.start).join("+")}}</div>
+         <div v-if="chain.warning">No chained shortcut {{normalize(chain.last).join("+")}} {{normalize(chain.warning).join("+")}}</div>
+         <div v-if="keymap_active.length > 0">Pressed: {{normalize(keymap_active).join("+")}}</div>
       </div>
    </div>
 </template>
@@ -107,7 +107,7 @@ export default {
          accepts: (el, target, source, sibling) => {
             if (!this.chain.in_chain) {
                let key = target.querySelector(".label").innerText
-               key = keys_from_text(key, this.keymap, this.modifiers_order, this.modifiers_names)._shortcut[0][0]
+               key = keys_from_text(key, this)._shortcut[0][0]
                let combo = [key, ...this.keymap_active]
                let existing = this.shortcuts_active.findIndex(entry => {
                   return entry._shortcut[0].includes(key) 
@@ -131,11 +131,11 @@ export default {
       drake
       .on("drop", (el, target, source, sibling)=> {
          let key = target.querySelector(".label").innerText
-         key = keys_from_text(key, this.keymap, this.modifiers_order, this.modifiers_names)._shortcut[0][0]
+         key = keys_from_text(key, this)._shortcut[0][0]
          let combo = [key, ...this.keymap_active]
 
          let oldkey = source.querySelector(".label").innerText
-         oldkey =  keys_from_text(oldkey, this.keymap, this.modifiers_order, this.modifiers_names)._shortcut[0][0]
+         oldkey =  keys_from_text(oldkey, this)._shortcut[0][0]
          
          let oldentry = this.shortcuts_active.filter(entry => {
             return entry._shortcut[0].includes(oldkey) 
@@ -143,12 +143,12 @@ export default {
          
          let change = {
             old_shortcut: oldentry._shortcut,
-            newshortcut: normalize(this.modifiers_order, this.modifiers_names, this.keymap, combo, true).join("+"),
+            newshortcut: normalize(combo, this).join("+"),
             oldcommand: oldentry.command,
             newcommand: oldentry.command,
             }
          if (oldentry.chained) {
-            change.newshortcut = change.newshortcut+" "+normalize(this.modifiers_order, this.modifiers_names, this.keymap, oldentry._shortcut[1], true).join("+")
+            change.newshortcut = change.newshortcut+" "+normalize(oldentry._shortcut[1], this).join("+")
          }
          this.$emit("edit", change)
          if (oldentry.chain_start) {
@@ -162,7 +162,7 @@ export default {
             for (let entry of chains) {
                let _oldentry = {...entry}
                
-               let _newshortcut = change.newshortcut + " " + normalize(this.modifiers_order, this.modifiers_names, this.keymap, _oldentry._shortcut[1], true).join("+")
+               let _newshortcut = change.newshortcut + " " + normalize(_oldentry._shortcut[1], this).join("+")
 
                let otherchange = {
                   old_shortcut: _oldentry._shortcut,

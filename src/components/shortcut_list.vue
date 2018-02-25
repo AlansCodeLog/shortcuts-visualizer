@@ -37,8 +37,8 @@
                   v-if="!entry.editing"
                   @click="toggle_editing(true, entry, index)"
                >
-                  {{normalize(entry._shortcut[0], true).join("+")}}
-                  {{entry._shortcut.length == 2 ? normalize(entry._shortcut[1], true)
+                  {{normalize(entry._shortcut[0], this).join("+")}}
+                  {{entry._shortcut.length == 2 ? normalize(entry._shortcut[1], this)
                .join("+") : ""}}
                </div>
                <!-- EDITING -->
@@ -98,10 +98,11 @@ export default {
             })
          } else {
             this.$emit("edit", {
-               old_shortcut: entry._shortcut,
-               newshortcut: this.shortcut_editing,
-               oldcommand: entry.command,
-               newcommand: this.shortcut_editing_command,
+               old_entry: entry,
+               new_entry: {
+                  shortcut: this.shortcut_editing,
+                  command: this.shortcut_editing_command,
+               }
             })
             this.shortcut_editing = ""
             this.shortcut_editing_command = ""

@@ -50,7 +50,7 @@ let keymap = create_keymap(keys)
 let modifiers_names = _.uniq(Object.keys(keymap).filter(identifier => keymap[identifier].is_modifier).map(identifier => keymap[identifier].name))
 let modifiers_order = ["ctrl", "shift", "alt"]
 
-let shortcuts_list = create_shortcuts_list(settings_shortcuts, keymap, modifiers_order, modifiers_names)
+let shortcuts_list = create_shortcuts_list(settings_shortcuts, keymap, modifiers_order, modifiers_names, this)
 
 export default {
    name: 'App',
@@ -125,20 +125,33 @@ export default {
             }, 1000);
          }
       },
-      shortcut_edit({old_shortcut, newshortcut, oldcommand, newcommand}) {
-         let index = this.shortcuts.findIndex(entry => entry._shortcut == old_shortcut && entry.command == oldcommand)
-         let newentry = {shortcut: newshortcut, command: newcommand}
-         let checkexists = _.isEqual(keys_from_text(newshortcut, this.keymap, this.modifiers_order, this.modifiers_names)._shortcut, old_shortcut) ? false : true
-         
-         newentry = create_shortcut_entry (newentry, this.shortcuts, this.keymap, this.modifiers_order, this.modifiers_names, true, checkexists)
+      shortcut_edit({old_entry, new_entry}) {
+         new_entry._shortcut = keys_from_text(new_entry.shortcut, this)._shortcut
+         let index = this.shortcuts.findIndex(entry => entry.shortcut == old_entry.shortcut) //todo same context
+         let checkexists = _.isEqual(new_entry._shortcut, old_entry._shortcut) ? false : true
 
-         console.log(newentry)
+         //remove old one first, else create_shortcut_entry will say it's a duplicate
+         this.shortcuts.splice(index, 1)
+         new_entry = create_shortcut_entry (new_entry, this, undefined, checkexists, true)
+
+         this.shortcuts.push(new_entry)
          
-         
-         this.shortcuts.splice(index, 1, newentry)
+         //if the old entry was chained, we might have to do some cleanup
+         if (old_entry.chained) {
+            let index_chain_start = this.shortcuts.findIndex(entry => entry.chain_start && _.xor(entry._shortcut[0],old_entry._shortcut[0]).length == 0)
+            let chain_count = this.shortcuts.reduce((count, entry) => {
+               if (!entry.chain_start && _.xor(entry._shortcut[0], old_entry._shortcut[0]).length == 0) {
+                  return count + 1
+               } else {return count + 0}
+            }, 0)
+            //if there are no other chains dependent on chain start, remove it
+            if (chain_count == 0) {
+               this.shortcuts.splice(index_chain_start, 1)
+            }
+         }
       },
-      normalize (identifiers, capitalize) {
-         return normalize(this.modifiers_order, this.modifiers_names, this.keymap, identifiers, capitalize)
+      normalize (identifiers) {
+         return normalize(identifiers, this)
       },
       keydown (e) {
          let identifier = e.code
@@ -215,7 +228,7 @@ export default {
                this.chained({in_chain: false, warning: [...newactive]})
             }
          } else {
-            let trigger_chain = chain_in_active(this.shortcuts_active, newactive, this.chain)
+            let trigger_chain = chain_in_active(newactive, this)
             if (trigger_chain) {
                this.chained(trigger_chain)
             }

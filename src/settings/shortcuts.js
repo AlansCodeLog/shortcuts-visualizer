@@ -21,13 +21,14 @@ const shortcuts = [
    //    command: "Chained T"
    // },
    {
+      shortcut: "ctrl+s",
+      command: "Replacement Start",
+      chain_start: true,
+   },
+   {
       shortcut: "ctrl+s a",
       command: "Chain A"
    },
-   // {
-   //    shortcut: "a",
-   //    command: "Just A"
-   // }
 ]
 
 export {shortcuts}
