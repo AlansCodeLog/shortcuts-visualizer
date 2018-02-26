@@ -8,10 +8,10 @@
             <div class="context">Context</div>
          </div>
          <div
-            :class="['entry', 'entry'+index, entry.changed ? 'changed' : '']"
+            :class="['entry', entry.editing ? 'editing' : '', 'entry'+index, entry.changed ? 'changed' : '', entry.dragging ? 'dragging' : '']"
             v-for="(entry, index) of shortcuts_active" :key="entry.shortcut+entry.command"
          >  
-            <div :class="['edit', entry.editing ? 'editing' : '']">
+            <div :class="['edit']">
                <!-- Edit -->
                <span
                   v-if="!entry.editing"
@@ -21,17 +21,17 @@
                <!-- Cancel -->
                <span
                   v-if="entry.editing"
-                  class="button"
+                  class="button dont_blur"
                   @click="cancel_edit(entry)"
                >&#10006;</span>
                <!-- Enter -->
                <span
                   v-if="entry.editing"
-                  class="button"
+                  class="button dont_blur"
                   @click="toggle_editing(false, entry, index)"
                >&#10004;</span>
             </div>
-            <div :class="['drag', 'shortcut', entry.editing ? 'editing' : '']">
+            <div :class="['drag', 'shortcut']">
                <!-- NOT EDITING -->
                <div
                   class="text"
@@ -41,13 +41,14 @@
                <!-- note: don't leave spaces between {{variables}} -->
                <!-- EDITING -->
                <input
+                  class="dont_blur"
                   v-if="entry.editing"
                   v-model="shortcut_editing"
-                  @keydown.enter="toggle_editing(false, entry)"
+                  @keydown.enter="toggle_editing(false, entry, index)"
                   @blur="check_blur($event, entry)"
                />
             </div>
-            <div :class="['drag', 'command', entry.editing ? 'editing' : '']">
+            <div :class="['drag', 'command']">
                <!-- NOT EDITING -->
                <div
                   class="text"
@@ -56,14 +57,15 @@
                >{{entry.command}}</div>
                <!-- EDITING -->
                <input
+                  class="dont_blur"
                   v-if="entry.editing"
                   v-model="shortcut_editing_command"
                   @keydown.enter="toggle_editing(false, entry, index)"
                   @blur="check_blur($event, entry)"
                />
             </div>
-            <div :class="['drag', 'context', entry.editing ? 'editing' : '']">
-               CONTEXT TODO
+            <div :class="['drag', 'context']">
+               TODO
             </div>
          </div>
       </div>
@@ -81,52 +83,74 @@ export default {
       return {
          shortcut_editing: "",
          shortcut_editing_command: "",
+         // focus_timer: undefined
       }
    },
    methods: {
       update_shortcuts($event) {
          this.$emit("edit", $event.target.value)
       },
-      toggle_editing (editing, entry, focus_index, focusto = 'shortcut') {
-         this.shortcuts.map(entry => entry.editing = false)
+      toggle_editing (editing, entry, focus_index, focusto = 'shortcut', check_existing = true) {
+         if (check_existing) {
+            let existing = this.shortcuts_active.findIndex(entry => entry.editing)
+
+            if (existing !== -1) {
+               let existing_entry = this.shortcuts_active[existing]
+               if (this.options.accept_on_blur) {
+                  this.toggle_editing(false, existing_entry, focus_index, undefined, false)
+               } else {
+                  this.cancel_edit(existing_entry)
+               }
+            }
+         }
+         
          entry.editing = editing
+         
          if (editing) {
             this.shortcut_editing = entry.shortcut
             this.shortcut_editing_command = entry.command
             this.$nextTick(() => {
-               this.$el.querySelector(".entry" + focus_index + " ." + focusto + " input").focus()
+               let element_to_focus = this.$el.querySelector(".entry" + focus_index + " ." + focusto + " input")
+               //the input might not exist if it's a chain_start because the chained commands get edited
+               if (element_to_focus) {
+                  element_to_focus.focus()
+               } else {
+                  //so we have to redo the action on the next tick
+                  this.$nextTick(() => {
+                     //we need a new reference to the entry for it to be affected
+                     let entry = this.shortcuts_active[focus_index]
+                     this.toggle_editing (true, entry, focus_index, focusto)
+                  });
+               }
             })
          } else {
-            this.$emit("edit", {
+            let change = {
                old_entry: entry,
                new_entry: {
                   shortcut: this.shortcut_editing,
                   command: this.shortcut_editing_command,
+               },
+            }
+            if (change.new_entry.shortcut !== change.old_entry.shortcut
+               || change.new_entry.command !== change.old_entry.command) {
+                  this.$emit("edit", change)
                }
-            })
             this.shortcut_editing = ""
             this.shortcut_editing_command = ""
          }
       },
-      cancel_edit(entry, all = false) {
+      cancel_edit(entry) {
          entry.editing = false
-         this.shortcut_editing=""
-         this.shortcut_editing_command=""
+         this.shortcut_editing = ""
+         this.shortcut_editing_command = ""
       },
       check_blur(e, entry) {
-         if (this.options.accept_on_blur) {
-            this.$nextTick(() => {
-               if (document.activeElement.tagName !== "INPUT") {
-                  this.toggle_editing(false, entry)
-               }
-            })
-         } else {
-            this.$nextTick(() => {
-               if (document.activeElement.tagName !== "INPUT") {
-                  this.cancel_edit(entry)
-               }
-            })
-         }
+         this.$nextTick(() => {
+            //if we don't click on another shortcut
+            if (!document.activeElement.classList.contains("dont_blur")) {
+               this.cancel_edit(entry)
+            }//else toggle edit will handle it
+         })
       }
    },
    computed: {
@@ -135,7 +159,7 @@ export default {
       let container_keys = document.querySelectorAll(".entry > .text")
       
       let drake = dragula([...container_keys], {
-         mirrorContainer: this.$el,
+         mirrorContainer: this.$el.querySelector(".container"),
          revertOnSpill: true,
          isContainer: function (el) {
             return el.classList.contains("drag")
@@ -165,8 +189,11 @@ export default {
          },
       })
       drake
-      .on("drag", ()=> {
+      .on("drag", (el, source)=> {
          this.$emit("freeze_input", true)
+         let entry_index = _.without(source.parentNode.classList, "entry")[0]
+         entry_index = entry_index.slice(5, entry_index.length)
+         this.shortcuts_active[entry_index].dragging = true
       })
       .on("over", (el, container, source) => {
          let type = _.without(container.classList, "drag")[0]
@@ -216,6 +243,7 @@ export default {
          this.$el.querySelectorAll(".unselectable").forEach(el => el.classList.remove("unselectable"))
          this.$el.querySelectorAll(".will_be_replaced").forEach(el => el.classList.remove("will_be_replaced"))
          this.$el.querySelectorAll(".will_replaced").forEach(el => el.classList.remove("will_replaced"))
+         this.shortcuts_active.map(entry => entry.dragging = false)
          this.$emit("freeze_input", false)
       })
    },
@@ -228,104 +256,101 @@ export default {
 @import "../settings/custom_dragula.scss";
 
 .shortcuts {
-   padding: 30px;
+   padding: $padding-size;
    margin: 0 auto;
    font-size: $regular-font-size;
    @media (max-width: $regular-media-query){
       font-size: $regular-shrink-amount * $regular-font-size;
    }
-}
-.container {
-   border: 1px solid rgba(0,0,0,0.5);
-   input {
-      font-size: 1em;
-      outline: none;
-      padding: 0;
-      background: none;
-      border: none;
+   .gu-mirror {
+      width: auto !important;
+      height: auto !important;
    }
-   .entry, .entry-header {
+   .container {
       border: 1px solid rgba(0,0,0,0.5);
-      width:100%;
-      display: flex;
-      user-select: none;
-      & > div {
-         // flex: 1 1 33%;
-         padding: 0.3em;
-         overflow: hidden;
-         white-space: nowrap;
-      }
-      & .text {
-         display: inline-block;
-         flex: 1 1 100%;
-      }
-   }
-   .entry {
-      & > div {
-         display: flex;
-         justify-content: flex-start;
-      }
-      .will_replace { //will_replace, in the list it's always will_replace
-         order: 2;   
-         margin-left: 2em;
-         flex: 0 1 auto;
-      }
-      .will_be_replaced {
-         order: 1;
-         flex: 0 1 auto;
-      }
-      .unselectable {
-         background: red;
-      }
-   }
-   .editing {
-      background: darkgray;
-      color:black;
-      position: relative;
-      span {
-         color:black;
-      }
       input {
-         padding: 0.3em;
-         position: absolute;
-         top:0;
-         bottom: 0;
-         right: 0;
-         left:0;
+         font-size: 1em;
+         outline: none;
+         padding: 0;
+         background: none;
+         border: none;
       }
-   }
-   .edit {
-      flex: 1 0 2em;
-      order: 1;
-      display: flex;
-      justify-content: space-around;
-      span {
-         line-height: 1em;
+      .edit {
+         flex: 1 0 2em;
+         order: 1;
       }
-   }
-   .entry {
-      transition: color .2s ease-out;
-   }
-   .changed {
-      color: rgb(126, 126, 255);
-   }
-   .command {
-      flex: 1 1 60%;
-      order: 3;
-   }
-   .shortcut {
-      flex: 1 1 20%;
-      order: 2;
-   }
-   .context {
-      flex: 1 1 20%;
-      order: 4;
-   }
-   .entry-header {
-      font-weight: bold;
-   }
-   &::after {
-      content: "";
+      .command {
+         flex: 1 1 60%;
+         order: 3;
+      }
+      .shortcut {
+         flex: 1 1 20%;
+         order: 2;
+      }
+      .context {
+         flex: 1 1 20%;
+         order: 4;
+      }
+      .entry, .entry-header {
+         border: 1px solid rgba(0,0,0,0.5);
+         width:100%;
+         display: flex;
+         user-select: none;
+         & > div { //.shortcut, .command, etc
+            padding: 0.3em;
+            overflow: hidden;
+            white-space: nowrap;
+         }
+         & .text {
+            display: inline-block;
+            flex: 1 1 100%;
+         }
+      }
+      .entry-header {
+         font-weight: bold;
+      }
+      .entry {
+         & > div { //.shortcut, .command, etc
+            display: flex;
+            justify-content: flex-start;
+         }
+         .gu-transit {
+            display: none;
+         }
+         &.dragging .gu-transit {
+            display: block;
+         }
+         &.editing{
+            background: darkgray;
+            & > div {  //.shortcut, .command, etc
+               color:black;
+               position: relative;
+               span {
+                  color:black;
+               }
+               input {
+                  padding: 0.3em;
+                  position: absolute;
+                  top:0;
+                  bottom: 0;
+                  right: 0;
+                  left:0;
+                  width: calc(100% - 0.3em);
+               }
+            }
+         }
+         .edit {
+            display: flex;
+            justify-content: space-around;
+            span {
+               line-height: 1em;
+            }
+         }
+         transition: background-color 0.3s ease-out;
+         &.changed {
+            background: fade-out($accent-color, 0.7) !important;
+         }
+      }
    }
 }
 </style>

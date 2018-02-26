@@ -1,0 +1,88 @@
+@import "./theme.scss";
+
+.keyboard {
+   outline: none;
+   font-size: $keyboard-font-size;
+   .key-row {
+      padding-bottom: $base-size;
+      height:0;
+      display:flex;
+      flex-wrap: wrap;
+      & > * {
+         flex-grow: 0;
+         flex-shrink: 0;
+      }
+   }
+
+   .empty-row {
+      padding-bottom: $base-size/2;
+   }
+
+   .key { 
+      width: $base-size;
+      box-sizing: border-box;
+      padding-bottom: $base-size;
+      position:relative;
+      .label {
+         margin:5%;
+         overflow: hidden;
+         user-select: none;
+      }
+      .shrink {
+         font-size:0.8em;
+      }
+      .dec {
+         position:absolute;
+         right: $cap-spacing;
+         top: $cap-spacing;
+         width: calc(100% - #{$cap-spacing*2});
+         height: calc(100% - #{$cap-spacing*2});
+         box-sizing: border-box;
+      }
+   }
+
+   .five {
+      width:5%;
+   }
+
+   .blank {
+      background:none;
+      box-shadow:none;
+   }
+
+   .spacer {
+      padding-bottom: $base-size;
+      width: 0.666 * $base_size;
+   }
+
+   .flexspace {
+      padding-bottom: $base-size;
+      flex:1 1 auto;
+   }
+
+   .vertical {
+      padding-bottom: 2 * $base_size;
+   }
+
+   .space {
+      width: 6.25 * $base_size;
+   }
+   .modifiers {
+      width: 1.25 * $base_size;
+   }
+   .small {
+      width: 1.5 * $base_size;
+   }
+   .medium-small {
+      width: 1.75 * $base_size;
+   }
+   .medium {
+      width: 2 * $base_size;
+   }
+   .medium-large {
+      width: 2.25 * $base_size;
+   }
+   .huge {
+      width: 2.75 * $base_size;
+   }
+}

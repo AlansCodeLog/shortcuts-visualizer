@@ -96,6 +96,7 @@ export default {
       let container_keys = document.querySelectorAll(".dec")
       
       let drake = dragula([...container_keys], {
+         mirrorContainer: this.$el,
          revertOnSpill: true, //so cancel will revert position of element
          isContainer: function (el) {
             return el.classList.contains(".dec")
@@ -135,9 +136,9 @@ export default {
       .on("over", (el, container, source) => {
          let type = _.without(container.classList, "drag")[0]
 
-         let siblings = el.parentNode.querySelectorAll(".active-shortcuts:not(.gu-transit)")
+         let siblings = container.parentNode.querySelectorAll(".active-shortcuts:not(.gu-transit)")
          let siblings_length = siblings.length
-         
+
          this.$el.querySelectorAll(".will_be_replaced").forEach(el => el.classList.remove("will_be_replaced"))
          this.$el.querySelectorAll(".unselectable").forEach(el => el.classList.remove("unselectable"))
 
@@ -194,12 +195,14 @@ export default {
 }
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
 
 @import "../settings/theme.scss";
+@import "../settings/custom_dragula.scss";
+@import "../settings/keyboard_base.scss";
 
 .keyboard {
-   font-size: $keyboard-font-size;
+   padding: 0 $padding-size;
    .active-shortcuts {
       cursor: pointer;
       position: absolute;
@@ -207,33 +210,36 @@ export default {
       bottom: 0;
       left: 0;
       right:0;
-      // word-break: break-all;
-      font-size: 0.9em;
-      display: flex;
-      justify-content: center;
+      font-size: $shortcut-font-size;
+      text-align: center;
+      display:flex;
       align-items: center;
-      border: (0.1 * $keyboard-font-size) solid rgb(0, 0, 116);
-      background: rgb(46, 46, 71);
+      background: hsla(hue($accent-color), 100%, 50%, 0.2);
       & > div {
          text-align: center;
          user-select: none;
+         word-break: break-word;
+         max-height: 100%;
+         overflow: hidden;
+         padding: 0.1em;
       }
    }
+   .gu-mirror {
+      font-size: $shortcut-drag-font-size;
+      width: auto !important;
+      height: auto !important;
+      right: auto !important;
+      bottom: auto !important;
+   }
    .will_replace {
+      display: none;
    }
    .will_be_replaced {
-      // top: calc(#{$keyboard-font-size  * 1.3} + 100%);
-      top: 100%;
-      bottom: auto;
       z-index: 1;
-      border-color: red;
-   }
-   .unselectable {
-      background:red;
-      border: red;
+      border: 1px solid;
    }
    .pressed > .dec {
-      border-color: $pressed-color !important;
+      border-color: $accent-color !important;
    }
    .chain-pressed > .dec::before {
       content: "";
@@ -242,108 +248,8 @@ export default {
       bottom:-$cap-spacing;
       left:-$cap-spacing;
       right:-$cap-spacing;
-      border-color: mix($chain-pressed-color,rgba(0,0,0,0), 50%) !important;
+      border-color: mix($accent-color,rgba(0,0,0,0), 50%) !important;
       border-style: dotted;
-   }
-
-   .key-row {
-      // height: $base_size;
-      padding-bottom: $base-size;
-      height:0;
-      display:flex;
-      flex-wrap: wrap;
-      & > * {
-         flex-grow: 0;
-         flex-shrink: 0;
-      }
-   }
-
-   .empty-row {
-      padding-bottom: $base-size/2;
-   }
-
-   .key { 
-      width: $base-size;
-      // height: 100%;
-      // border-radius: 2px;
-      box-sizing: border-box;
-      padding-bottom: $base-size;
-      position:relative;
-      .label {
-         margin:5%;
-         overflow: hidden;
-         user-select: none;
-      }
-      .shrink {
-         font-size:0.8em;
-      }
-      .dec {
-         position:absolute;
-         right: $cap-spacing;
-         top: $cap-spacing;
-         width: calc(100% - #{$cap-spacing*2});
-         height: calc(100% - #{$cap-spacing*2});
-         box-sizing: border-box;
-         box-shadow: $cap-box-shadow;
-      }
-   }
-
-   .five {
-      width:5%;
-      &:nth-child(odd) {
-         background:green;
-      }
-      &:nth-child(even) {
-         background:blue;
-      }
-   }
-
-   .blank {
-      background:none;
-      box-shadow:none;
-   }
-
-   .spacer {
-      padding-bottom: $base-size;
-      width: 0.666 * $base_size;
-   }
-
-   .flexspace {
-      padding-bottom: $base-size;
-      flex:1 1 auto;
-   }
-
-   .vertical {
-      padding-bottom: 2 * $base_size;
-   }
-
-   .space {
-      // width:360px;
-      width: 6.25 * $base_size;
-   }
-   .modifiers {
-      // width:60px;
-      width: 1.25 * $base_size;
-   }
-   .small {
-      // width:60px;
-      width: 1.5 * $base_size;
-   }
-   .medium-small {
-      // width:80px;
-      width: 1.75 * $base_size;
-   }
-   .medium {
-      // width:80px;
-      width: 2 * $base_size;
-   }
-   .medium-large {
-      width: 2.25 * $base_size;
-      // width:110px;
-   }
-   .huge {
-      // width:140px;
-      width: 2.75 * $base_size;
    }
 }
 

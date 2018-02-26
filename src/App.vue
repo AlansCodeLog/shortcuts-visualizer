@@ -63,12 +63,12 @@ export default {
       Options,
       ShortcutsList
    },
-   data() {
+   data() {  
       return {
          options: {
             mode: "Toggle All",
             theme_dark: true,
-            accept_on_blur: false,
+            accept_on_blur: true,
          },
          layout: layout,
          keys: keys,
@@ -320,21 +320,19 @@ export default {
 
 .background-light {
    background: $theme-light-background;
-   .key {
-      background: $cap-light-border;
-   }
    .key > .dec {
-      border: $cap-light-border;
+      background: $cap-light;
+      border: (0.1 * $keyboard-font-size) solid  mix($cap-light, black, 90%);
+      box-shadow: 0 (0.05 * $keyboard-font-size) (0.1 * $keyboard-font-size) (0.1 * $keyboard-font-size) mix($cap-light, black, 50%);
    }
 }
 .background-dark {
    background: $theme-dark-background;
    color: invert($theme-dark-background);
-   .key {
-      background: $cap-dark-border;
-   }
-   .key > .dec{
-      border: $cap-dark-border;
+   .key .dec {
+      background: $cap-dark;
+      border: (0.1 * $keyboard-font-size) solid mix($cap-dark, black, 90%);
+      box-shadow: 0 (0.05 * $keyboard-font-size) (0.1 * $keyboard-font-size) (0.1 * $keyboard-font-size) mix($cap-dark, black, 50%);
    }
 }
 

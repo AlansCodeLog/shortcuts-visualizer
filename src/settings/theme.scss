@@ -1,13 +1,43 @@
+//cap size from which all others are calculated better not to touch
 $base_size: 4.3%;
-$theme-light-background: rgb(224, 224, 224);
-$theme-dark-background: rgb(43, 43, 43);
-$cap-spacing: 0.2vw;
-$pressed-color: red;
-$chain-pressed-color: red;
-$keyboard-font-size: 1vw; //only for keyboard, also governs width of borders and shadows
+
+//for the text to shrink depending on the window size, this must be in vw units
+//if you need the font size to be responsive to a div's size, you will need to handle the font size of the .keyboard div manually
+$keyboard-font-size: 1vw;
+
+//depends on the above
+$cap-spacing: 0.2em;
+
+//padding around containers
+$padding-size: 30px;
+
+//use this to tweak the overall font size
 $regular-font-size: 1em;
+
+//control the active shortcuts font size on keys
+$shortcut-font-size: 0.7em;
+//control size of shortcut dragged
+$shortcut-drag-font-size: 1em;
+
+//media query for shortcut list
 $regular-media-query: 960px;
+//shrink amount for font
 $regular-shrink-amount: 0.8;
-$cap-dark-border: (0.1 * $keyboard-font-size) solid rgb(78, 78, 78);
-$cap-light-border: (0.1 * $keyboard-font-size) solid rgb(170, 170, 170);
-$cap-box-shadow: 0 (0.05 * $keyboard-font-size) (0.1 * $keyboard-font-size) (0.1 * $keyboard-font-size) rgba(0,0,0,0.7);
+
+//colors
+$theme-light-background: rgb(240, 240, 240);
+$theme-dark-background: rgb(43, 43, 43);
+
+//for pressed keys, shortcuts, etc
+$accent-color: rgb(45, 94, 255);
+
+//should be a low alpha, as they will get layered on on top of eachother
+$cap-dark: rgba(0,0,0,0.3);
+$cap-light: rgba(206, 65, 65, 0.1);
+
+//drag colors
+$dragging-background: rgba(0,0,0,0.7);
+$dragging-not-allowed-background: red;
+$dragging-not-allowed: black;
+$dragging-will-be-replaced: rgb(255, 166, 0);
+

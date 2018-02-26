@@ -40,23 +40,23 @@ export default {
 
 @import "../settings/theme.scss";
 
+
+//TODO
+
 input[type="checkbox"] {
    transform: scale(1.5);
-   // margin: 0.1em;
    margin:0 0.2em;
    vertical-align: -0.1em;
    @media (max-width: $regular-media-query){
       transform: scale($regular-shrink-amount*1.5);
       vertical-align: -0.15em;
-      // margin: $regular-shrink-amount * 0.1em;
    }
 }
 
 .options {
    width:100%;
    height: 2%;
-   margin: 0 2px;
-   padding: 20px 0;
+   padding: $padding-size;
    display: flex;
    align-items: center;
    font-size: $regular-font-size;

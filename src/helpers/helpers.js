@@ -244,6 +244,9 @@ export function create_shortcut_entry (entry, _this, {shortcuts, keymap, modifie
    //
    if (entry.chained) {
       let new_entry = {
+         editing: false,
+         dragging: false,
+         changed: false,
          command:"Chain Start",
          chain_start: true,
          chained: false,
@@ -285,6 +288,7 @@ export function create_shortcut_entry (entry, _this, {shortcuts, keymap, modifie
    //for internal use
    entry.editing = false
    entry.changed = false
+   entry.dragging = false
    
    return entry
 }
