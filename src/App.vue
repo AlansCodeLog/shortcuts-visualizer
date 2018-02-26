@@ -25,7 +25,11 @@
          @edit="shortcut_edit($event)"
       ></Keys>
       <ShortcutsList
+         :chain="chain"
+         :keymap="keymap"
          :shortcuts="shortcuts"
+         :modifiers_names="modifiers_names"
+         :modifiers_order="modifiers_order"
          :shortcuts_active="shortcuts_list_active"
          :normalize="normalize"
          :options="options"
@@ -125,23 +129,52 @@ export default {
             }, 1000);
          }
       },
-      shortcut_edit({old_entry, new_entry}) {
-         new_entry._shortcut = keys_from_text(new_entry.shortcut, this)._shortcut
+      shortcut_edit({old_entry, new_entry, flip = false}) {
+         new_entry._shortcut = typeof new_entry._shortcut !== "undefined"
+            ? new_entry._shortcut
+            : keys_from_text(new_entry.shortcut, this)._shortcut
          let index = this.shortcuts.findIndex(entry => entry.shortcut == old_entry.shortcut) //todo same context
-         let checkexists = _.isEqual(new_entry._shortcut, old_entry._shortcut) ? false : true
+         //we don't need to check_exists if the old and new entries are the same
+         let check_exists = new_entry.shortcut == old_entry.shortcut ? false : true
          //if we changed a chain start to a new chain start, create_shortcut won't know that
          
          if (old_entry.chain_start && new_entry._shortcut.length == 1) {
             new_entry.chain_start = true
          }
 
-
-         //remove old one first, else create_shortcut_entry will say it's a duplicate
-         this.shortcuts.splice(index, 1)
-
-         new_entry = create_shortcut_entry (new_entry, this, undefined, checkexists, true, true)
+         //if a shortcut exists, all we need to do is swap the command
+         if (check_exists) {
+            let new_shortcut_exists = false
+            let existing = this.shortcuts.findIndex(entry => entry.shortcut == new_entry.shortcut)
+            new_shortcut_exists = existing !== -1 ? true : false
+            if (new_shortcut_exists) {
+               let entry_swap = this.shortcuts[existing]
+               if (flip) {
+                  let old_shortcut = old_entry._shortcut
+                  let oldshortcut = old_entry.shortcut
+                  let new_shortcut = entry_swap._shortcut
+                  let newshortcut = entry_swap.shortcut
+                  entry_swap.shortcut = oldshortcut
+                  old_entry.shortcut = newshortcut
+                  entry_swap._shortcut = old_shortcut
+                  old_entry._shortcut = new_shortcut
+                  this.shortcut_edit_success([old_entry, entry_swap])
+               } else {
+                  let new_command = new_entry.command
+                  let old_command = entry_swap.command
+                  entry_swap.command = new_command
+                  old_entry.command = old_command
+                  this.shortcut_edit_success([old_entry, entry_swap])
+               }
+               return
+            }
+         } //ELSE
          
-         this.shortcuts.push(new_entry)
+         new_entry = create_shortcut_entry (new_entry, this, undefined, false, true, true)
+
+         this.shortcuts.splice(index, 1, new_entry)
+
+         this.shortcut_edit_success([new_entry])
 
          //if the old entry was chained, we might have to do some cleanup
          if (old_entry.chained) {
@@ -182,6 +215,14 @@ export default {
                this.shortcut_edit(otherchange)
             }
          }
+      },
+      shortcut_edit_success(entries) {
+         entries.map(entry => {
+            entry.changed = true 
+            setTimeout(() => {
+               entry.changed = false
+            }, 300);
+         })
       },
       normalize (identifiers) {
          return normalize(identifiers, this)

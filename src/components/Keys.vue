@@ -96,13 +96,12 @@ export default {
       let container_keys = document.querySelectorAll(".dec")
       
       let drake = dragula([...container_keys], {
-         revertOnSpill: true,
+         revertOnSpill: true, //so cancel will revert position of element
          isContainer: function (el) {
             return el.classList.contains(".dec")
          },
          moves: function (el, source, handle, sibling) {
-            // return handle.classList.contains("active-shortcuts")
-            return true
+            return el.classList.contains("active-shortcuts")
          },
          accepts: (el, target, source, sibling) => {
             if (!this.chain.in_chain) {
@@ -115,47 +114,79 @@ export default {
                let exists = existing == -1 ? false : true
                if (exists) {
                   let target_entry = this.shortcuts_active[existing]
-                  if (target_entry.chain_start) {
-                     return false
-                  } else {
-                     return true
-                  }
+                  if (!target_entry.chain_start) {return true}
                } else {
                   return true
                }
             } else {
                return true
             }
+            //ELSE
+            el.classList.remove("will_replace")
+            this.$el.querySelectorAll(".will_be_replaced").forEach(el => el.classList.remove("will_be_replaced"))
+            target.querySelector(".active-shortcuts").classList.add("unselectable")
+            return false
          },
       })
       drake
+      .on("drag", ()=> {
+         this.$emit("freeze_input", true)
+      })
+      .on("over", (el, container, source) => {
+         let type = _.without(container.classList, "drag")[0]
+
+         let siblings = el.parentNode.querySelectorAll(".active-shortcuts:not(.gu-transit)")
+         let siblings_length = siblings.length
+         
+         this.$el.querySelectorAll(".will_be_replaced").forEach(el => el.classList.remove("will_be_replaced"))
+         this.$el.querySelectorAll(".unselectable").forEach(el => el.classList.remove("unselectable"))
+
+         this.$el.querySelectorAll(".will_be_replaced").forEach(el => el.classList.remove("will_be_replaced"))
+         this.$el.querySelectorAll(".unselectable").forEach(el => el.classList.remove("unselectable"))
+
+         if (siblings_length > 0) {
+            el.classList.add("will_replace")
+            siblings.forEach(el => el.classList.add("will_be_replaced"))
+         } else {
+            el.classList.remove("will_replace")
+         }
+      })
       .on("drop", (el, target, source, sibling)=> {
          let key = target.querySelector(".label").innerText
          key = keys_from_text(key, this)._shortcut[0][0]
-         let combo = [key, ...this.keymap_active]
+         
+         let combo = [this.chain.start, [key, ...this.keymap_active]].filter(keyset => keyset.length !== 0)
 
          let oldkey = source.querySelector(".label").innerText
          oldkey =  keys_from_text(oldkey, this)._shortcut[0][0]
          
+
          let oldentry = this.shortcuts_active.filter(entry => {
-            return entry._shortcut[0].includes(oldkey) 
+            if (this.chain.in_chain) {
+               return entry._shortcut[1].includes(oldkey) 
+            } else {
+               return entry._shortcut[0].includes(oldkey) 
+            }
          })[0]
+         let normalized = combo.map(keyset => normalize(keyset, this).join("+")).join(" ")
          
          let change = {
             old_entry: oldentry,
             new_entry: {
-               shortcut: normalize(combo, this).join("+"),
+               shortcut: normalized,
+               _shortcut: combo, //optional
                command: oldentry.command,
-               }
             }
-         if (oldentry.chained) {
-            change.new_entry.shortcut = change.new_entry.newshortcut+" "+normalize(oldentry._shortcut[1], this).join("+")
          }
-         this.$emit("edit", change)
-         drake.cancel()
-         el.remove()
          
-         this.$nextTick(()=> {this.$forceUpdate()})
+         this.$emit("edit", change)
+         //we don't actually want to drop the element, vue will handle rerendering it in the proper place
+         drake.cancel()
+      }).on("cancel", (el, target, source, sibling)=> {
+         this.$el.querySelectorAll(".unselectable").forEach(el => el.classList.remove("unselectable"))
+         this.$el.querySelectorAll(".will_be_replaced").forEach(el => el.classList.remove("will_be_replaced"))
+         this.$el.querySelectorAll(".will_replaced").forEach(el => el.classList.remove("will_replaced"))
+         this.$emit("freeze_input", false)
       })
 
    }
@@ -187,6 +218,19 @@ export default {
          text-align: center;
          user-select: none;
       }
+   }
+   .will_replace {
+   }
+   .will_be_replaced {
+      // top: calc(#{$keyboard-font-size  * 1.3} + 100%);
+      top: 100%;
+      bottom: auto;
+      z-index: 1;
+      border-color: red;
+   }
+   .unselectable {
+      background:red;
+      border: red;
    }
    .pressed > .dec {
       border-color: $pressed-color !important;

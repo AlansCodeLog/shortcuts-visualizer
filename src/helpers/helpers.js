@@ -284,6 +284,7 @@ export function create_shortcut_entry (entry, _this, {shortcuts, keymap, modifie
    
    //for internal use
    entry.editing = false
+   entry.changed = false
    
    return entry
 }
