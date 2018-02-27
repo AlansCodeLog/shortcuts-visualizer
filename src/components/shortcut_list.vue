@@ -45,7 +45,7 @@
                   v-if="entry.editing"
                   v-model="shortcut_editing"
                   @keydown.enter="toggle_editing(false, entry, index)"
-                  @blur="check_blur($event, entry)"
+                  @blur="check_blur($event, entry, index)"
                />
             </div>
             <div :class="['drag', 'command']">
@@ -61,7 +61,7 @@
                   v-if="entry.editing"
                   v-model="shortcut_editing_command"
                   @keydown.enter="toggle_editing(false, entry, index)"
-                  @blur="check_blur($event, entry)"
+                  @blur="check_blur($event, entry, index)"
                />
             </div>
             <div :class="['drag', 'context']">
@@ -91,6 +91,10 @@ export default {
          this.$emit("edit", $event.target.value)
       },
       toggle_editing (editing, entry, focus_index, focusto = 'shortcut', check_existing = true) {
+         //we need to keep a reference to the original values in case we accept_on_blur
+         let shortcut_editing = this.shortcut_editing
+         let shortcut_editing_command = this.shortcut_editing_command
+         
          if (check_existing) {
             let existing = this.shortcuts_active.findIndex(entry => entry.editing)
 
@@ -127,34 +131,43 @@ export default {
             let change = {
                old_entry: entry,
                new_entry: {
-                  shortcut: this.shortcut_editing,
-                  command: this.shortcut_editing_command,
+                  shortcut: shortcut_editing,
+                  command: shortcut_editing_command,
                },
             }
-            if (change.new_entry.shortcut !== change.old_entry.shortcut
+            if (!check_existing) {
+               if (change.new_entry.shortcut !== change.old_entry.shortcut
                || change.new_entry.command !== change.old_entry.command) {
-                  this.$emit("edit", change)
+                  this.$emit("edit", {...change, flip: focusto == "command" ? false : true})
                }
-            this.shortcut_editing = ""
-            this.shortcut_editing_command = ""
+               this.shortcut_editing = ""
+               this.shortcut_editing_command = ""
+            }
          }
       },
       cancel_edit(entry) {
          entry.editing = false
-         this.shortcut_editing = ""
-         this.shortcut_editing_command = ""
+         // this.shortcut_editing = ""
+         // this.shortcut_editing_command = ""
       },
-      check_blur(e, entry) {
+      check_blur(e, entry, index) {
          this.$nextTick(() => {
             //if we don't click on another shortcut
             if (!document.activeElement.classList.contains("dont_blur")) {
-               this.cancel_edit(entry)
+               // this.cancel_edit(entry)
+               if (this.options.accept_on_blur) {
+                  this.toggle_editing(false, entry, index)
+               } else {
+                  this.cancel_edit(entry)
+               }
             }//else toggle edit will handle it
          })
       }
    },
    computed: {
    },
+   // updated() {console.log("updated")
+   // },
    mounted() {
       let container_keys = document.querySelectorAll(".entry > .text")
       
@@ -242,7 +255,7 @@ export default {
       }).on("cancel", (el, target, source, sibling)=> {
          this.$el.querySelectorAll(".unselectable").forEach(el => el.classList.remove("unselectable"))
          this.$el.querySelectorAll(".will_be_replaced").forEach(el => el.classList.remove("will_be_replaced"))
-         this.$el.querySelectorAll(".will_replaced").forEach(el => el.classList.remove("will_replaced"))
+         this.$el.querySelectorAll(".will_replace").forEach(el => el.classList.remove("will_replace"))
          this.shortcuts_active.map(entry => entry.dragging = false)
          this.$emit("freeze_input", false)
       })

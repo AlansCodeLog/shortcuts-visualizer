@@ -134,54 +134,85 @@ export default {
             ? new_entry._shortcut
             : keys_from_text(new_entry.shortcut, this)._shortcut
          let index = this.shortcuts.findIndex(entry => entry.shortcut == old_entry.shortcut) //todo same context
+         //if we changed a chain or chain start to something else, create_shortcut won't know that
+         if (new_entry._shortcut.length > 1) {
+            new_entry.chained = true
+         } else {
+            new_entry.chained = false
+         }
+         if (!new_entry.chained && this.shortcuts.findIndex(entry => _.xor(entry._shortcut[0] == new_entry._shortcut[0]).length == 0) !== -1) {
+            new_entry.chain_start = true
+         } else {
+            new_entry.chain_start = false
+         }
+         
+
+         //in case we just swap the shortcuts our references will get messed up
+         let old_old_entry = {...old_entry}
+         let new_new_entry = {...new_entry}
+
          //we don't need to check_exists if the old and new entries are the same
          let check_exists = new_entry.shortcut == old_entry.shortcut ? false : true
-         //if we changed a chain start to a new chain start, create_shortcut won't know that
          
-         if (old_entry.chain_start && new_entry._shortcut.length == 1) {
-            new_entry.chain_start = true
-         }
-
          //if a shortcut exists, all we need to do is swap the command
          if (check_exists) {
-            let new_shortcut_exists = false
+            var new_shortcut_exists = false
             let existing = this.shortcuts.findIndex(entry => entry.shortcut == new_entry.shortcut)
             new_shortcut_exists = existing !== -1 ? true : false
             if (new_shortcut_exists) {
                let entry_swap = this.shortcuts[existing]
                if (flip) {
-                  let old_shortcut = old_entry._shortcut
-                  let oldshortcut = old_entry.shortcut
-                  let new_shortcut = entry_swap._shortcut
-                  let newshortcut = entry_swap.shortcut
-                  entry_swap.shortcut = oldshortcut
-                  old_entry.shortcut = newshortcut
-                  entry_swap._shortcut = old_shortcut
-                  old_entry._shortcut = new_shortcut
+
+                  //not getting flipped?
+                  let old = {...old_entry}
+                  let swap = {...entry_swap}
+                  entry_swap.shortcut = old.shortcut
+                  old_entry.shortcut = swap.shortcut
+                  entry_swap._shortcut = old._shortcut
+                  old_entry._shortcut = swap._shortcut
+                  entry_swap.chain_start = old.chain_start
+                  old_entry.chain_start = swap.chain_start
+                  entry_swap.chained = old.chained
+                  old_entry.chained = swap.chained
                   this.shortcut_edit_success([old_entry, entry_swap])
                } else {
-                  let new_command = new_entry.command
-                  let old_command = entry_swap.command
-                  entry_swap.command = new_command
-                  old_entry.command = old_command
+                  let old = {...old_entry}
+                  let swap = {...entry_swap}
+                  entry_swap.command = old.command
+                  old_entry.command = swap.command
+                  entry_swap.chain_start = old.chain_start
+                  old_entry.chain_start = swap.chain_start
+                  entry_swap.chained = old.chained
+                  old_entry.chained = swap.chained
                   this.shortcut_edit_success([old_entry, entry_swap])
+                  console.log(entry_swap, old_old_entry)
+                  
                }
-               return
             }
-         } //ELSE
+         }
+            
+         if (!new_shortcut_exists) {
+            new_entry = create_shortcut_entry (new_entry, this, undefined, false, false, true)
+            new_new_entry = new_entry //just updating, it never gets swapped if we're here
+
+            for (let prop of Object.keys(old_entry)) {
+               if (typeof new_entry[prop] !== "undefined") {
+                  old_entry[prop] = new_entry[prop]
+               }
+               
+            }
+            this.shortcut_edit_success([new_entry])
+         }
          
-         new_entry = create_shortcut_entry (new_entry, this, undefined, false, true, true)
-
-         this.shortcuts.splice(index, 1, new_entry)
-
-         this.shortcut_edit_success([new_entry])
-
-         //if the old entry was chained, we might have to do some cleanup
-         if (old_entry.chained) {
+         // if the old entry was chained, we might have to do some cleanup
+         if (old_old_entry.chained) {
+            let old_entry = old_old_entry
             let index_chain_start = this.shortcuts.findIndex(entry => entry.chain_start && _.xor(entry._shortcut[0],old_entry._shortcut[0]).length == 0)
             //sometimes the chain start might not exist because we just changed it
+            
             if (index_chain_start !== -1) {
                let chain_count = this.shortcuts.reduce((count, entry) => {
+                  
                   if (!entry.chain_start && _.xor(entry._shortcut[0], old_entry._shortcut[0]).length == 0) {
                      return count + 1
                   } else {return count + 0}
@@ -192,15 +223,19 @@ export default {
                }
             }
          }
-         if (old_entry.chain_start) {
+         
+         
+         if (old_old_entry.chain_start) {
+            let old_entry = old_old_entry
+            let new_entry = new_new_entry
+            
             let chains = this.shortcuts.filter(entry => {
                if (entry.chained && _.xor(old_entry._shortcut[0], entry._shortcut[0]).length == 0) {
                   return entry
                }
             })
             
-            for (let entry of chains) {
-               let _oldentry = {...entry}
+            for (let _oldentry of chains) {
                
                let _newshortcut = new_entry.shortcut + " " + normalize(_oldentry._shortcut[1], this).join("+")
                
@@ -215,6 +250,34 @@ export default {
                this.shortcut_edit(otherchange)
             }
          }
+         
+         // if (old_entry.chain_start) {//the swap
+         //    let old_entry = old_old_entry
+         //    let new_entry = new_new_entry
+            
+         //    let chains = this.shortcuts.filter(entry => {
+         //       if (entry.chained && _.xor(new_entry._shortcut[0], entry._shortcut[0]).length == 0) {
+         //          return entry
+         //       }
+         //    })
+         //    console.log(chains)
+            
+         //    for (let _oldentry of chains) {
+         //       console.log(_oldentry)
+               
+         //       let _newshortcut = old_entry.shortcut + " " + normalize(_oldentry._shortcut[1], this).join("+")
+               
+         //       let otherchange = {
+         //          old_entry: _oldentry,
+         //          new_entry: {
+         //             shortcut: _newshortcut,
+         //             command: _oldentry.command,
+         //          }
+         //       }
+               
+         //       this.shortcut_edit(otherchange)
+         //    }
+         // }
       },
       shortcut_edit_success(entries) {
          entries.map(entry => {

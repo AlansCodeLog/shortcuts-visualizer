@@ -92,6 +92,8 @@ export default {
          return active_keys
       }
    },
+   // updated() {console.log("updated keys")
+   // },
    mounted() {
       let container_keys = document.querySelectorAll(".dec")
       
@@ -186,7 +188,8 @@ export default {
       }).on("cancel", (el, target, source, sibling)=> {
          this.$el.querySelectorAll(".unselectable").forEach(el => el.classList.remove("unselectable"))
          this.$el.querySelectorAll(".will_be_replaced").forEach(el => el.classList.remove("will_be_replaced"))
-         this.$el.querySelectorAll(".will_replaced").forEach(el => el.classList.remove("will_replaced"))
+         this.$el.querySelectorAll(".will_replace").forEach(el => el.classList.remove("will_replace"))
+         
          this.$emit("freeze_input", false)
       })
 
