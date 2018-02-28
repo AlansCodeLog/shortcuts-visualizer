@@ -157,9 +157,9 @@ function _keys_from_text(shortcut, _this, {keymap, modifiers_order, modifiers_na
       return _.pull(keys, '==BREAK==');
    })
    //normalize key names and create string shortcut property
-   shortcut = [_normalize(_shortcut[0], undefined, {keymap, modifiers_order, modifiers_names}).join("+")]
+   shortcut = [_normalize(_shortcut[0].sort(), undefined, {keymap, modifiers_order, modifiers_names}).join("+")]
    if (_shortcut.length > 1) {
-      shortcut.push(_normalize(_shortcut[1], undefined, {keymap, modifiers_order, modifiers_names}).join("+"))
+      shortcut.push(_normalize(_shortcut[1].sort(), undefined, {keymap, modifiers_order, modifiers_names}).join("+"))
    }
    return {shortcut: shortcut.join(" "), _shortcut: _shortcut}
 }
@@ -199,49 +199,94 @@ export function create_keymap (keys) {
 export function create_shortcuts_list (settings_shortcuts, keymap, modifiers_order, modifiers_names) {
    // create empty array because we might push to it more than once per entry
    let shortcuts = []
+   //normalizes all the names, creates _shortcut entry, and adds chained and chained_start
+   //this way create_shortcut_entry can check existing shortcuts much more cleanly
+   ready_all(settings_shortcuts, undefined, {keymap, modifiers_order, modifiers_names})
    settings_shortcuts.map(entry => {
-      shortcuts.push(create_shortcut_entry(entry, undefined, {shortcuts, keymap, modifiers_order, modifiers_names}))
+      let new_entries = create_shortcut_entry(entry, undefined, {shortcuts, keymap, modifiers_order, modifiers_names})
+      
+      if (new_entries.error) {
+         console.log(shortcuts)
+         
+         throw new_entries.error}
+      if (new_entries.remove) {
+         _.pullAt(shortcuts, new_entries.remove)
+      }
+      shortcuts.push(new_entries.entry)
+      if (new_entries.extra) {
+         shortcuts.push(new_entries.extra)
+      }
    })
+   
    return shortcuts
 }
 
-export function create_shortcut_entry (entry, _this, {shortcuts, keymap, modifiers_order, modifiers_names} = {}, check_exists = false, editing = false, existing_entry = false) {
+export function ready_all(shortcuts, _this, {keymap, modifiers_order, modifiers_names}) {
    //setting variables from this when there's no need to override variables
    if (typeof _this !== "undefined") {
       var {shortcuts, keymap, modifiers_order, modifiers_names} = _this
    }
-   if (!existing_entry) {
-      
-      // spread results from _keys_from_text
+
+   shortcuts.map(entry =>{
       var {shortcut, _shortcut} = _keys_from_text(entry.shortcut, undefined, {keymap, modifiers_order, modifiers_names})
       //add to our shortcut entry
       entry.shortcut = shortcut
       entry._shortcut = _shortcut
-   } //else they already exist
+      entry.chained = entry._shortcut.length > 1 ? true : false
+      entry.chain_start = typeof entry.chain_start !== "undefined" ? entry.chain_start : false
+   })
+}
 
-   //check if chained or start of chain
-   entry.chained = entry._shortcut.length > 1 ? true : false
-   entry.chain_start = typeof entry.chain_start !== "undefined" ? entry.chain_start : false
-   
-   if (check_exists) {
-      
-      shortcuts.map(existing_entry => {
-         if (existing_entry.shortcut == entry.shortcut) {
-            //TODO allow context exception
-            if (existing_entry.chain_start) {
-               //replace chain start if replacement chain_start is true, otherwise through chain overwrite error
-               if (!entry.chain_start) {
-                  throw new Error("Shortcut '" + existing_entry.shortcut + "' (command: " + existing_entry.command +") is the start of a chain. It cannot be overwritten for command '" + entry.command + "'. If you'd like to just change the command text, chain_start must be set to true for the shortcut.")
-               }
-            } else {
-               throw new Error("Shortcut '" + entry.shortcut + "' (command: " + entry.command +") already exists: '" + existing_entry.shortcut + "' (command: " + existing_entry.command)+")"
-            }
-         }
-      })
+function create_error(index, entry, existing_entry, type, editing) {
+   if (type == "Regular Error") {
+      var error = {}
+      error.name = new Error("Shortcut '" + entry.shortcut + "' (command: " + entry.command +") already exists: '" + existing_entry.shortcut + "' (command: " + existing_entry.command)+")"
+      error.code = "Regular Error"
+      error.index = index
+   } else if (type == "Chain Error") {
+      var error = {}
+      error.name = new Error("Shortcut '" + entry.shortcut + "' is the start of a chain. It cannot be overwritten for command '" + entry.command + "'. If you'd like to just change the command text, chain_start must be set to true for the shortcut.")
+      error.code = "Chain Error"
+      error.index = index
+   }
+   if (!editing) {throw error} else {return error}
+}
+
+export function create_shortcut_entry (entry, _this, {shortcuts, keymap, modifiers_order, modifiers_names} = {}, check_exists = false, editing = false, filled_entry = false) {
+   //setting variables from this when there's no need to override variables
+   if (typeof _this !== "undefined") {
+      var {shortcuts, keymap, modifiers_order, modifiers_names} = _this
    }
    
-   //create chain start if entry chained and custom chain start not set
-   //
+   let existing_error = false
+   let overwrite = false
+   shortcuts.findIndex((existing_entry, index) => {
+      if (existing_entry.shortcut == entry.shortcut) { //if the two shortcuts are exactly the same
+         if (entry.chain_start == existing_entry.chain_start) { 
+            if (entry.chain_start) {//if they're both chain starts
+               overwrite = true
+            } else { //if they're both regular
+               existing_error = create_error(index, entry, existing_entry, "Regular Error")
+            }
+         } else if (existing_entry.chain_start) {//existing entry is a chain start but not new
+            existing_error = create_error(index, existing_entry, entry, "Chain Error", editing)
+         } else if (entry.chain_start) {//new entry is a chain start but not existing
+            existing_error = create_error(index, entry, existing_entry, "Chain Error", editing)
+         }
+      } else if (_.isEqual(existing_entry._shortcut[0], entry._shortcut[0])) {
+         if (!existing_entry.chain_start && !existing_entry.chained) {//if existing entry should be marked as chain start but isn't
+            existing_error = create_error(index, existing_entry, entry, "Chain Error", editing)
+         } else if (!existing_entry.chain_start && !entry.chained && !entry.chain_start) {//if new entry should be marked as chain but isn't
+            existing_error = create_error(index, entry, existing_entry, "Chain Error", editing)
+         } else if (!existing_entry.chain_start && !entry.chained) {
+            overwrite = true
+         }
+      }
+   })
+
+   let extra_entry = false
+   
+   // create chain start if entry chained and custom chain start not set
    if (entry.chained) {
       let new_entry = {
          editing: false,
@@ -251,38 +296,40 @@ export function create_shortcut_entry (entry, _this, {shortcuts, keymap, modifie
          chain_start: true,
          chained: false,
          _shortcut: [entry._shortcut[0]],
-         shortcut: _normalize(entry._shortcut[0], undefined, {keymap, modifiers_order, modifiers_names}).join("+")
+         shortcut: _normalize(entry._shortcut[0], undefined, {keymap, modifiers_order, modifiers_names}).join("+"),
       }
       
-      let existing_index = shortcuts.findIndex(existing_entry => {
-         //find entries that should be chain starts
-         if (existing_entry._shortcut.length == 1 && existing_entry.shortcut.split(" ")[0] == new_entry.shortcut.split(" ")[0]) {
+      let existing_index = shortcuts.findIndex((existing_entry, index) => {
+         if (existing_entry.chain_start && _.isEqual(existing_entry._shortcut[0], new_entry._shortcut[0])) {
             if (existing_entry.chain_start) {
                return true
-            } else {
-               //order/variables might seem weird, but from the user's perspective, it's the new_entry that already "exists" if they did not set the existing_entry's chain_start: true
-               throw new Error("Shortcut '" + new_entry.shortcut + "' (command: " + new_entry.command +") is the start of a chain. It cannot be overwritten for command '" + existing_entry.command + "'. If you'd like to just change the command text, chain_start must be set to true for the shortcut.")
             }
          }
       })
+      
       let exists = existing_index == -1 ? false : true
       
       if (!exists) {
-         shortcuts.push(new_entry)
+         extra_entry = new_entry
       }
    }
+   if (entry.chain_start) {
+      console.log("would happen if not for not editing")
+   }
+   
    //remove any existing chain starts so replacement can be put
-   if (entry.chain_start && !editing) {
-      let existing_index = shortcuts.findIndex(existing_entry => {
-         if (existing_entry.shortcut.split(" ")[0] == entry.shortcut.split(" ")[0]) {
-            if (existing_entry.chain_start == entry.chain_start) {
-               return true
-            } else {
-               throw new Error("Should not throw")
+   let chain_starts_to_remove
+   if (overwrite && entry.chain_start) {
+      let existing_index = []
+      shortcuts.map((existing_entry, index) => {
+         if (_.isEqual(existing_entry._shortcut[0], entry._shortcut[0])) {
+            if (existing_entry.chain_start) {
+               existing_index.push(index)
             }
          }
       })
-      shortcuts.splice(existing_index, 1)
+      
+      chain_starts_to_remove = existing_index.length == 0 ? false : existing_index
    }
    
    //for internal use
@@ -290,5 +337,5 @@ export function create_shortcut_entry (entry, _this, {shortcuts, keymap, modifie
    entry.changed = false
    entry.dragging = false
    
-   return entry
+   return {entry, extra: extra_entry, remove: chain_starts_to_remove, error: existing_error}
 }
