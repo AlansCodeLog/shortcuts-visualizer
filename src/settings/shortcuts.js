@@ -14,7 +14,7 @@ const shortcuts = [
    {
       shortcut: "ctrl+q",
       command: "accident",
-      chain_start: true,
+      // chain_start: true,
    },
    // {
    //    shortcut: "ctrl+s b",

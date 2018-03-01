@@ -147,14 +147,11 @@ export default {
       },
       cancel_edit(entry) {
          entry.editing = false
-         // this.shortcut_editing = ""
-         // this.shortcut_editing_command = ""
       },
       check_blur(e, entry, index) {
          this.$nextTick(() => {
             //if we don't click on another shortcut
             if (!document.activeElement.classList.contains("dont_blur")) {
-               // this.cancel_edit(entry)
                if (this.options.accept_on_blur) {
                   this.toggle_editing(false, entry, index)
                } else {
@@ -166,8 +163,6 @@ export default {
    },
    computed: {
    },
-   // updated() {console.log("updated")
-   // },
    mounted() {
       let container_keys = document.querySelectorAll(".entry > .text")
       
