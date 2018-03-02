@@ -3,6 +3,7 @@
       <div class="container">
          <div class="entry-header">
             <div class="edit"></div>
+            <div class="chain" title="Chain Start"></div>
             <div class="shortcut">Shortcut</div>
             <div class="command">Command</div>
             <div class="context">Context</div>
@@ -31,6 +32,8 @@
                   @click="toggle_editing(false, entry, index)"
                >&#10004;</span>
             </div>
+            <div v-if="entry.chain_start" class="chain is_chain" title="Chain Start">&#128279;</div>
+            <div v-else class="chain not_chain"></div>
             <div :class="['drag', 'shortcut']">
                <!-- NOT EDITING -->
                <div
@@ -177,22 +180,31 @@ export default {
          },
          accepts: (el, target, source, sibling) => {
             let type = _.without(source.classList, "drag")[0]
-            
+
+            this.$el.querySelectorAll(".unselectable").forEach(el => el.classList.remove("unselectable"))
+
             if (target.classList.contains(type)) {
-               if (type == "command" || type == "shortcut") {
-                  if (!this.chain.in_chain) {
-                     let combo = target.parentNode.querySelector(".shortcut .text").innerText
-                     let existing = this.shortcuts_active.findIndex(entry => entry.shortcut == combo)
-                     if (!this.shortcuts_active[existing].chain_start) {return true}
+               let source_is_chain = source.parentNode.querySelector(".chain").classList.contains("is_chain")
+               let target_is_chain = target.parentNode.querySelector(".chain").classList.contains("is_chain")
+               
+               if (type == "shortcut") {
+                  let source_shortcut = el.innerText.split(" ")
+                  let target_shortcut = target.parentNode.querySelector(".shortcut .text:not(.gu-transit)").innerText.split(" ")
+                  //chained should not be able to drag to it's chain start and vice versa
+                  if (target_shortcut[0] == source_shortcut[0]) {
+                     if (!(target_shortcut.length > 1 && source_is_chain) && !(source_shortcut.length > 1 && target_is_chain)) {
+                        return true
+                     }
                   } else {
                      return true
                   }
-                  el.classList.remove("will_replace")
-                  this.$el.querySelectorAll(".will_be_replaced").forEach(el => el.classList.remove("will_be_replaced"))
-                  target.classList.add("unselectable")
+               } else if (type == "command" && source_is_chain == target_is_chain) {
+                  //only chains can drag to chains and only non-chains to non-chains
+                  return true
                }
             }
             //ELSE
+            target.classList.add("unselectable")
             return false
          },
       })
@@ -219,34 +231,57 @@ export default {
             el.classList.remove("will_replace")
          }
       })
+      .on("out", (el, container, source) => {
+         this.$el.querySelectorAll(".will_be_replaced").forEach(el => el.classList.remove("will_be_replaced"))
+         this.$el.querySelectorAll(".unselectable").forEach(el => el.classList.remove("unselectable"))
+      }) 
       .on("drop", (el, target, source, sibling)=> {
          let type = _.without(source.classList, "drag")[0]
-         if (type == "command" || type == "shortcut") {
-            let combo =  target.parentNode.querySelector(".shortcut .text:not(.gu-transit)").innerText
-            combo = keys_from_text(combo, this)
-            let combo_normalized = combo.shortcut
-            combo = combo._shortcut
-            let old_combo = type == "command" 
-               ? source.parentNode.querySelector(".shortcut .text").innerText
-               : el.innerText
-            let oldentry = this.shortcuts_active.filter(entry => {
-               return entry.shortcut == old_combo
-            })[0]
-            
-            var change = {
-               old_entry: oldentry,
+
+         let target_combo =  target.parentNode.querySelector(".shortcut .text:not(.gu-transit)").innerText
+         target_combo = keys_from_text(target_combo, this)
+         let source_combo = type == "shortcut"
+            ? el.innerText
+            : source.parentNode.querySelector(".shortcut .text").innerText
+         let source_old_entry = this.shortcuts_active.filter(entry => {
+            return entry.shortcut == source_combo
+         })[0]
+         if (type == "shortcut") {
+            let change = {
+               old_entry: source_old_entry,
                new_entry: {
-                  _shortcut: combo,
-                  shortcut: combo_normalized,
-                  command: oldentry.command,
+                  _shortcut: target_combo._shortcut,
+                  shortcut: target_combo.shortcut,
+                  command: source_old_entry.command,
                }
             }
             this.$emit("edit", {...change, flip: type == "command" ? false : true})
-            
-            drake.cancel()
          } else {
-            drake.cancel()
+            let target_command = target.parentNode.querySelector(".command .text:not(.gu-transit)").innerText
+            let change = {
+               old_entry: source_old_entry,
+               new_entry: {
+                  _shortcut: source_old_entry._shortcut,
+                  shortcut: source_old_entry.shortcut,
+                  command: target_command,
+               }
+            }
+            let target_entry = this.shortcuts_active.filter(entry => {
+               return entry.shortcut == target_combo.shortcut
+            })[0]
+
+            let change2 = {
+               old_entry: target_entry,
+               new_entry: {
+                  _shortcut: target_entry._shortcut,
+                  shortcut: target_entry.shortcut,
+                  command: source_old_entry.command,
+               }
+            }
+            this.$emit("edit", {...change, flip: type == "command" ? false : true})
+            this.$emit("edit", {...change2, flip: type == "command" ? false : true})
          }
+         drake.cancel()
       }).on("cancel", (el, target, source, sibling)=> {
          this.$el.querySelectorAll(".unselectable").forEach(el => el.classList.remove("unselectable"))
          this.$el.querySelectorAll(".will_be_replaced").forEach(el => el.classList.remove("will_be_replaced"))
@@ -287,6 +322,10 @@ export default {
          flex: 1 0 2em;
          order: 1;
       }
+      .chain {
+         flex: 1 0 1.5em;
+         order: 1;
+      }
       .command {
          flex: 1 1 60%;
          order: 3;
@@ -321,12 +360,18 @@ export default {
          & > div { //.shortcut, .command, etc
             display: flex;
             justify-content: flex-start;
+            &:not(.chain):hover {
+               cursor: pointer;
+            }
          }
          .gu-transit {
             display: none;
          }
          &.dragging .gu-transit {
-            display: block;
+            display: none;
+            &:hover {
+               display: block;
+            }
          }
          &.editing{
             background: darkgray;

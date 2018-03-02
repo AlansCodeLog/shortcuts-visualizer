@@ -157,6 +157,9 @@ export default {
             old_entry[prop] = new_entry[prop]
          })
 
+         console.log(new_entry.chain_start, old_entry.chain_start) //TODO chain start to chain start hell
+         
+
          if (swap_exists) {
             
             // console.log(error.code, entry_swap.command, entry_swap_copy.command, old_entry_copy.command, new_entry.command)

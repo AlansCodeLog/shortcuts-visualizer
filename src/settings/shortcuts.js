@@ -30,7 +30,11 @@ const shortcuts = [
    //    command: "Chained Ctrl A"
    // },
    {
-      shortcut: "ctrl+s a",
+      shortcut: "ctrl+s s",
+      command: "Chain A"
+   },
+   {
+      shortcut: "ctrl+b b",
       command: "Chain A"
    },
    // {
