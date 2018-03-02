@@ -92,13 +92,13 @@ export default {
          return Object.keys(this.keymap).filter(identifier => {
             let key = this.keymap[identifier];
             return key.active
-         })
+         }).sort()
       },
       shortcuts_active () {
-         return get_shortcuts_active (this.shortcuts, this.keymap_active, this.chain, this.keymap, false)
+         return get_shortcuts_active (this, false)
       },
       shortcuts_list_active () {
-         return get_shortcuts_active (this.shortcuts, this.keymap_active, this.chain, this.keymap, true)
+         return get_shortcuts_active (this, true)
       },
    },
    methods: {
@@ -129,7 +129,8 @@ export default {
             }, 1000);
          }
       },
-      shortcut_edit({old_entry, new_entry, flip = false, checks = true}) {
+      shortcut_edit({old_entry, new_entry}, checks = true) {
+
          new_entry._shortcut = typeof new_entry._shortcut !== "undefined"
             ? new_entry._shortcut
             : keys_from_text(new_entry.shortcut, this)._shortcut
@@ -146,8 +147,8 @@ export default {
          //"backup" our objects
          if (error) {
             var existing_index = error.index
-            var entry_swap = this.shortcuts_list_active[existing_index]
-            var entry_swap_copy = {...this.shortcuts_list_active[existing_index]}
+            var entry_swap = this.shortcuts[existing_index]
+            var entry_swap_copy = {...this.shortcuts[existing_index]}
          }
          let old_entry_copy = {...old_entry}
          let swap_exists = error && old_entry_copy.shortcut !== entry_swap_copy.shortcut
@@ -157,24 +158,21 @@ export default {
             old_entry[prop] = new_entry[prop]
          })
 
-         console.log(new_entry.chain_start, old_entry.chain_start) //TODO chain start to chain start hell
-         
 
-         if (swap_exists) {
+         if (swap_exists && !old_entry_copy.chain_start && !new_entry.chain_start) {
             
-            // console.log(error.code, entry_swap.command, entry_swap_copy.command, old_entry_copy.command, new_entry.command)
             Object.keys(new_entry).map(prop => {
                if (["shortcut", "_shortcut"].includes(prop)) {
                   entry_swap[prop] = old_entry_copy[prop]
                }
             })
             this.shortcut_edit_success([entry_swap])
-            // console.log(error.code, entry_swap.command, entry_swap_copy.command, old_entry_copy.command, new_entry.command)
             
          }
          this.shortcut_edit_success([old_entry])
 
-         if (checks) {
+         if (checks && !old_entry_copy.chain_start && !new_entry.chain_start) {
+            
             // if we need to add a chain start
             if (extra && typeof entry_swap == "undefined") {
                this.shortcuts.splice(index, 0, extra)
@@ -206,7 +204,7 @@ export default {
                      }
                   }
                   
-                  this.shortcut_edit(otherchange, false, false)
+                  this.shortcut_edit(otherchange, false)
                }
             }
 
@@ -224,6 +222,80 @@ export default {
                   this.shortcuts.splice(index_chain_start, 1)
                }
             }
+         } else if (checks) {
+            //if we need to swap chain starts and all their chains, first we have to do the chains
+
+            let chain_entry = typeof entry_swap_copy !== "undefined" && entry_swap_copy.chain_start
+               ? "entry_swap_copy"
+               : old_entry_copy.chain_start
+                  ? "old_entry_copy"
+                  : false
+
+            if (chain_entry && old_entry_copy.shortcut !== entry_swap_copy.shortcut) {
+               //first temporarily overwrite the chain start of our target chain
+               {
+                  let old_start = chain_entry == "entry_swap_copy" ? old_entry_copy : entry_swap_copy
+                  this.shortcuts.map(entry => {
+                     if (entry.chained && _.isEqual(old_start._shortcut[0], entry._shortcut[0])) {
+                        entry._shortcut[0] = "TEMPSWAMP"
+                     }
+                  })
+                  
+               }
+               //change chains based on source
+               {
+                  let old_start = chain_entry == "entry_swap_copy" ? entry_swap_copy : old_entry_copy
+                  let chains = this.shortcuts.filter(entry => {
+                     if (entry.chained && _.isEqual(old_start._shortcut[0], entry._shortcut[0])) {
+                        return entry
+                     }
+                  })
+                  
+                  let new_start = chain_entry == "entry_swap_copy" ? old_entry_copy : new_entry
+                  for (let entry of chains) {
+                     let otherchange = {
+                        old_entry: entry,
+                        new_entry: {
+                           shortcut: new_start.shortcut + " " + normalize(entry._shortcut[1], this).join("+"),
+                           command: entry.command,
+                        }
+                     }
+                     
+                     this.shortcut_edit(otherchange, false)
+                  }
+               }
+
+               //then the same thing reversed for the chains we previously swapped out //TODO simplify to method
+               {
+                  let chains = this.shortcuts.filter(entry => {
+                     if (entry.chained && entry._shortcut[0] == "TEMPSWAMP") {
+                        return entry
+                     }
+                  })
+                  console.log(chains)
+                  
+                  let new_start = chain_entry == "entry_swap_copy" ? new_entry : old_entry_copy
+                  for (let entry of chains) {
+                     let otherchange = {
+                        old_entry: entry,
+                        new_entry: {
+                           shortcut: new_start.shortcut + " " + normalize(entry._shortcut[1], this).join("+"),
+                           command: entry.command,
+                        }
+                     }
+                     
+                     this.shortcut_edit(otherchange, false)
+                  }
+               }
+            }
+            //then we do the final chain swap
+            Object.keys(new_entry).map(prop => {
+               if (["shortcut", "_shortcut"].includes(prop)) {
+                  entry_swap[prop] = old_entry_copy[prop]
+               }
+            })
+            this.shortcut_edit_success([entry_swap])
+            this.shortcut_edit_success([old_entry])
          }
 
       },

@@ -20,7 +20,7 @@ Eventually it would be nice to support some way to import/export them, at least 
 - [x] Flexible Layout
 - [x] Simple Key Detection
 - [x] Toggle Options
-- [ ] Colors
+- [x] Colors
 - [x] Chained Shortcuts / Shortcut Chords (e.g. VS Code you can do `Ctrl+K Ctrl+[` where `Ctrl+K` just adds a listener to `Ctrl+[` which then triggers a command)
 - [x] Shortcut List
 - [x] Show Active Shortcuts
@@ -33,12 +33,12 @@ Eventually it would be nice to support some way to import/export them, at least 
 - [ ] Drag/Drop Commands Bin w/ Search
 - [ ] Del Bin
 - [ ] Command Bin
+- [ ] Mouse Commands
 - [~] Polishing/Clean/Beta
 - [ ] Demo
 - [ ] Documentation
 - [ ] Custom Remaps (e.g. Capslock = Ctrl + Alt + Shift)
 - [ ] Package as a proper vue component.
-- [ ] Figure out some way to make this a standalone library or include easily in a non-vue app?
 - [ ] Tests...
 
 # Notes 

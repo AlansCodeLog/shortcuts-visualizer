@@ -41,7 +41,7 @@ export default {
 @import "../settings/theme.scss";
 
 
-//TODO
+//TODO fix checkbox
 
 input[type="checkbox"] {
    transform: scale(1.5);

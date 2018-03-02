@@ -31,11 +31,9 @@
                      && !(keys[key].ignore == true)
                      "
                   :class="[{label: true}, keys[key].label_classes]"
-               >
-                  {{keys[key].character}}
-               </div>
+               >{{keys[key].character}}</div>
                <div
-                  class="active-shortcuts"
+                  :class="['active-shortcuts', active_keys[keys[key].identifier].chain_start ? 'is_chain' : '']"
                   v-if="
                      !key.is_modifier
                      && !keys[key].ignore
@@ -107,27 +105,31 @@ export default {
             return el.classList.contains("active-shortcuts")
          },
          accepts: (el, target, source, sibling) => {
+            this.$el.querySelectorAll(".unselectable").forEach(el => el.classList.remove("unselectable"))
+            
             if (!this.chain.in_chain) {
-               let key = target.querySelector(".label").innerText
-               key = keys_from_text(key, this)._shortcut[0][0]
-               let combo = [key, ...this.keymap_active]
-               let existing = this.shortcuts_active.findIndex(entry => {
-                  return entry._shortcut[0].includes(key) 
-               })
-               let exists = existing == -1 ? false : true
-               if (exists) {
-                  let target_entry = this.shortcuts_active[existing]
-                  if (!target_entry.chain_start) {return true}
-               } else {
-                  return true
-               }
+               let target_command = target.querySelector(".active-shortcuts:not(.gu-transit) > div")
+               
+               if (target_command !== null) {
+                  target_command = target_command.innerText
+                  let target_entry = this.shortcuts_active.findIndex(entry => {
+                     return entry.command == target_command
+                  })
+                  target_entry = this.shortcuts_active[target_entry]
+                  let current_command = el.querySelector("div").innerText //TODO context
+                  let current_entry = this.shortcuts_active.findIndex(entry => {
+                     return entry.command == current_command
+                  })
+                  current_entry = this.shortcuts_active[current_entry]
+                  
+                  if (current_entry.chain_start == target_entry.chain_start) {
+                        return true
+                  } 
+               } else {return true}
             } else {
                return true
             }
-            //ELSE
-            el.classList.remove("will_replace")
-            this.$el.querySelectorAll(".will_be_replaced").forEach(el => el.classList.remove("will_be_replaced"))
-            target.querySelector(".active-shortcuts").classList.add("unselectable")
+            target.querySelectorAll(".active-shortcuts:not(.gu-transit)").forEach(el => el.classList.add("unselectable"))
             return false
          },
       })
@@ -144,9 +146,6 @@ export default {
          this.$el.querySelectorAll(".will_be_replaced").forEach(el => el.classList.remove("will_be_replaced"))
          this.$el.querySelectorAll(".unselectable").forEach(el => el.classList.remove("unselectable"))
 
-         this.$el.querySelectorAll(".will_be_replaced").forEach(el => el.classList.remove("will_be_replaced"))
-         this.$el.querySelectorAll(".unselectable").forEach(el => el.classList.remove("unselectable"))
-
          if (siblings_length > 0) {
             el.classList.add("will_replace")
             siblings.forEach(el => el.classList.add("will_be_replaced"))
@@ -154,36 +153,42 @@ export default {
             el.classList.remove("will_replace")
          }
       })
+      .on("out", (el, container, source) => {
+         this.$el.querySelectorAll(".will_be_replaced").forEach(el => el.classList.remove("will_be_replaced"))
+         this.$el.querySelectorAll(".unselectable").forEach(el => el.classList.remove("unselectable"))
+      }) 
       .on("drop", (el, target, source, sibling)=> {
-         let key = target.querySelector(".label").innerText
-         key = keys_from_text(key, this)._shortcut[0][0]
-         
-         let combo = [this.chain.start, [key, ...this.keymap_active]].filter(keyset => keyset.length !== 0)
 
-         let oldkey = source.querySelector(".label").innerText
-         oldkey =  keys_from_text(oldkey, this)._shortcut[0][0]
-         
+         let source_key = source.querySelector(".label").innerText
+         source_key = keys_from_text(source_key, this)._shortcut[0][0]
+         let source_combo = [this.chain.start, _.uniq([source_key, ...this.keymap_active]).sort()].filter(keyset => keyset.length !== 0)
 
-         let oldentry = this.shortcuts_active.filter(entry => {
-            if (this.chain.in_chain) {
-               return entry._shortcut[1].includes(oldkey) 
+         let source_entry = this.shortcuts_active.findIndex(entry => {
+            if (!this.chain.in_chain) {
+               return _.isEqual(entry._shortcut[0], source_combo[0])
             } else {
-               return entry._shortcut[0].includes(oldkey) 
+               return _.isEqual(entry._shortcut[0], source_combo[0]) && _.isEqual(entry._shortcut[1], source_combo[1])
             }
-         })[0]
-         let normalized = combo.map(keyset => normalize(keyset, this).join("+")).join(" ")
+         })
+         source_entry = this.shortcuts_active[source_entry]
+
+         let target_key = target.querySelector(".label").innerText
+         target_key = keys_from_text(target_key, this)._shortcut[0][0]
          
+         let target_combo = [this.chain.start, _.uniq([target_key, ...this.keymap_active]).sort()].filter(keyset => keyset.length !== 0)
+
          let change = {
-            old_entry: oldentry,
+            old_entry: source_entry,
             new_entry: {
-               shortcut: normalized,
-               _shortcut: combo, //optional
-               command: oldentry.command,
+               shortcut: target_combo.map(keyset => normalize(keyset, this).join("+")).join(" "),
+               _shortcut: target_combo, //optional
+               command: source_entry.command,
             }
          }
          
          this.$emit("edit", change)
-         //we don't actually want to drop the element, vue will handle rerendering it in the proper place
+
+         //we don't actually want to drop the element and change the dom, vue will handle rerendering it in the proper place
          drake.cancel()
       }).on("cancel", (el, target, source, sibling)=> {
          this.$el.querySelectorAll(".unselectable").forEach(el => el.classList.remove("unselectable"))
@@ -225,6 +230,7 @@ export default {
          max-height: 100%;
          overflow: hidden;
          padding: 0.1em;
+         margin: 0 auto;
       }
    }
    .gu-mirror {
@@ -239,10 +245,14 @@ export default {
    }
    .will_be_replaced {
       z-index: 1;
-      border: 1px solid;
+      // border: $cap-spacing 1px solid;
    }
-   .pressed > .dec {
-      border-color: $accent-color !important;
+   .active-shortcuts {
+      // border-color: $accent-color !important;
+      border: rgba(0,0,0,0) 0.2em solid;
+   }
+   .is_chain {
+      border-color: transparentize($accent-color, 0.7);
    }
    .chain-pressed > .dec::before {
       content: "";

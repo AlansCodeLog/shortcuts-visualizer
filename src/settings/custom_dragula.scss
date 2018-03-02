@@ -17,7 +17,7 @@
 }
 .will_be_replaced {
    color: $dragging-will-be-replaced !important;
-   border-color: $dragging-will-be-replaced !important;
+   border-color: transparentize($dragging-will-be-replaced, 0.7) !important;
 }
 .unselectable {
    color: $dragging-not-allowed-background !important;

@@ -13,7 +13,7 @@ const shortcuts = [
    // },
    {
       shortcut: "ctrl+q",
-      command: "accident",
+      command: "Command Q",
       // chain_start: true,
    },
    // {
@@ -22,7 +22,12 @@ const shortcuts = [
    // },
    {
       shortcut: "ctrl+s",
-      command: "Custom Chain Text",
+      command: "Custom Chain Text S",
+      chain_start: true,
+   },
+   {
+      shortcut: "ctrl+b",
+      command: "Custom Chain Text B",
       chain_start: true,
    },
    // {
@@ -31,11 +36,11 @@ const shortcuts = [
    // },
    {
       shortcut: "ctrl+s s",
-      command: "Chain A"
+      command: "Command Chain S"
    },
    {
       shortcut: "ctrl+b b",
-      command: "Chain A"
+      command: "Command Chain B"
    },
    // {
    //    shortcut: "ctrl+s a",

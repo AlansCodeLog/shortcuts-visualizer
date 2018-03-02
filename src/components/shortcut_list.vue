@@ -141,7 +141,7 @@ export default {
             if (!check_existing) {
                if (change.new_entry.shortcut !== change.old_entry.shortcut
                || change.new_entry.command !== change.old_entry.command) {
-                  this.$emit("edit", {...change, flip: focusto == "command" ? false : true})
+                  this.$emit("edit", change)
                }
                this.shortcut_editing = ""
                this.shortcut_editing_command = ""
@@ -255,7 +255,9 @@ export default {
                   command: source_old_entry.command,
                }
             }
-            this.$emit("edit", {...change, flip: type == "command" ? false : true})
+            console.log(change)
+            
+            this.$emit("edit", change)
          } else {
             let target_command = target.parentNode.querySelector(".command .text:not(.gu-transit)").innerText
             let change = {
@@ -278,8 +280,10 @@ export default {
                   command: source_old_entry.command,
                }
             }
-            this.$emit("edit", {...change, flip: type == "command" ? false : true})
-            this.$emit("edit", {...change2, flip: type == "command" ? false : true})
+            console.log(change, change2)
+            
+            this.$emit("edit", change)
+            this.$emit("edit", change2)
          }
          drake.cancel()
       }).on("cancel", (el, target, source, sibling)=> {

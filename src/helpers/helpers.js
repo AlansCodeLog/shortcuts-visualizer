@@ -16,7 +16,11 @@ export function find_extra_keys_pressed(shortcut_entry, {pressed_keys}) {
    })
 }
 
-export function get_shortcuts_active (shortcuts, pressed_keys, chain_state, keymap, show_unpressed_modifiers = false) {
+export function get_shortcuts_active (_this, show_unpressed_modifiers = false) {
+   
+   let {shortcuts, keymap} = _this
+   let pressed_keys = _this.keymap_active
+   let chain_state = _this.chain
    //params for functions used, to clean things up a bit
    let p = {pressed_keys, keymap}
    return shortcuts.filter(entry => {
@@ -32,25 +36,16 @@ export function get_shortcuts_active (shortcuts, pressed_keys, chain_state, keym
          }
          return true
       } else if (!chain_state.in_chain) {
-         if (!show_unpressed_modifiers) {
-            let extra_modifiers_in_shortcut = find_extra_modifiers(entry._shortcut[0], p)
+         if (show_unpressed_modifiers) {
             let extra_keys_pressed = find_extra_keys_pressed(entry._shortcut[0], p)
-            if (extra_modifiers_in_shortcut.length > 0) {
-               return false
-            }
+            
             if (extra_keys_pressed.length !== 0) {
                return false
             }
-         } else {
-            // let extra_keys_pressed = find_extra_keys_pressed(entry._shortcut[1], p)
-            // let extra_modifiers_in_shortcut = find_extra_modifiers(entry._shortcut[1], p)
-            // console.log(extra_keys_pressed, extra_modifiers_in_shortcut)
-            
-            // if (extra_keys_pressed == 0) {
-               return true
-            // }
-         }
-      } else if (chain_state.in_chain && entry.chained) {
+            return true
+         } 
+         return false
+      } else if (chain_state.in_chain && entry.chained && _.isEqual(entry._shortcut[0], chain_state.start)) {
          //TODO this is almost same check as first
          let extra_modifiers_in_shortcut = find_extra_modifiers(entry._shortcut[1], p)
          let extra_keys_pressed = find_extra_keys_pressed(entry._shortcut[1], p)
