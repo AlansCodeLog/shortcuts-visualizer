@@ -93,18 +93,20 @@ export default {
    // updated() {console.log("updated keys")
    // },
    mounted() {
-      let container_keys = document.querySelectorAll(".dec")
+      let container_keys = this.$el.querySelectorAll(".dec")
       
       let drake = dragula([...container_keys], {
          mirrorContainer: this.$el,
          revertOnSpill: true, //so cancel will revert position of element
          isContainer: function (el) {
-            return el.classList.contains(".dec")
+            return el.classList.contains(".dec") || el.classList.contains("bin")
          },
          moves: function (el, source, handle, sibling) {
             return el.classList.contains("active-shortcuts")
          },
          accepts: (el, target, source, sibling) => {
+            
+            if (target.classList.contains("bin")) {return true}
             this.$el.querySelectorAll(".unselectable").forEach(el => el.classList.remove("unselectable"))
             
             if (!this.chain.in_chain) {
@@ -135,7 +137,7 @@ export default {
       })
       drake
       .on("drag", ()=> {
-         this.$emit("freeze_input", true)
+         this.$emit("freeze", true)
       })
       .on("over", (el, container, source) => {
          let type = _.without(container.classList, "drag")[0]
@@ -158,7 +160,6 @@ export default {
          this.$el.querySelectorAll(".unselectable").forEach(el => el.classList.remove("unselectable"))
       }) 
       .on("drop", (el, target, source, sibling)=> {
-
          let source_key = source.querySelector(".label").innerText
          source_key = keys_from_text(source_key, this)._shortcut[0][0]
          let source_combo = [this.chain.start, _.uniq([source_key, ...this.keymap_active]).sort()].filter(keyset => keyset.length !== 0)
@@ -171,22 +172,26 @@ export default {
             }
          })
          source_entry = this.shortcuts_active[source_entry]
-
-         let target_key = target.querySelector(".label").innerText
-         target_key = keys_from_text(target_key, this)._shortcut[0][0]
          
-         let target_combo = [this.chain.start, _.uniq([target_key, ...this.keymap_active]).sort()].filter(keyset => keyset.length !== 0)
+         if (target.classList.contains("bin")) {
+            this.$emit("add", source_entry)
+         } else {
+            let target_key = target.querySelector(".label").innerText
+            target_key = keys_from_text(target_key, this)._shortcut[0][0]
+            
+            let target_combo = [this.chain.start, _.uniq([target_key, ...this.keymap_active]).sort()].filter(keyset => keyset.length !== 0)
 
-         let change = {
-            old_entry: source_entry,
-            new_entry: {
-               shortcut: target_combo.map(keyset => normalize(keyset, this).join("+")).join(" "),
-               _shortcut: target_combo, //optional
-               command: source_entry.command,
+            let change = {
+               old_entry: source_entry,
+               new_entry: {
+                  shortcut: target_combo.map(keyset => normalize(keyset, this).join("+")).join(" "),
+                  _shortcut: target_combo, //optional
+                  command: source_entry.command,
+               }
             }
+            
+            this.$emit("edit", change)
          }
-         
-         this.$emit("edit", change)
 
          //we don't actually want to drop the element and change the dom, vue will handle rerendering it in the proper place
          drake.cancel()
@@ -195,7 +200,7 @@ export default {
          this.$el.querySelectorAll(".will_be_replaced").forEach(el => el.classList.remove("will_be_replaced"))
          this.$el.querySelectorAll(".will_replace").forEach(el => el.classList.remove("will_replace"))
          
-         this.$emit("freeze_input", false)
+         this.$emit("freeze", false)
       })
 
    }
@@ -210,8 +215,8 @@ export default {
 @import "../settings/keyboard_base.scss";
 
 .keyboard {
-   padding: 0 $padding-size;
-   .active-shortcuts {
+   padding: 0 $padding-size $padding-size;
+   .active-shortcuts, .entry {
       cursor: pointer;
       position: absolute;
       top:$keyboard-font-size * 1.3;
@@ -223,6 +228,7 @@ export default {
       display:flex;
       align-items: center;
       background: hsla(hue($accent-color), 100%, 50%, 0.2);
+      border: rgba(0,0,0,0) 0.2em solid;
       & > div {
          text-align: center;
          user-select: none;
@@ -232,6 +238,9 @@ export default {
          padding: 0.1em;
          margin: 0 auto;
       }
+   }
+   .entry .remove {
+      display: none;
    }
    .gu-mirror {
       font-size: $shortcut-drag-font-size;
@@ -246,10 +255,6 @@ export default {
    .will_be_replaced {
       z-index: 1;
       // border: $cap-spacing 1px solid;
-   }
-   .active-shortcuts {
-      // border-color: $accent-color !important;
-      border: rgba(0,0,0,0) 0.2em solid;
    }
    .is_chain {
       border-color: transparentize($accent-color, 0.7);

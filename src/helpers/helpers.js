@@ -18,12 +18,13 @@ export function find_extra_keys_pressed(shortcut_entry, {pressed_keys}) {
 
 export function get_shortcuts_active (_this, show_unpressed_modifiers = false) {
    
-   let {shortcuts, keymap} = _this
+   let {shortcuts, keymap, options} = _this
    let pressed_keys = _this.keymap_active
    let chain_state = _this.chain
    //params for functions used, to clean things up a bit
    let p = {pressed_keys, keymap}
    return shortcuts.filter(entry => {
+      if (!entry.contexts.includes(options.context)) {return false}
       if (!chain_state.in_chain && !entry.chained) {
          let extra_modifiers_in_shortcut = find_extra_modifiers(entry._shortcut[0], p)
          let extra_keys_pressed = find_extra_keys_pressed(entry._shortcut[0], p)
@@ -194,6 +195,7 @@ export function create_keymap (keys) {
 export function create_shortcuts_list (settings_shortcuts, keymap, modifiers_order, modifiers_names) {
    // create empty array because we might push to it more than once per entry
    let shortcuts = []
+   let contexts = []
    //normalizes all the names, creates _shortcut entry, and adds chained and chained_start
    //this way create_shortcut_entry can check existing shortcuts much more cleanly
    ready_all(settings_shortcuts, undefined, {keymap, modifiers_order, modifiers_names})
@@ -208,9 +210,12 @@ export function create_shortcuts_list (settings_shortcuts, keymap, modifiers_ord
       if (new_entries.extra) {
          shortcuts.push(new_entries.extra)
       }
+      for (let context of entry.contexts) {
+         if (!contexts.includes(context)) {contexts.push(context)}
+      }
    })
    
-   return shortcuts
+   return {shortcuts_list: shortcuts, context_list: contexts}
 }
 
 export function ready_all(shortcuts, _this, {keymap, modifiers_order, modifiers_names}) {
@@ -226,6 +231,10 @@ export function ready_all(shortcuts, _this, {keymap, modifiers_order, modifiers_
       entry._shortcut = _shortcut
       entry.chained = entry._shortcut.length > 1 ? true : false
       entry.chain_start = typeof entry.chain_start !== "undefined" ? entry.chain_start : false
+      entry.contexts = typeof entry.contexts !== "undefined" ? entry.contexts.sort() : ["Global"]
+      if (!Array.isArray(entry.contexts)) {
+         throw "Entry contexts: " + entry.contexts + " must be an array. See shortcut: " + entry.shortcut + " for command: " + entry.command
+      }
    })
 }
 

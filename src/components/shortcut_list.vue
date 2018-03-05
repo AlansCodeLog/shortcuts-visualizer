@@ -210,7 +210,7 @@ export default {
       })
       drake
       .on("drag", (el, source)=> {
-         this.$emit("freeze_input", true)
+         this.$emit("freeze", true)
          let entry_index = _.without(source.parentNode.classList, "entry")[0]
          entry_index = entry_index.slice(5, entry_index.length)
          this.shortcuts_active[entry_index].dragging = true
@@ -255,7 +255,6 @@ export default {
                   command: source_old_entry.command,
                }
             }
-            console.log(change)
             
             this.$emit("edit", change)
          } else {
@@ -291,7 +290,7 @@ export default {
          this.$el.querySelectorAll(".will_be_replaced").forEach(el => el.classList.remove("will_be_replaced"))
          this.$el.querySelectorAll(".will_replace").forEach(el => el.classList.remove("will_replace"))
          this.shortcuts_active.map(entry => entry.dragging = false)
-         this.$emit("freeze_input", false)
+         this.$emit("freeze", false)
       })
    },
 }

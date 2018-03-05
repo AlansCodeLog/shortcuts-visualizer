@@ -6,6 +6,7 @@
       <Options
          :options="options"
          :modes="modes"
+         :contexts="contexts"
          @input="change('options', $event)"
       ></Options>
       <Keys
@@ -23,7 +24,18 @@
          @keyup="keyup($event)"
          @chained="chained($event)"
          @edit="shortcut_edit($event)"
+         @freeze="change('freeze', $event)"
+         @add="add_to_bin($event)"
       ></Keys>
+      <Bin
+         :bin="bin"
+         :shortcuts="shortcuts"
+         :keymap="keymap"
+         :modifiers_names="modifiers_names"
+         :modifiers_order="modifiers_order"
+         :keymap_active="keymap_active"
+         :chain="chain"
+      ></Bin>
       <ShortcutsList
          :chain="chain"
          :keymap="keymap"
@@ -34,6 +46,7 @@
          :normalize="normalize"
          :options="options"
          @edit="shortcut_edit($event)"
+         @freeze="change('freeze', $event)"
       ></ShortcutsList>
    </div>
 </template>
@@ -42,6 +55,7 @@
 import Keys from "./components/keys"
 import Options from "./components/options"
 import ShortcutsList from "./components/shortcut_list"
+import Bin from "./components/bin"
 
 import {layout} from "./settings/layout.js"
 import {keys} from "./settings/keys.js"
@@ -54,14 +68,16 @@ let keymap = create_keymap(keys)
 let modifiers_names = _.uniq(Object.keys(keymap).filter(identifier => keymap[identifier].is_modifier).map(identifier => keymap[identifier].name))
 let modifiers_order = ["ctrl", "shift", "alt"]
 
-let shortcuts_list = create_shortcuts_list(settings_shortcuts, keymap, modifiers_order, modifiers_names, this)
+let {shortcuts_list, context_list} = create_shortcuts_list(settings_shortcuts, keymap, modifiers_order, modifiers_names, this)
+
 
 export default {
    name: 'App',
    components: {
       Keys,
       Options,
-      ShortcutsList
+      ShortcutsList,
+      Bin
    },
    data() {  
       return {
@@ -69,11 +85,13 @@ export default {
             mode: "Toggle All",
             theme_dark: true,
             accept_on_blur: true,
+            context: "Global",
          },
          layout: layout,
          keys: keys,
          keymap: keymap,
          modes: ["As Pressed", "Toggle Modifiers", "Toggle All"],
+         contexts: context_list,
          modifiers_names: modifiers_names,
          modifiers_order: modifiers_order,
          shortcuts: shortcuts_list,
@@ -85,6 +103,8 @@ export default {
             warning: false,
          },
          mods_unknown: true,
+         freeze: false,
+         bin: []
       }
    },
    computed: {
@@ -307,10 +327,34 @@ export default {
             }, 300);
          })
       },
+      add_to_bin(entry, extra = false) {
+         if (!extra) {
+            let index = this.shortcuts.findIndex(existing_entry => {
+            return existing_entry.shortcut == entry.shortcut
+               && existing_entry.command == entry.command
+               && existing_entry.contexts.join("") == existing_entry.contexts.join("")
+            })
+            this.shortcuts.splice(index, 1)
+         }
+         entry.context == ["Global"]
+         this.bin.push(entry)
+         if (!extra && entry.chain_start) {
+            let indexes = this.shortcuts.map((existing_entry, index) => {
+               if (existing_entry.chained && existing_entry._shortcut[0].join("") == entry._shortcut[0].join("")) {
+                  return index
+               }
+            }).filter(entry => typeof entry !== "undefined")
+            for (let entry_index of indexes) {
+               this.add_to_bin(this.shortcuts[entry_index], true)
+            }
+            _.pullAt(this.shortcuts, indexes)
+         }
+      },
       normalize (identifiers) {
          return normalize(identifiers, this)
       },
       keydown (e) {
+         if (this.freeze) {return false}
          let identifier = e.code
          e.preventDefault()
          e.stopPropagation()
@@ -343,6 +387,7 @@ export default {
          this.$emit("input", this.keymap)
       },
       keyup (e) {
+         if (this.freeze) {return false}
          let identifier = e.code
          e.preventDefault()
          e.stopPropagation()
@@ -408,14 +453,34 @@ export default {
       border: (0.1 * $keyboard-font-size) solid  mix($cap-light, black, 90%);
       box-shadow: 0 (0.05 * $keyboard-font-size) (0.1 * $keyboard-font-size) (0.1 * $keyboard-font-size) mix($cap-light, black, 50%);
    }
+   .options {
+      .contexts .contexts-list {
+         background: rgba(0,0,0,0.1);
+         border-color: rgba(0,0,0,0.1);
+      }
+   }
+   .bin-container {
+      background: rgba(0,0,0,0.1);
+      border-color: rgba(0,0,0,0.1);
+   }
 }
 .background-dark {
    background: $theme-dark-background;
    color: invert($theme-dark-background);
-   .key .dec {
+   .key > .dec {
       background: $cap-dark;
       border: (0.1 * $keyboard-font-size) solid mix($cap-dark, black, 90%);
       box-shadow: 0 (0.05 * $keyboard-font-size) (0.1 * $keyboard-font-size) (0.1 * $keyboard-font-size) mix($cap-dark, black, 50%);
+   }
+   .options {
+      .contexts .contexts-list {
+         background: rgba(0,0,0,0.25);
+         border-color:rgba(0,0,0,0.3);
+      }
+   }
+   .bin-container {
+      background: rgba(0,0,0,0.25);
+      border-color:rgba(0,0,0,0.3);
    }
 }
 

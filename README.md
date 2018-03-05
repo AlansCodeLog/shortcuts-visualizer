@@ -51,6 +51,8 @@ Eventually it would be nice to support some way to import/export them, at least 
    - So the keys object keys can be changed to anything you want, as can the text, etc, and it only matters what those are named for the layout, it's the identifier that's being listened to to actually set the active classes.
 - Shortcuts are matched against a list created from the key's character property. All lowercase, no spaces, empty names are discarded. Can be overridden by setting a name property.
    - In a few rare cases this might be slightly confusing, specifically the super or oskey who's identifier is MetaRight/Left, while meta is sometimes shown on keyboard layouts where the menu key is. And I think meta is something else on macs?
+- Although it should be possible to allow a key to be dragged, then change the shortcut, this seems to break dragula. For now, to avoid the bugs that will likely bring, input is frozen on all dragging.
+
 
 # Documentation Snippets
 

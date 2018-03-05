@@ -14,6 +14,7 @@ const shortcuts = [
    {
       shortcut: "ctrl+q",
       command: "Command Q",
+      contexts: ["B"]
       // chain_start: true,
    },
    // {
