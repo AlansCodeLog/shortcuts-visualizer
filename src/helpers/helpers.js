@@ -1,5 +1,11 @@
 import * as _ from "lodash"
 
+export function multisplice(array, indexes) {
+   for (let i = 0; i < indexes.length; i++) {
+      array.splice(indexes[i] - i, 1)
+   }
+}
+
 export function find_extra_modifiers(shortcut_entry, {pressed_keys, keymap}) {
    return _.difference(shortcut_entry, pressed_keys).filter(identifier => { //the order of difference matters
       if (keymap[identifier].is_modifier) {
@@ -204,7 +210,7 @@ export function create_shortcuts_list (settings_shortcuts, keymap, modifiers_ord
       
       if (new_entries.error) {throw new_entries.error}
       if (new_entries.remove) {
-         _.pullAt(shortcuts, new_entries.remove)
+         multisplice(shortcuts, new_entries.remove)
       }
       shortcuts.push(new_entries.entry)
       if (new_entries.extra) {

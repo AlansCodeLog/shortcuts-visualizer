@@ -216,7 +216,7 @@ export default {
 
 .keyboard {
    padding: 0 $padding-size $padding-size;
-   .active-shortcuts, .entry {
+   .active-shortcuts, .bin-entry {
       cursor: pointer;
       position: absolute;
       top:$keyboard-font-size * 1.3;
@@ -239,7 +239,7 @@ export default {
          margin: 0 auto;
       }
    }
-   .entry .remove {
+   .bin-entry .remove {
       display: none;
    }
    .gu-mirror {

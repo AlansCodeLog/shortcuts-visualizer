@@ -2,10 +2,10 @@
    <div class="bin-container">
       <div class="bin">
          <div
-            :class="['entry', entry.chain_start ? 'is_chain':'']"
+            :class="['bin-entry', entry.chain_start ? 'is_chain':'']"
             v-for="(entry, index) in bin"
             :key="index+entry.command"
-         ><span class="command">{{entry.command}}</span><div
+         ><span :index="index" class="command">{{entry.command}}</span><div
             class="remove"
             alt="remove"
             @click="remove(index)"
@@ -16,10 +16,10 @@
 
 <script>
 import dragula from "dragula"
-import {keys_from_text, normalize} from "../helpers/helpers"
+import {keys_from_text, normalize, multiplice} from "../helpers/helpers"
 export default {
-   name: 'Keys',
-   props: ["bin", "shortcuts", "keymap", "keymap_active", "modifiers_names", "modifiers_order", "chain"],
+   name: 'Bin',
+   props: ["bin", "shortcuts", "shortcuts_active", "keymap", "keymap_active", "modifiers_names", "modifiers_order", "chain"],
    data() {
       return {
          endkey: false,
@@ -42,7 +42,7 @@ export default {
                existing_entry.shortcut = existing_entry._shortcut.map(keyset => normalize(keyset, this).join("+")).join(" ")
                this.shortcuts.push(existing_entry)
             }
-            _.pullAt(this.bin, indexes)
+            multisplice(this.bin, indexes)
          }
          this.bin.splice(index, 1)
          entry._shortcut = new_shortcut
@@ -59,10 +59,10 @@ export default {
          mirrorContainer: this.$el.querySelector(".bin"),
          revertOnSpill: true, //so cancel will revert position of element
          isContainer: function (el) {
-            return el.classList.contains("bin") || el.classList.contains("dec")
+            return el.classList.contains("bin") || el.classList.contains("dec") || (el.classList.contains("drag") && el.classList.contains("command"))
          },
          moves: function (el, source, handle, sibling) {
-            return el.classList.contains("entry")
+            return el.classList.contains("bin-entry")
          },
          accepts: (el, target, source, sibling) => {
             return target.classList.contains("dec") || target.classList.contains("drag") 
@@ -73,24 +73,79 @@ export default {
          this.$emit("freeze", true)
       })
       .on("over", (el, container, source) => {
+         document.querySelectorAll(".will_be_replaced").forEach(el => el.classList.remove("will_be_replaced"))
+         document.querySelectorAll(".will_replace").forEach(el => el.classList.remove("will_replace"))
+
+         let is_key = container.classList.contains("dec")
+         if (is_key) {
+            let target_entry = container.querySelectorAll(".active-shortcuts")
+            if (target_entry.length > 0) {
+               target_entry.forEach(el => el.classList.add("will_be_replaced"))
+               el.classList.add("will_replace")
+            }
+         } else {
+            let type = _.without(container.classList, "drag")[0]
+            
+            let siblings = container.parentNode.querySelectorAll("." + type + " .text:not(.gu-transit)")
+            let siblings_length = siblings.length
+
+            if (siblings_length > 0) {
+               el.classList.add("will_replace")
+               siblings.forEach(el => el.classList.add("will_be_replaced"))
+            } else {
+               el.classList.remove("will_replace")
+            }
+         }
+
       })
       .on("out", (el, container, source) => {
+         document.querySelectorAll(".will_be_replaced").forEach(el => el.classList.remove("will_be_replaced"))
+         document.querySelectorAll(".will_replace").forEach(el => el.classList.remove("will_replace"))
       }) 
       .on("drop", (el, target, source, sibling)=> {
-         let target_key = target.querySelector(".label").innerText
+         let is_key = target.classList.contains("dec")
+         let current_index = el.querySelector(".command").getAttribute("index") //TODO context
+         let current_entry = this.bin[current_index]
+         if (is_key) {
+            let target_key = target.querySelector(".label").innerText
          
-         target_key = keys_from_text(target_key, this)._shortcut[0][0]
-         let target_combo = [this.chain.start, _.uniq([target_key, ...this.keymap_active]).sort()].filter(keyset => keyset.length !== 0)
+            target_key = keys_from_text(target_key, this)._shortcut[0][0]
+            let target_combo = [this.chain.start, _.uniq([target_key, ...this.keymap_active]).sort()].filter(keyset => keyset.length !== 0)
 
-         let entry_index = this.bin.findIndex(entry => {
-            return entry.command == el.querySelector(".command").innerText
-         })
-         let entry = this.bin[entry_index]
-         this.move(entry, entry_index, target_combo)
-         
+            let target_command = target.querySelector(".active-shortcuts > div")
+                     
+            if (target_command !== null) {
+               target_command = target_command.innerText
+               let target_entry = this.shortcuts_active.findIndex(entry => {
+                  return entry.command == target_command
+                  && entry._shortcut.join("") == target_combo.join("")
+               })
+               
+               target_entry = this.shortcuts_active[target_entry]
+               let target_shortcut = target_entry._shortcut
+               
+               this.$emit("add", target_entry)
+            } 
+            this.move(current_entry, current_index, target_combo)
+         } else {
+            let target_command = target.parentNode.querySelector(".command .text:not(.gu-transit)").innerText
+            let target_combo = target.parentNode.querySelector(".shortcut .text:not(.gu-transit)").innerText
+            target_combo = keys_from_text(target_combo, this)._shortcut
+            
+            let target_entry_index = this.shortcuts_active.findIndex(entry => {
+               return entry.command == target_command
+               && entry._shortcut.join("") == target_combo.join("")
+            })
+            let target_entry = this.shortcuts_active[target_entry_index]
+            
+            this.$emit("add", target_entry)
+            this.move(current_entry, current_index, target_combo)
+         }
          //we don't actually want to drop the element and change the dom, vue will handle rerendering it in the proper place
          drake.cancel()
       }).on("cancel", (el, target, source, sibling)=> {
+         document.querySelectorAll(".will_be_replaced").forEach(el => el.classList.remove("will_be_replaced"))
+         document.querySelectorAll(".will_replace").forEach(el => el.classList.remove("will_replace"))
          this.$emit("freeze", false)
       })
    },
@@ -114,10 +169,10 @@ export default {
    flex-wrap: wrap;
    justify-content: center;
    padding: 0.5em;
-   .entry.gu-transit {
+   .bin-entry.gu-transit {
       display: none;
    }
-   .entry, .active-shortcuts.gu-transit {
+   .bin-entry, .active-shortcuts.gu-transit {
       user-select: none;
       cursor: pointer;
       flex: 0 0 auto;

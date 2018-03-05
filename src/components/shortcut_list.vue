@@ -279,7 +279,6 @@ export default {
                   command: source_old_entry.command,
                }
             }
-            console.log(change, change2)
             
             this.$emit("edit", change)
             this.$emit("edit", change2)
@@ -295,7 +294,7 @@ export default {
    },
 }
 </script>
-<style lang="scss" scoped>
+<style lang="scss">
 
 
 @import "../settings/theme.scss";
@@ -355,6 +354,7 @@ export default {
             display: inline-block;
             flex: 1 1 100%;
          }
+         
       }
       .entry-header {
          font-weight: bold;
@@ -370,11 +370,14 @@ export default {
          .gu-transit {
             display: none;
          }
-         &.dragging .gu-transit {
+         &.dragging .gu-transit  {
             display: none;
             &:hover {
                display: block;
             }
+         }
+         .bin-entry.will_replace {
+            display: none;
          }
          &.editing{
             background: darkgray;

@@ -33,8 +33,10 @@
          :keymap="keymap"
          :modifiers_names="modifiers_names"
          :modifiers_order="modifiers_order"
+         :shortcuts_active="shortcuts_active"
          :keymap_active="keymap_active"
          :chain="chain"
+         @add="add_to_bin($event)"
       ></Bin>
       <ShortcutsList
          :chain="chain"
@@ -62,7 +64,7 @@ import {keys} from "./settings/keys.js"
 import {shortcuts as settings_shortcuts} from "./settings/shortcuts.js"
 
 import * as _ from "lodash"
-import {find_extra_modifiers, find_extra_keys_pressed, chain_in_active, get_shortcuts_active, create_shortcut_entry, create_shortcuts_list, create_keymap, normalize, keys_from_text} from "./helpers/helpers"
+import {find_extra_modifiers, find_extra_keys_pressed, chain_in_active, get_shortcuts_active, create_shortcut_entry, create_shortcuts_list, create_keymap, normalize, keys_from_text, multisplice} from "./helpers/helpers"
 
 let keymap = create_keymap(keys)
 let modifiers_names = _.uniq(Object.keys(keymap).filter(identifier => keymap[identifier].is_modifier).map(identifier => keymap[identifier].name))
@@ -347,7 +349,7 @@ export default {
             for (let entry_index of indexes) {
                this.add_to_bin(this.shortcuts[entry_index], true)
             }
-            _.pullAt(this.shortcuts, indexes)
+            multisplice(this.shortcuts, indexes)
          }
       },
       normalize (identifiers) {
