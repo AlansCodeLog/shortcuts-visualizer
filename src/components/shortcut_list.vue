@@ -6,12 +6,14 @@
             <div class="chain" title="Chain Start"></div>
             <div class="shortcut">Shortcut</div>
             <div class="command">Command</div>
-            <div class="context">Context</div>
+            <div class="contexts">Contexts</div>
          </div>
          <div
             :class="['entry', entry.editing ? 'editing' : '', 'entry'+index, entry.changed ? 'changed' : '', entry.dragging ? 'dragging' : '']"
-            v-for="(entry, index) of shortcuts_active" :key="entry.shortcut+entry.command"
+            v-for="(entry, index) of shortcuts_list_active" :key="entry.shortcut+entry.command"
+            :index = index
          >  
+            <!-- COLUMN EDIT -->
             <div :class="['edit']">
                <!-- Edit -->
                <span
@@ -32,16 +34,21 @@
                   @click="toggle_editing(false, entry, index)"
                >&#10004;</span>
             </div>
+
+            <!-- COLUMN CHAIN -->
             <div v-if="entry.chain_start" class="chain is_chain" title="Chain Start">&#128279;</div>
             <div v-else class="chain not_chain"></div>
+            
+            <!-- note: don't leave spaces between {{variables}} in shortcut, command, and contexts columns -->
+
+            <!-- COLUMN SHORTCUT -->
             <div :class="['drag', 'shortcut']">
                <!-- NOT EDITING -->
                <div
-                  class="text"
+                  class="list-subentry"
                   v-if="!entry.editing"
                   @click="toggle_editing(true, entry, index)"
                >{{entry._shortcut.map(keyset => normalize(keyset, this).join("+")).join(" ")}}</div>
-               <!-- note: don't leave spaces between {{variables}} -->
                <!-- EDITING -->
                <input
                   class="dont_blur"
@@ -51,10 +58,12 @@
                   @blur="check_blur($event, entry, index)"
                />
             </div>
+
+            <!-- COLUMN COMMAND -->
             <div :class="['drag', 'command']">
                <!-- NOT EDITING -->
                <div
-                  class="text"
+                  class="list-subentry"
                   @click="toggle_editing(true, entry, index, 'command')"
                   v-if="!entry.editing"
                >{{entry.command}}</div>
@@ -67,8 +76,23 @@
                   @blur="check_blur($event, entry, index)"
                />
             </div>
-            <div :class="['drag', 'context']">
-               TODO
+
+            <!-- COLUMN CONTEXTS -->
+            <div :class="['drag', 'contexts']">
+               <!-- NOT EDITING -->
+               <div
+                  class="list-subentry"
+                  @click="toggle_editing(true, entry, index, 'contexts')"
+                  v-if="!entry.editing"
+               >{{entry.contexts.join(", ")}}</div>
+               <!-- EDITING -->
+               <input
+                  class="dont_blur"
+                  v-if="entry.editing"
+                  :value="shortcut_editing_contexts.join(', ')"
+                  @keydown.enter="set_contexts($event.target.value);toggle_editing(false, entry, index)"
+                  @blur="set_contexts($event.target.value);check_blur($event, entry, index)"
+               />
             </div>
          </div>
       </div>
@@ -81,30 +105,33 @@ import dragula from "dragula"
 import { keys_from_text } from '../helpers/helpers';
 export default {
    name: 'Shortcuts',
-   props: ["shortcuts", "shortcuts_active", "normalize", "options", "chain", "keymap", "modifiers_order", "modifiers_names"],
+   props: ["shortcuts", "shortcuts_list_active", "normalize", "options", "chain", "keymap", "modifiers_order", "modifiers_names"],
    data () {
       return {
          shortcut_editing: "",
          shortcut_editing_command: "",
-         // focus_timer: undefined
+         shortcut_editing_contexts: [],
       }
    },
    methods: {
-      update_shortcuts($event) {
-         this.$emit("edit", $event.target.value)
+      set_contexts (value) {
+         this.shortcut_editing_contexts = value.split(/,\s|,/g)
       },
-      toggle_editing (editing, entry, focus_index, focusto = 'shortcut', check_existing = true) {
+      toggle_editing (editing, entry, index, focusto = 'shortcut', check_existing = true) {
          //we need to keep a reference to the original values in case we accept_on_blur
          let shortcut_editing = this.shortcut_editing
          let shortcut_editing_command = this.shortcut_editing_command
+         let shortcut_editing_contexts = this.shortcut_editing_contexts
          
+         //the first time, we want to check if we were editing something and cancel/accept depending on the optiosn set
+         //but we don't want to check again when we call the function here
          if (check_existing) {
-            let existing = this.shortcuts_active.findIndex(entry => entry.editing)
-
+            let existing = this.shortcuts_list_active.findIndex(entry => entry.editing)
+            
             if (existing !== -1) {
-               let existing_entry = this.shortcuts_active[existing]
+               let existing_entry = this.shortcuts_list_active[existing]
                if (this.options.accept_on_blur) {
-                  this.toggle_editing(false, existing_entry, focus_index, undefined, false)
+                  this.toggle_editing(false, existing_entry, index, undefined, false)
                } else {
                   this.cancel_edit(existing_entry)
                }
@@ -113,11 +140,14 @@ export default {
          
          entry.editing = editing
          
+         //if we're toggling true set our variables
          if (editing) {
             this.shortcut_editing = entry.shortcut
             this.shortcut_editing_command = entry.command
+            this.shortcut_editing_contexts = entry.contexts
+            //focus when possible
             this.$nextTick(() => {
-               let element_to_focus = this.$el.querySelector(".entry" + focus_index + " ." + focusto + " input")
+               let element_to_focus = this.$el.querySelector(".entry" + index + " ." + focusto + " input")
                //the input might not exist if it's a chain_start because the chained commands get edited
                if (element_to_focus) {
                   element_to_focus.focus()
@@ -125,27 +155,31 @@ export default {
                   //so we have to redo the action on the next tick
                   this.$nextTick(() => {
                      //we need a new reference to the entry for it to be affected
-                     let entry = this.shortcuts_active[focus_index]
-                     this.toggle_editing (true, entry, focus_index, focusto)
+                     let entry = this.shortcuts_list_active[index]
+                     this.toggle_editing (true, entry, index, focusto)
                   });
                }
             })
-         } else {
+         } else if (!check_existing) {
+            //else send our change
             let change = {
                old_entry: entry,
                new_entry: {
                   shortcut: shortcut_editing,
                   command: shortcut_editing_command,
+                  contexts: shortcut_editing_contexts,
                },
             }
-            if (!check_existing) {
-               if (change.new_entry.shortcut !== change.old_entry.shortcut
-               || change.new_entry.command !== change.old_entry.command) {
-                  this.$emit("edit", change)
-               }
-               this.shortcut_editing = ""
-               this.shortcut_editing_command = ""
+            //only if something changed though
+            if (change.new_entry.shortcut !== change.old_entry.shortcut
+            || change.new_entry.command !== change.old_entry.command
+            || change.new_entry.contexts !== change.old_entry.contexts) {
+               this.$emit("edit", change)
             }
+            //reset our variables
+            this.shortcut_editing = ""
+            this.shortcut_editing_command = ""
+            this.shortcut_editing_contexts = ["Global"]
          }
       },
       cancel_edit(entry) {
@@ -164,63 +198,71 @@ export default {
          })
       }
    },
-   computed: {
-   },
    mounted() {
-      let container_keys = document.querySelectorAll(".entry > .text")
+      let container_keys = this.$el.querySelectorAll(".entry > .list-subentry")
       
       let drake = dragula([...container_keys], {
-         mirrorContainer: this.$el.querySelector(".container"),
-         revertOnSpill: true,
+         mirrorContainer: this.$el, //we want to keep the dragged element within this component to style it apropriately
+         revertOnSpill: true, //so cancel will revert position of element
          isContainer: function (el) {
-            return el.classList.contains("drag")
+            return el.classList.contains("drag") || el.classList.contains("bin")
          },
          moves: function (el, source, handle, sibling) {
-            return el.classList.contains("text")
+            return el.classList.contains("list-subentry")
          },
          accepts: (el, target, source, sibling) => {
+            //gets the type of subentry (shortcut, command, or contexts)
             let type = _.without(source.classList, "drag")[0]
 
+            //clean our classes
             this.$el.querySelectorAll(".unselectable").forEach(el => el.classList.remove("unselectable"))
 
+            //only commands can be dragged to the bin
+            if (type == "command" && target.classList.contains("bin")) {return true}
+
+            //otherwise we can only drag to a similar type
             if (target.classList.contains(type)) {
-               let source_is_chain = source.parentNode.querySelector(".chain").classList.contains("is_chain")
-               let target_is_chain = target.parentNode.querySelector(".chain").classList.contains("is_chain")
+               let source_entry = source.getAttribute("index")
+               source_entry = this.shortcuts_list_active[source_entry]
+               let target_entry = target.getAttribute("index")
+               target_entry = this.shortcuts_list_active[target_entry]
                
                if (type == "shortcut") {
-                  let source_shortcut = el.innerText.split(" ")
-                  let target_shortcut = target.parentNode.querySelector(".shortcut .text:not(.gu-transit)").innerText.split(" ")
                   //chained should not be able to drag to it's chain start and vice versa
-                  if (target_shortcut[0] == source_shortcut[0]) {
-                     if (!(target_shortcut.length > 1 && source_is_chain) && !(source_shortcut.length > 1 && target_is_chain)) {
+                  if (target._shortcut[0] == source._shortcut[0]) {
+                     if (!(target.chained && source.chain_start) && !(source.chained && target.chain_start)) {
                         return true
                      }
                   } else {
                      return true
                   }
-               } else if (type == "command" && source_is_chain == target_is_chain) {
+               } else if (type !== "shortcut" && source.chain_start == target.chain_start) {
                   //only chains can drag to chains and only non-chains to non-chains
                   return true
                }
             }
-            //ELSE
+            //ELSE if anything was false, make the target unselectable (red)
             target.classList.add("unselectable")
             return false
          },
       })
       drake
       .on("drag", (el, source)=> {
+         //freeze input over keyboard
          this.$emit("freeze", true)
-         let entry_index = _.without(source.parentNode.classList, "entry")[0]
-         entry_index = entry_index.slice(5, entry_index.length)
-         this.shortcuts_active[entry_index].dragging = true
+         //set entry to dragging
+         let source_entry = source.parentNode.getAttribute("index")
+         source_entry = this.shortcuts_list_active[source_entry]
+         source_entry.dragging = true
       })
       .on("over", (el, container, source) => {
          let type = _.without(container.classList, "drag")[0]
 
-         let siblings = container.parentNode.querySelectorAll("." + type + " .text:not(.gu-transit)")
+         //we want to know how many real siblings the target has as sometimes the element might be inserted before/after it's sibling and so we need to manually add the selectors to properly target them with css
+         let siblings = container.parentNode.querySelectorAll("." + type + " .list-subentry:not(.gu-transit)")
          let siblings_length = siblings.length
-         
+
+         //clean classes beforehand
          this.$el.querySelectorAll(".will_be_replaced").forEach(el => el.classList.remove("will_be_replaced"))
          this.$el.querySelectorAll(".unselectable").forEach(el => el.classList.remove("unselectable"))
 
@@ -232,63 +274,66 @@ export default {
          }
       })
       .on("out", (el, container, source) => {
+         //sometimes the classes get stuck
          this.$el.querySelectorAll(".will_be_replaced").forEach(el => el.classList.remove("will_be_replaced"))
          this.$el.querySelectorAll(".unselectable").forEach(el => el.classList.remove("unselectable"))
       }) 
       .on("drop", (el, target, source, sibling)=> {
          let type = _.without(source.classList, "drag")[0]
 
-         let target_combo =  target.parentNode.querySelector(".shortcut .text:not(.gu-transit)").innerText
-         target_combo = keys_from_text(target_combo, this)
-         let source_combo = type == "shortcut"
-            ? el.innerText
-            : source.parentNode.querySelector(".shortcut .text").innerText
-         let source_old_entry = this.shortcuts_active.filter(entry => {
-            return entry.shortcut == source_combo
-         })[0]
+         let source_entry = source.parentNode.getAttribute("index")
+         source_entry = this.shortcuts_list_active[source_entry]
+         let target_entry = target.parentNode.getAttribute("index")
+         target_entry = this.shortcuts_list_active[target_entry]
+
          if (type == "shortcut") {
+            //we only need to emit one change and it will get swapped
             let change = {
-               old_entry: source_old_entry,
+               old_entry: source_entry,
                new_entry: {
-                  _shortcut: target_combo._shortcut,
-                  shortcut: target_combo.shortcut,
-                  command: source_old_entry.command,
+                  _shortcut: target_entry._shortcut,
+                  shortcut: target_entry.shortcut,
+                  command: source_entry.command,
                }
             }
             
             this.$emit("edit", change)
          } else {
-            let target_command = target.parentNode.querySelector(".command .text:not(.gu-transit)").innerText
+            //while this is more the equivilent of two edits
             let change = {
-               old_entry: source_old_entry,
+               old_entry: source_entry,
                new_entry: {
-                  _shortcut: source_old_entry._shortcut,
-                  shortcut: source_old_entry.shortcut,
-                  command: target_command,
+                  _shortcut: source_entry._shortcut,
+                  shortcut: source_entry.shortcut,
+                  command: type == "command" ? target_entry.command : source_entry.command,
+                  contexts: type == "command" ? source.contexts : target_entry.contexts,
                }
             }
-            let target_entry = this.shortcuts_active.filter(entry => {
-               return entry.shortcut == target_combo.shortcut
-            })[0]
 
             let change2 = {
                old_entry: target_entry,
                new_entry: {
                   _shortcut: target_entry._shortcut,
                   shortcut: target_entry.shortcut,
-                  command: source_old_entry.command,
+                  command: type == "command" ? source_entry.command : target_entry.command,
+                  contexts: type == "command" ? source_entry.contexts : target_entry.contexts,
                }
             }
             
             this.$emit("edit", change)
             this.$emit("edit", change2)
          }
+
+         //we don't actually want to drop the element and change the dom, vue will handle rerendering it in the proper place
          drake.cancel()
       }).on("cancel", (el, target, source, sibling)=> {
+         //clean css classes
          this.$el.querySelectorAll(".unselectable").forEach(el => el.classList.remove("unselectable"))
          this.$el.querySelectorAll(".will_be_replaced").forEach(el => el.classList.remove("will_be_replaced"))
          this.$el.querySelectorAll(".will_replace").forEach(el => el.classList.remove("will_replace"))
-         this.shortcuts_active.map(entry => entry.dragging = false)
+         //in case we missed any, set draggint to false on all
+         this.shortcuts_list_active.map(entry => entry.dragging = false)
+         //unfreeze input
          this.$emit("freeze", false)
       })
    },
@@ -336,7 +381,7 @@ export default {
          flex: 1 1 20%;
          order: 2;
       }
-      .context {
+      .contexts {
          flex: 1 1 20%;
          order: 4;
       }
@@ -350,7 +395,7 @@ export default {
             overflow: hidden;
             white-space: nowrap;
          }
-         & .text {
+         & .list-subentry {
             display: inline-block;
             flex: 1 1 100%;
          }

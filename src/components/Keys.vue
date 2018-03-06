@@ -1,11 +1,14 @@
 <template>
+   <!-- tab index needs to be added so we can capture keyboard events, also allows us to ignore typing in other components -->
    <div class="keyboard" tabIndex="1" @keydown="$emit('keydown', $event)">
+      <!-- make our key rows from our layout -->
       <div
          :class="['key-row', row.length == 0 ? 'empty-row': '']"
          v-for="(row, rindex) of layout"
          :key="rindex"
          :id="'key-row' + rindex"
       >
+         <!-- create the key with classes for showing whether we're pressing it and/or if we're in a chain, show the chain's pressed keys -->
          <div
             v-if="keys[key]"
             v-for="(key, index) of row"
@@ -22,29 +25,34 @@
                   : ''
             ]"
          >
+            <!-- the key container, used to style most of the key, is also dragging container for dragula and ignored keys can't get dragged -->
             <div
-               :class="[keys[key].ignore ? '' : 'dec']"
+               :class="[keys[key].ignore ? '' : 'key-container']"
             >
+               <!-- the label for the key character, also contains any label classes -->
                <div
                   v-if="
                      keys[key]
                      && !(keys[key].ignore == true)
                      "
-                  :class="[{label: true}, keys[key].label_classes]"
+                  :class="['label', keys[key].label_classes]"
                >{{keys[key].character}}</div>
+               <!-- the actual shortcut entry command, this is what gets dragged if we drag -->
                <div
-                  :class="['active-shortcuts', active_keys[keys[key].identifier].chain_start ? 'is_chain' : '']"
+                  :class="['key-entry', active_keys[keys[key].identifier].entry.chain_start ? 'is_chain' : '']"
                   v-if="
                      !key.is_modifier
                      && !keys[key].ignore
                      && typeof active_keys[keys[key].identifier] !== 'undefined'
                   "
+                  :active_shortcuts_index="active_keys[keys[key].identifier].__active_shortcuts_index"
                >
-                  <div>{{active_keys[keys[key].identifier].command}}</div>
+                  <div class="command">{{active_keys[keys[key].identifier].entry.command}}</div>
                </div>
             </div>
          </div>
       </div>
+      <!-- tells us what's being pressed, whether we're waiting for a chain, etc -->
       <div class="status">
          <div v-if="chain.in_chain">Waiting on chain: {{normalize(chain.start).join("+")}}</div>
          <div v-if="chain.warning">No chained shortcut {{normalize(chain.last).join("+")}} {{normalize(chain.warning).join("+")}}</div>
@@ -56,95 +64,83 @@
 <script>
 import dragula from "dragula"
 import {keys_from_text, normalize} from "../helpers/helpers"
+
 export default {
    name: 'Keys',
-   props: ["layout", "keys", "keymap", "keymap_active", "chain", "normalize", "shortcuts_active", "pressed", "modifiers_order", "modifiers_names", "shortcuts"],
-   components: {
-   },
-   data() {
-      return {
-         endkey: false,
-         // active_keys: {}
-      }
-   },
+   //any props that look like they weren't used are being used by the helpers!
+   props: ["chain", "keymap", "keymap_active", "keys", "layout", "modifiers_names", "modifiers_order", "normalize", "pressed", "shortcuts", "shortcuts_active"],
    computed: {
       active_keys () {
          let active_keys = {}
-         this.shortcuts_active.map(entry => {
-            if (this.chain.in_chain && entry.chained) {
-               let intersect = entry._shortcut[1].filter(identifier => !this.keymap[identifier].is_modifier)
-               if (intersect.length == 1) {
-                  active_keys[(intersect.join(""))] = entry
-               } else if (intersect.length > 1){
-                  throw "Invalid shortcut"
-               }
-            } else {
-               let intersect = entry._shortcut[0].filter(identifier => !this.keymap[identifier].is_modifier)
-               if (intersect.length == 1) {
-                  active_keys[(intersect.join(""))] = entry
-               } else if (intersect.length > 1){
-                  throw "Invalid shortcut"
-               }
-            }
+         //assign each active shortcut to an object by key (excluding modifiers)
+         //also add index property for use within this component to quickly get entry
+         this.shortcuts_active.map((entry, index) => {
+            //if we're in a chain check against the end else check agains the beginning
+            let shorcut_index = this.chain.in_chain && entry.chained ? 1 : 0
+            let intersect = entry._shortcut[shorcut_index].filter(identifier => !this.keymap[identifier].is_modifier)
+            active_keys[(intersect.join(""))] = {entry, __active_shortcuts_index: index}
          })
          return active_keys
       }
    },
-   // updated() {console.log("updated keys")
-   // },
    mounted() {
-      let container_keys = this.$el.querySelectorAll(".dec")
+      let container_keys = this.$el.querySelectorAll(".key-container")
       
       let drake = dragula([...container_keys], {
-         mirrorContainer: this.$el,
+         mirrorContainer: this.$el, //we want to keep the dragged element within this component to style it apropriately
          revertOnSpill: true, //so cancel will revert position of element
          isContainer: function (el) {
-            return el.classList.contains(".dec") || el.classList.contains("bin")
+            return el.classList.contains(".key-container") || el.classList.contains("bin")
+            //TODO allow dragging to shortcut list
          },
          moves: function (el, source, handle, sibling) {
-            return el.classList.contains("active-shortcuts")
+            return el.classList.contains("key-entry")
          },
          accepts: (el, target, source, sibling) => {
-            
+            //if we drag to the bin we always accept
             if (target.classList.contains("bin")) {return true}
+            
+            //clean classes
             this.$el.querySelectorAll(".unselectable").forEach(el => el.classList.remove("unselectable"))
             
+            //if we're not in a chain (where anything can be swapped), don't allow swapping of entries that aren't chain starts with entries that are and vice-versa
             if (!this.chain.in_chain) {
-               let target_command = target.querySelector(".active-shortcuts:not(.gu-transit) > div")
+               //check if the key even has a shortcut assigned
+               let target_entry = target.querySelector(".key-entry:not(.gu-transit)")
                
-               if (target_command !== null) {
-                  target_command = target_command.innerText
-                  let target_entry = this.shortcuts_active.findIndex(entry => {
-                     return entry.command == target_command
-                  })
+               if (target_entry !== null) {
+                  //get both our entries to compare
+                  let target_entry = target.querySelector(".key-entry").getAttribute("active_shortcuts_index")
                   target_entry = this.shortcuts_active[target_entry]
-                  let current_command = el.querySelector("div").innerText //TODO context
-                  let current_entry = this.shortcuts_active.findIndex(entry => {
-                     return entry.command == current_command
-                  })
+
+                  let current_entry = el.getAttribute("active_shortcuts_index")
                   current_entry = this.shortcuts_active[current_entry]
                   
                   if (current_entry.chain_start == target_entry.chain_start) {
-                        return true
+                     return true
                   } 
                } else {return true}
             } else {
                return true
             }
-            target.querySelectorAll(".active-shortcuts:not(.gu-transit)").forEach(el => el.classList.add("unselectable"))
+            //ELSE if anything was false, make the target unselectable (red)
+            target.querySelectorAll(".key-entry:not(.gu-transit)").forEach(el => el.classList.add("unselectable"))
             return false
          },
       })
       drake
       .on("drag", ()=> {
+         //freeze input over keyboard
          this.$emit("freeze", true)
       })
       .on("over", (el, container, source) => {
          let type = _.without(container.classList, "drag")[0]
 
-         let siblings = container.parentNode.querySelectorAll(".active-shortcuts:not(.gu-transit)")
+         //we want to know how many real siblings the target has as sometimes the element might be inserted before/after it's sibling and so we need to manually add the selectors to properly target them with css
+         let siblings = container.parentNode.querySelectorAll(".key-entry:not(.gu-transit)")
          let siblings_length = siblings.length
 
+         //clean classes beforehand
          this.$el.querySelectorAll(".will_be_replaced").forEach(el => el.classList.remove("will_be_replaced"))
          this.$el.querySelectorAll(".unselectable").forEach(el => el.classList.remove("unselectable"))
 
@@ -156,29 +152,23 @@ export default {
          }
       })
       .on("out", (el, container, source) => {
+         //sometimes the classes get stuck
          this.$el.querySelectorAll(".will_be_replaced").forEach(el => el.classList.remove("will_be_replaced"))
          this.$el.querySelectorAll(".unselectable").forEach(el => el.classList.remove("unselectable"))
       }) 
       .on("drop", (el, target, source, sibling)=> {
-         let source_key = source.querySelector(".label").innerText
-         source_key = keys_from_text(source_key, this)._shortcut[0][0]
-         let source_combo = [this.chain.start, _.uniq([source_key, ...this.keymap_active]).sort()].filter(keyset => keyset.length !== 0)
-
-         let source_entry = this.shortcuts_active.findIndex(entry => {
-            if (!this.chain.in_chain) {
-               return _.isEqual(entry._shortcut[0], source_combo[0])
-            } else {
-               return _.isEqual(entry._shortcut[0], source_combo[0]) && _.isEqual(entry._shortcut[1], source_combo[1])
-            }
-         })
+         let source_entry = el.getAttribute("active_shortcuts_index")
          source_entry = this.shortcuts_active[source_entry]
-         
+
+         //if we drag to the bin just emit and add (add_to_bin)
          if (target.classList.contains("bin")) {
             this.$emit("add", source_entry)
          } else {
+            //else get target from it's key than calculate the new combo
             let target_key = target.querySelector(".label").innerText
             target_key = keys_from_text(target_key, this)._shortcut[0][0]
             
+            //all this means is get the chain start, mix the active keys with the target keys and remove any duplicates, sort them, then filter the entire thing for empty arrays (to clean an empty chain start)
             let target_combo = [this.chain.start, _.uniq([target_key, ...this.keymap_active]).sort()].filter(keyset => keyset.length !== 0)
 
             let change = {
@@ -196,10 +186,12 @@ export default {
          //we don't actually want to drop the element and change the dom, vue will handle rerendering it in the proper place
          drake.cancel()
       }).on("cancel", (el, target, source, sibling)=> {
+         //clean classes
+         //when removing/assigning these classes they should always use querySelectorAll so we don't have to deal with them not existing, we just get an empty array if they don't exist that is never iterated through
          this.$el.querySelectorAll(".unselectable").forEach(el => el.classList.remove("unselectable"))
          this.$el.querySelectorAll(".will_be_replaced").forEach(el => el.classList.remove("will_be_replaced"))
          this.$el.querySelectorAll(".will_replace").forEach(el => el.classList.remove("will_replace"))
-         
+         //unfreeze input
          this.$emit("freeze", false)
       })
 
@@ -209,14 +201,15 @@ export default {
 </script>
 
 <style lang="scss">
+//do not scope! causes problems, also we want to be able to target light/dark theme from within component
 
 @import "../settings/theme.scss";
 @import "../settings/custom_dragula.scss";
-@import "../settings/keyboard_base.scss";
+@import "../settings/keyboard_base.scss"; //handles the messy stuff so we can concentrate on styling
 
 .keyboard {
    padding: 0 $padding-size $padding-size;
-   .active-shortcuts, .bin-entry {
+   .key-entry, .bin-entry {
       cursor: pointer;
       position: absolute;
       top:$keyboard-font-size * 1.3;
@@ -229,7 +222,7 @@ export default {
       align-items: center;
       background: hsla(hue($accent-color), 100%, 50%, 0.2);
       border: rgba(0,0,0,0) 0.2em solid;
-      & > div {
+      .command {
          text-align: center;
          user-select: none;
          word-break: break-word;
@@ -254,12 +247,11 @@ export default {
    }
    .will_be_replaced {
       z-index: 1;
-      // border: $cap-spacing 1px solid;
    }
    .is_chain {
       border-color: transparentize($accent-color, 0.7);
    }
-   .chain-pressed > .dec::before {
+   .chain-pressed > .key-container::before {
       content: "";
       position: absolute;
       top:-$cap-spacing;
@@ -271,5 +263,19 @@ export default {
    }
 }
 
+.background-light {
+   .key-container {
+      background: $cap-light;
+      border: (0.1 * $keyboard-font-size) solid  mix($cap-light, black, 90%);
+      box-shadow: 0 (0.05 * $keyboard-font-size) (0.1 * $keyboard-font-size) (0.1 * $keyboard-font-size) mix($cap-light, black, 50%);
+   }
+}
+.background-dark {
+   .key-container {
+      background: $cap-dark;
+      border: (0.1 * $keyboard-font-size) solid mix($cap-dark, black, 90%);
+      box-shadow: 0 (0.05 * $keyboard-font-size) (0.1 * $keyboard-font-size) (0.1 * $keyboard-font-size) mix($cap-dark, black, 50%);
+   }
+}
 </style>
 

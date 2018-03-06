@@ -59,13 +59,13 @@ export default {
          mirrorContainer: this.$el.querySelector(".bin"),
          revertOnSpill: true, //so cancel will revert position of element
          isContainer: function (el) {
-            return el.classList.contains("bin") || el.classList.contains("dec") || (el.classList.contains("drag") && el.classList.contains("command"))
+            return el.classList.contains("bin") || el.classList.contains("key-container") || (el.classList.contains("drag") && el.classList.contains("command"))
          },
          moves: function (el, source, handle, sibling) {
             return el.classList.contains("bin-entry")
          },
          accepts: (el, target, source, sibling) => {
-            return target.classList.contains("dec") || target.classList.contains("drag") 
+            return target.classList.contains("key-container") || target.classList.contains("drag") 
          },
       })
       drake
@@ -76,9 +76,9 @@ export default {
          document.querySelectorAll(".will_be_replaced").forEach(el => el.classList.remove("will_be_replaced"))
          document.querySelectorAll(".will_replace").forEach(el => el.classList.remove("will_replace"))
 
-         let is_key = container.classList.contains("dec")
+         let is_key = container.classList.contains("key-container")
          if (is_key) {
-            let target_entry = container.querySelectorAll(".active-shortcuts")
+            let target_entry = container.querySelectorAll(".key-entry")
             if (target_entry.length > 0) {
                target_entry.forEach(el => el.classList.add("will_be_replaced"))
                el.classList.add("will_replace")
@@ -103,7 +103,7 @@ export default {
          document.querySelectorAll(".will_replace").forEach(el => el.classList.remove("will_replace"))
       }) 
       .on("drop", (el, target, source, sibling)=> {
-         let is_key = target.classList.contains("dec")
+         let is_key = target.classList.contains("key-container")
          let current_index = el.querySelector(".command").getAttribute("index") //TODO context
          let current_entry = this.bin[current_index]
          if (is_key) {
@@ -112,7 +112,7 @@ export default {
             target_key = keys_from_text(target_key, this)._shortcut[0][0]
             let target_combo = [this.chain.start, _.uniq([target_key, ...this.keymap_active]).sort()].filter(keyset => keyset.length !== 0)
 
-            let target_command = target.querySelector(".active-shortcuts > div")
+            let target_command = target.querySelector(".key-entry > div")
                      
             if (target_command !== null) {
                target_command = target_command.innerText
@@ -172,7 +172,7 @@ export default {
    .bin-entry.gu-transit {
       display: none;
    }
-   .bin-entry, .active-shortcuts.gu-transit {
+   .bin-entry, .key-entry.gu-transit {
       user-select: none;
       cursor: pointer;
       flex: 0 0 auto;
@@ -210,10 +210,10 @@ export default {
    .is_chain  {
       border: 2px solid rgba(0,0,0,1);
    }
-   .active-shortcuts.gu-transit {
+   .key-entry.gu-transit {
       border-color: $accent-color;
    }
-   .active-shortcuts.is_chain {
+   .key-entry.is_chain {
       display: flex;
       align-items: center;
       flex-wrap: nowrap;

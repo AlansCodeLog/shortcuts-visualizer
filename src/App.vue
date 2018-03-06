@@ -44,7 +44,7 @@
          :shortcuts="shortcuts"
          :modifiers_names="modifiers_names"
          :modifiers_order="modifiers_order"
-         :shortcuts_active="shortcuts_list_active"
+         :shortcuts_list_active="shortcuts_list_active"
          :normalize="normalize"
          :options="options"
          @edit="shortcut_edit($event)"
@@ -160,6 +160,16 @@ export default {
 
          if (old_entry.chain_start) {
             new_entry.chain_start = true
+         }
+
+         if (typeof new_entry.contexts == "undefined") {
+            new_entry.contexts = old_entry.contexts
+         }
+
+         for (let context of new_entry.contexts) {
+            if (!this.contexts.includes(context)) {
+               this.contexts.push(context)
+            }
          }
          
          let result = create_shortcut_entry(new_entry, this, undefined, true)
@@ -356,10 +366,10 @@ export default {
          return normalize(identifiers, this)
       },
       keydown (e) {
-         if (this.freeze) {return false}
          let identifier = e.code
          e.preventDefault()
          e.stopPropagation()
+         if (this.freeze) {return}
          if (this.options.mode == "Toggle All") {
             this.keymap[identifier].active = !this.keymap[identifier].active
          } else if (this.options.mode == "Toggle Modifiers") {
@@ -389,10 +399,10 @@ export default {
          this.$emit("input", this.keymap)
       },
       keyup (e) {
-         if (this.freeze) {return false}
          let identifier = e.code
          e.preventDefault()
          e.stopPropagation()
+         if (this.freeze) {return}
          if (this.keymap[identifier].nokeydown) {
             this.keymap[identifier].active = this.keymap[identifier].fake_toggle ? !this.keymap[identifier].active : true
             this.keymap[identifier].timer = setTimeout(() => {
@@ -450,7 +460,7 @@ export default {
 
 .background-light {
    background: $theme-light-background;
-   .key > .dec {
+   .key > .key-container {
       background: $cap-light;
       border: (0.1 * $keyboard-font-size) solid  mix($cap-light, black, 90%);
       box-shadow: 0 (0.05 * $keyboard-font-size) (0.1 * $keyboard-font-size) (0.1 * $keyboard-font-size) mix($cap-light, black, 50%);
@@ -469,7 +479,7 @@ export default {
 .background-dark {
    background: $theme-dark-background;
    color: invert($theme-dark-background);
-   .key > .dec {
+   .key > .key-container {
       background: $cap-dark;
       border: (0.1 * $keyboard-font-size) solid mix($cap-dark, black, 90%);
       box-shadow: 0 (0.05 * $keyboard-font-size) (0.1 * $keyboard-font-size) (0.1 * $keyboard-font-size) mix($cap-dark, black, 50%);
