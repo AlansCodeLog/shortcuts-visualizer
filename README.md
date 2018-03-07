@@ -25,7 +25,7 @@ Eventually it would be nice to support some way to import/export them, at least 
 - [x] Shortcut List
 - [x] Show Active Shortcuts
 - [x] Editing shortcuts
-- [ ] Adding/Deleting Existing Shortcuts
+- [x] Adding/Deleting Existing Shortcuts
 - [x] Show active shortcuts on top of keys.
 - [x] Custom Modifier Keys (e.g. use Tab as a modifier, or disable Shift, like for a text editor)
 - [x] Program Contexts
@@ -33,13 +33,15 @@ Eventually it would be nice to support some way to import/export them, at least 
 - [x] Drag/Drop Commands
 - [x] Del Bin
 - [ ] Command Bin w/ Search
-- [ ] Mouse Commands
 - [~] Polishing/Clean/Beta
 - [ ] Demo
-- [ ] Documentation
-- [ ] Custom Remaps (e.g. Capslock = Ctrl + Alt + Shift)
+- [~] Documentation
 - [ ] Package as a proper vue component.
 - [ ] Tests...
+
+Possible future features/ideas:
+- [ ] Mouse Commands
+- [ ] Custom Remaps (e.g. Capslock = Ctrl + Alt + Shift)
 
 # Notes 
 

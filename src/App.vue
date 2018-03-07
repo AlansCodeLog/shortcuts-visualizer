@@ -33,7 +33,7 @@
          <div v-if="chain.in_chain">Waiting on chain: {{normalize(chain.start).join("+")}}</div>
          <div v-if="chain.warning">No chained shortcut {{normalize(chain.last).join("+")}} {{normalize(chain.warning).join("+")}}</div>
          <div v-if="keymap_active.length > 0">Pressed: {{normalize(keymap_active).join("+")}}</div>
-         <div class="error" v-if="invalid_shortcut_error">{{invalid_shortcut_error}}</div>
+         <div class="error" v-if="error_message">{{error_message}}</div>
       </div>
       <div class="bins">
          <Bin
@@ -55,6 +55,8 @@
          <div class="delete-bin"></div>
       </div>
       <ShortcutsList
+         @add="shortcut_add($event)"
+         @error="set_error($event)"
          @add_to_bin="add_to_bin($event)"
          @delete="delete_entry($event)"
          @edit="shortcut_edit($event)"
@@ -129,7 +131,7 @@ export default {
          freeze: false,
          bin: [],
          block_singles: true,
-         invalid_shortcut_error: false
+         error_message: false
       }
    },
    computed: {
@@ -175,9 +177,9 @@ export default {
          }
       },
       set_error(error) {
-         this.invalid_shortcut_error = error.message
+         this.error_message = error.message
          setTimeout(() => {
-            this.invalid_shortcut_error = false
+            this.error_message = false
          }, this.timeout);
       },
       delete_entry(entry) {
@@ -187,6 +189,9 @@ export default {
             && existing_entry.contexts.join("") == entry.contexts.join("")
          })
          this.shortcuts.splice(index, 1)
+      },
+      shortcut_add(entry) {
+         this.shortcuts.push(entry)
       },
       shortcut_edit({old_entry, new_entry}, checks = true) {
 
@@ -559,6 +564,9 @@ export default {
 
 .background-light {
    background: $theme-light-background;
+   input {
+      color: invert($theme-light-background);
+   }
    .key > .key-container {
       background: $cap-light;
       border: (0.1 * $keyboard-font-size) solid  mix($cap-light, black, 90%);
@@ -578,6 +586,9 @@ export default {
 .background-dark {
    background: $theme-dark-background;
    color: invert($theme-dark-background);
+   input {
+      color: invert($theme-dark-background);
+   }
    .key > .key-container {
       background: $cap-dark;
       border: (0.1 * $keyboard-font-size) solid mix($cap-dark, black, 90%);

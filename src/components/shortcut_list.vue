@@ -1,18 +1,60 @@
 <template>
    <div class="shortcuts">
       <div class="container">
+         <div v-if="!adding" class="add" @click="toggle_adding()">Add a Shortcut +</div>
+         <div v-else class="stop-add" @click="toggle_adding()">Cancel</div>
          <div class="entry-header">
             <div class="edit"></div>
             <div class="chain" title="Chain Start"></div>
             <div class="shortcut">Shortcut</div>
             <div class="command">Command</div>
             <div class="contexts">Contexts</div>
+            <div class="delete" title="delete"></div>
+         </div>
+         <div v-if="adding" class="adding">
+            <div class="edit" @click="add()">
+               <span>&#10004;</span>
+            </div>
+            <div class="chain" title="Chain Start">
+               <input
+                  type="checkbox"
+                  @keydown.enter="add()"
+                  @keydown.esc="toggle_adding()"
+                  v-model="entry_to_add.chain_start"
+               />
+            </div>
+            <div class="shortcut">
+               <input
+                  class="shortcut"
+                  @keydown.enter="add()"
+                  @keydown.esc="toggle_adding()"
+                  v-model="entry_to_add.shortcut"
+               />
+            </div>
+            <div class="command">
+               <input
+                  class="command"
+                  @keydown.enter="add()"
+                  @keydown.esc="toggle_adding()"
+                  v-model="entry_to_add.command"
+               />
+            </div>
+            <div class="contexts" >
+               <input
+                  class="contexts"
+                  @keydown.enter="add()"
+                  @keydown.esc="toggle_adding()"
+                  v-model="entry_to_add.contexts"
+               />
+            </div>
+            <div class="delete" title="cancel" @click="toggle_adding()">&#10006;</div>
          </div>
          <div
             :class="['entry', entry.editing ? 'editing' : '', 'entry'+index, entry.changed ? 'changed' : '', entry.dragging ? 'dragging' : '']"
             v-for="(entry, index) of shortcuts_list_active" :key="entry.shortcut+entry.command"
             :index = index
          >  
+            <div class="remove" @click="remove(index)">&#10006;</div>
             <!-- COLUMN EDIT -->
             <div :class="['edit']">
                <!-- Edit -->
@@ -53,9 +95,10 @@
                <input
                   class="dont_blur"
                   v-if="entry.editing"
-                  v-model="shortcut_editing"
+                  v-model="editing.shortcut"
                   @keydown.enter="toggle_editing(false, entry, index)"
                   @blur="check_blur($event, entry, index)"
+                  @keydown.esc="cancel_edit(entry)"
                />
             </div>
 
@@ -72,9 +115,10 @@
                <input
                   class="dont_blur"
                   v-if="entry.editing"
-                  v-model="shortcut_editing_command"
+                  v-model="editing.command"
                   @keydown.enter="toggle_editing(false, entry, index)"
                   @blur="check_blur($event, entry, index)"
+                  @keydown.esc="cancel_edit(entry)"
                />
             </div>
 
@@ -90,11 +134,13 @@
                <input
                   class="dont_blur"
                   v-if="entry.editing"
-                  :value="shortcut_editing_contexts.join(', ')"
+                  :value="editing.contexts.join(', ')"
                   @keydown.enter="set_contexts($event.target.value);toggle_editing(false, entry, index)"
                   @blur="set_contexts($event.target.value);check_blur($event, entry, index)"
+                  @keydown.esc="cancel_edit(entry)"
                />
             </div>
+            <div class="delete" title="delete" @click="remove(index)">&#10006;</div>
          </div>
       </div>
    </div>
@@ -103,28 +149,95 @@
 <script>
 
 import dragula from "dragula"
-import { keys_from_text } from '../helpers/helpers';
+import { keys_from_text, create_shortcut_entry } from '../helpers/helpers';
 export default {
    name: 'Shortcuts',
    props: ["chain", "keymap", "modifiers_names", "modifiers_order", "normalize", "options", "shortcuts", "shortcuts_list_active"],
    data () {
       return {
-         shortcut_editing: "",
-         shortcut_editing_command: "",
-         shortcut_editing_contexts: [],
+         editing: {
+            shortcut: "",
+            command: "",
+            contexts: [],
+         },
+         adding: false,
+         entry_to_add: {
+            shortcut: "",
+            command: "",
+            contexts: "Global",
+            chain_start: false,
+         }
       }
    },
    methods: {
+      remove (index) {
+         this.$emit("delete", this.shortcuts_list_active[index])
+      },
+      toggle_adding() {
+         this.adding = !this.adding
+         if (this.adding) {
+            this.entry_to_add.shortcut = ""
+            this.entry_to_add.command = ""
+            this.entry_to_add.contexts = this.options.context
+            this.entry_to_add.chain_start = false
+         }
+      },
+      add() { //everything is in this component so we can give the user a chance to edit the entry
+         let entry = {...this.entry_to_add}
+         if (entry.contexts == "") {
+            entry.contexts = this.options.context
+         }
+         entry.contexts = entry.contexts.split(/\s*,\s*/g)
+         
+         //handle any errors
+         if (entry.command == "") {
+            this.$emit("error", {message: "Entry command cannot be empty."})
+            return
+         }
+         try {
+            var result = create_shortcut_entry(entry, this, undefined, true)
+         } catch (error) {
+            this.$emit("error", {message: error})
+            return
+         }
+         entry = result.entry
+         let {extra, remove, error, invalid} = result
+         
+         if (remove) {
+            this.$emit("error", {message: "Shortcut " +entry.shortcut+" is a chain start. It cannot be overwritten."})
+            return
+         }
+         if (error) {
+            if (error.code == "Chain Error") {
+               this.$emit("error", {message: "Shortcut " +entry.shortcut+" is a chain start. It cannot be overwritten."})
+            } else {
+               this.$emit("error", error)
+            }
+            return
+         }
+         if (invalid) {
+            this.$emit("error", invalid)
+            return
+         }
+         //if no errors, emit add
+         this.$emit("add", entry)
+         //reset
+         this.entry_to_add.shortcut = ""
+         this.entry_to_add.command = ""
+         this.entry_to_add.contexts = this.options.context
+         this.entry_to_add.chain_start = false
+         this.toggle_adding()
+      },
       set_contexts (value) {
          //we need to handle transforming the array to text.
          //contexts can have spaces but we check for extra white space before/after the comma
-         this.shortcut_editing_contexts = value.split(/\s*,\s*/g)
+         this.editing.contexts = value.split(/\s*,\s*/g)
       },
       toggle_editing (editing, entry, index, focusto = 'shortcut', check_existing = true) {
          //we need to keep a reference to the original values in case we accept_on_blur
-         let shortcut_editing = this.shortcut_editing
-         let shortcut_editing_command = this.shortcut_editing_command
-         let shortcut_editing_contexts = this.shortcut_editing_contexts
+         let shortcut = this.editing.shortcut
+         let command = this.editing.command
+         let contexts = this.editing.contexts
          
          //the first time, we want to check if we were editing something (that is we were editing a shortcut then clicked to another) and cancel/accept depending on whether to accept on blur
          //but we don't want to check again when this function calls itself here
@@ -145,9 +258,9 @@ export default {
          
          //if we're toggling true set our variables
          if (editing) {
-            this.shortcut_editing = entry.shortcut
-            this.shortcut_editing_command = entry.command
-            this.shortcut_editing_contexts = entry.contexts
+            this.editing.shortcut = entry.shortcut
+            this.editing.command = entry.command
+            this.editing.contexts = entry.contexts
             //focus when possible
             this.$nextTick(() => {
                let element_to_focus = this.$el.querySelector(".entry" + index + " ." + focusto + " input")
@@ -168,9 +281,9 @@ export default {
             let change = {
                old_entry: entry,
                new_entry: {
-                  shortcut: shortcut_editing,
-                  command: shortcut_editing_command,
-                  contexts: shortcut_editing_contexts,
+                  shortcut: shortcut,
+                  command: command,
+                  contexts: contexts,
                },
             }
             //only if something changed though
@@ -180,9 +293,9 @@ export default {
                this.$emit("edit", change)
             }
             //reset our variables
-            this.shortcut_editing = ""
-            this.shortcut_editing_command = ""
-            this.shortcut_editing_contexts = ["Global"]
+            this.editing.shortcut = ""
+            this.editing.command = ""
+            this.editing.contexts = ["Global"]
          }
       },
       cancel_edit(entry) {
@@ -395,21 +508,26 @@ export default {
       }
       .chain {
          flex: 1 0 1.5em;
-         order: 1;
-      }
-      .command {
-         flex: 1 1 60%;
-         order: 3;
+         order: 2;
       }
       .shortcut {
          flex: 1 1 20%;
-         order: 2;
+         order: 3;
+      }
+      .command {
+         flex: 1 1 60%;
+         order: 4;
       }
       .contexts {
          flex: 1 1 20%;
-         order: 4;
+         order: 5;
       }
-      .entry, .entry-header {
+      .delete {
+         flex: 1 0 1.5em;
+         order: 6;
+      }
+      .entry, .entry-header, .add, .stop-add, .adding {
+         box-sizing: border-box;
          border: 1px solid rgba(0,0,0,0.5);
          width:100%;
          display: flex;
@@ -425,10 +543,66 @@ export default {
          }
          
       }
-      .entry-header {
+      .entry-header, .add, .stop-add {
          font-weight: bold;
       }
       .entry {
+         .remove {
+            position: absolute;
+            top: -0.7em;
+            right: -0.7em;
+            width: 1.2em;
+            height: 1.2em;
+            border: 2px solid mix(red, black, 80%);
+            background: transparentize(red, 0.7);
+            color: red;
+            line-height: 1.2em;
+            border-radius: 100%;
+            text-align: center;
+            cursor: pointer;
+         }
+         &:hover:not(.gu-mirror) .remove {
+            display: block;
+         }
+      }
+      .add, .stop-add {
+         text-align: center;
+         margin: 0 auto;
+         padding: 0.3em;
+         display: inline-block;
+         cursor: pointer;
+      }
+      .add, .stop-add {
+         color: $accent-color;
+      }
+      .stop-add {
+         color: $dragging-not-allowed-background;
+      }
+      .adding {
+         background: transparentize($accent-color, 0.7);
+         .edit {
+            text-align: center;
+         }
+         & > div {
+            position: relative;
+         }
+         & > div:not(.chain) input {
+               padding: 0.3em;
+               position: absolute;
+               top:0;
+               bottom: 0;
+               right: 0;
+               left:0;
+               width: calc(100% - 0.3em);
+         }
+         .chain {
+            input {
+               height: 1em;
+               width: 1em;
+            }
+         }
+      }
+      .entry, .adding {
          & > div { //.shortcut, .command, etc
             display: flex;
             justify-content: flex-start;
@@ -449,13 +623,9 @@ export default {
             display: none;
          }
          &.editing{
-            background: darkgray;
+            background: transparentize($dragging-will-be-replaced, 0.7);
             & > div {  //.shortcut, .command, etc
-               color:black;
                position: relative;
-               span {
-                  color:black;
-               }
                input {
                   padding: 0.3em;
                   position: absolute;
@@ -470,9 +640,7 @@ export default {
          .edit {
             display: flex;
             justify-content: space-around;
-            span {
-               line-height: 1em;
-            }
+            align-items: center;
          }
          transition: background-color 0.3s ease-out;
          &.changed {

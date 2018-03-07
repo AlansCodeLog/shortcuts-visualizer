@@ -7,7 +7,6 @@
             :key="index+entry.command"
          ><span :index="index" class="command">{{entry.command}}</span><div
             class="remove"
-            alt="remove"
             @click="remove(index)"
          >&#10006;</div></div>
       </div>
@@ -22,7 +21,7 @@ export default {
    props: ["bin", "block_singles", "chain", "context", "keymap", "keymap_active", "modifiers_names", "modifiers_order", "options", "shortcuts", "shortcuts_active", "shortcuts_list_active"],
    methods: {
       remove (index) {
-         this.emit("delete", this.bin[index])
+         this.$emit("delete", this.bin[index])
       },
       //move an entry from the bin to "somewhere else" aka a different shortcut
       move(entry, index, new_shortcut) {

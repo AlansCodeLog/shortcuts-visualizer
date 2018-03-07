@@ -253,12 +253,12 @@ export function ready_all(shortcuts, _this, {keymap, modifiers_order, block_sing
 function create_error(index, entry, existing_entry, type, editing) {
    if (type == "Regular Error") {
       var error = {}
-      error.name = new Error("Shortcut '" + entry.shortcut + "' (command: " + entry.command +") already exists: '" + existing_entry.shortcut + "' (command: " + existing_entry.command)+")"
+      error.message = "Shortcut '" + entry.shortcut + "' (command: " + entry.command +") already exists: '" + existing_entry.shortcut + "' (command: " + existing_entry.command+")"
       error.code = type
       error.index = index
-   } else if (type.indexOf("Chain Error") !== -1) {
+   } else if (type == "Chain Error") {
       var error = {}
-      error.name = new Error("Shortcut '" + entry.shortcut + "' is the start of a chain. It cannot be overwritten for command '" + entry.command + "'. If you'd like to just change the command text, chain_start must be set to true for the shortcut.")
+      error.message = "Shortcut '" + entry.shortcut + "' is the start of a chain. It cannot be overwritten for command '" + entry.command + "'. If you'd like to just change the command text, chain_start must be set to true for the shortcut."
       error.code = type
       error.index = index
    } else {
@@ -274,35 +274,59 @@ export function create_shortcut_entry (entry, _this, {shortcuts, keymap, modifie
    if (typeof _this !== "undefined") {
       var {shortcuts, keymap, modifiers_order, modifiers_names, block_singles} = _this
    }
+
+   if (typeof entry._shortcut == "undefined") {
+      entry.shortcut = _keys_from_text(entry.shortcut, _this)
+      entry._shortcut = entry.shortcut._shortcut
+      entry.shortcut = entry.shortcut.shortcut
+   }
    
    entry.chained = entry._shortcut.length > 1 ? true : false
    entry.chain_start = typeof entry.chain_start !== "undefined" ? entry.chain_start : false
 
    let invalid_shortcut = false
 
-   entry._shortcut.map((keyset, index) => {
+   for (let keyset of entry._shortcut) {
+      //get modifiers in keyset
       let modifiers = _.difference(modifiers_names, keyset)
       
-      if (block_singles && index == 0 && keyset.length == 1) {
+      //global block_singles
+      if (block_singles && modifiers == 0) {
          invalid_shortcut = {}
          invalid_shortcut.message = "Invalid shortcut '" + entry.shortcut + "'. Cannot assign shortcuts to single keys."
          invalid_shortcut.code = "Blocked Singles"
+         break
       }
-      let blocked = keyset.map(key => {
-         if (keymap[key].block_all) {
-            invalid_shortcut = {}
-            invalid_shortcut.message = "Invalid shortcut '" + entry.shortcut + "'. Shortcuts cannot contain key: " + keymap[key].character + ", assignments to the key are blocked."
-            invalid_shortcut.code = "All Blocked"
-            invalid_shortcut.key = key
-         }
-         if (keymap[key].is_modifier && keymap[key].block_single && modifiers.length == 1) {
-            invalid_shortcut = {}
-            invalid_shortcut.message = "Invalid shortcut: '" + entry.shortcut + "'. Shortcut's only modifier cannot be: " + keymap[key].character + ", single assignments to the key are blocked."
-            invalid_shortcut.code = "Single Blocked"
-            invalid_shortcut.key = key
-         }
-      })
-   })
+      let singles = modifiers.map(key => keymap[key].block_single)
+      let non_singles = singles.filter(block => block == false)
+      singles = singles.filter(block => block == true)
+
+      //block single blocked keys
+      if (singles.length > 0 && non_singles.length == 0) {
+         invalid_shortcut = {}
+         invalid_shortcut.message = "Invalid shortcut: '" + entry.shortcut + "'. Shortcut's only modifier cannot be: [" + block_all.join(", ") + "], single assignments to the key are blocked."
+         invalid_shortcut.code = "Single Blocked"
+         break
+      }
+      //block individual block all keys
+      let block_all = keyset.map(key => keymap[key].block_all).filter(block => block == true)
+      if (block_all.length > 0) {
+         invalid_shortcut = {}
+         invalid_shortcut.message = "Invalid shortcut '" + entry.shortcut + "'. Shortcuts cannot contain keys: [" + block_all.join(", ") + "], assignments to the key are blocked."
+         invalid_shortcut.code = "All Blocked"
+         break
+      }
+
+      let regulars = _.difference(keyset, modifiers_names)
+
+      //don't allow shortcuts to be only modifiers
+      if (regulars.length == 0) {
+         invalid_shortcut = {}
+         invalid_shortcut.message = "Invalid shortcut '" + entry.shortcut + "'. Shortcuts cannot be just modifiers."
+         invalid_shortcut.code = "Modifier Only"
+         break
+      }
+   }
    
    let existing_error = false
    let overwrite = false
@@ -318,13 +342,13 @@ export function create_shortcut_entry (entry, _this, {shortcuts, keymap, modifie
          } else if (existing_entry.chain_start) {//existing entry is a chain start but not new
             existing_error = create_error(index, existing_entry, entry, "Chain Error", editing)
          } else if (entry.chain_start) {//new entry is a chain start but not existing
-            existing_error = create_error(index, entry, existing_entry, "Chain Error4", editing)
+            existing_error = create_error(index, entry, existing_entry, "Chain Error", editing)
          }
       } else if (_.isEqual(existing_entry._shortcut[0], entry._shortcut[0])) {
          if (existing_entry._shortcut.length == 1 && !existing_entry.chain_start && !existing_entry.chained) {//if existing entry should be marked as chain start but isn't
-            if (!editing) {existing_error = create_error(index, existing_entry, entry, "Chain Error3", editing)}
+            if (!editing) {existing_error = create_error(index, existing_entry, entry, "Chain Error", editing)}
          } else if (entry._shortcut.length == 1 &&  !existing_entry.chain_start && !entry.chained && !entry.chain_start) {//if new entry should be marked as chain but isn't
-         if (!editing) {existing_error = create_error(index, entry, existing_entry, "Chain Error2", editing)}
+         if (!editing) {existing_error = create_error(index, entry, existing_entry, "Chain Error", editing)}
          } else if (existing_entry._shortcut.length == 1 && entry._shortcut.length == 1 && !existing_entry.chain_start && !entry.chained) {//if new entry is a chain start, existing isn't and should be overwritten
             overwrite = true
             if (editing) {existing_error = create_error(index, entry, existing_entry, "Overwrite", editing)}
