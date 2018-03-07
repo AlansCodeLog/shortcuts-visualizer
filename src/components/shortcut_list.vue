@@ -62,8 +62,9 @@
             <!-- COLUMN COMMAND -->
             <div :class="['drag', 'command']">
                <!-- NOT EDITING -->
+               <!-- is_chain is needed for styling when dragging to bin -->
                <div
-                  class="list-subentry"
+                  :class="['list-subentry', entry.chain_start ? 'is_chain' : '']"
                   @click="toggle_editing(true, entry, index, 'command')"
                   v-if="!entry.editing"
                >{{entry.command}}</div>
@@ -105,7 +106,7 @@ import dragula from "dragula"
 import { keys_from_text } from '../helpers/helpers';
 export default {
    name: 'Shortcuts',
-   props: ["shortcuts", "shortcuts_list_active", "normalize", "options", "chain", "keymap", "modifiers_order", "modifiers_names"],
+   props: ["chain", "keymap", "modifiers_names", "modifiers_order", "normalize", "options", "shortcuts", "shortcuts_list_active"],
    data () {
       return {
          shortcut_editing: "",
@@ -115,7 +116,9 @@ export default {
    },
    methods: {
       set_contexts (value) {
-         this.shortcut_editing_contexts = value.split(/,\s|,/g)
+         //we need to handle transforming the array to text.
+         //contexts can have spaces but we check for extra white space before/after the comma
+         this.shortcut_editing_contexts = value.split(/\s*,\s*/g)
       },
       toggle_editing (editing, entry, index, focusto = 'shortcut', check_existing = true) {
          //we need to keep a reference to the original values in case we accept_on_blur
@@ -123,8 +126,8 @@ export default {
          let shortcut_editing_command = this.shortcut_editing_command
          let shortcut_editing_contexts = this.shortcut_editing_contexts
          
-         //the first time, we want to check if we were editing something and cancel/accept depending on the optiosn set
-         //but we don't want to check again when we call the function here
+         //the first time, we want to check if we were editing something (that is we were editing a shortcut then clicked to another) and cancel/accept depending on whether to accept on blur
+         //but we don't want to check again when this function calls itself here
          if (check_existing) {
             let existing = this.shortcuts_list_active.findIndex(entry => entry.editing)
             
@@ -205,12 +208,15 @@ export default {
          mirrorContainer: this.$el, //we want to keep the dragged element within this component to style it apropriately
          revertOnSpill: true, //so cancel will revert position of element
          isContainer: function (el) {
-            return el.classList.contains("drag") || el.classList.contains("bin")
+            return el.classList.contains("drag") || el.classList.contains("bin") || el.classList.contains("delete-bin")
          },
          moves: function (el, source, handle, sibling) {
             return el.classList.contains("list-subentry")
          },
          accepts: (el, target, source, sibling) => {
+            if (target.classList.contains("delete-bin")) {
+               return true
+            }
             //gets the type of subentry (shortcut, command, or contexts)
             let type = _.without(source.classList, "drag")[0]
 
@@ -256,27 +262,34 @@ export default {
          source_entry.dragging = true
       })
       .on("over", (el, container, source) => {
-         let type = _.without(container.classList, "drag")[0]
+         //TODO let is_key = container.classList.contains("key-container")
+         let is_list = container.classList.contains("drag")
+         if (is_list) {
+            let type = _.without(container.classList, "drag")[0]
 
-         //we want to know how many real siblings the target has as sometimes the element might be inserted before/after it's sibling and so we need to manually add the selectors to properly target them with css
-         let siblings = container.parentNode.querySelectorAll("." + type + " .list-subentry:not(.gu-transit)")
-         let siblings_length = siblings.length
+            //we want to know how many real siblings the target has as sometimes the element might be inserted before/after it's sibling and so we need to manually add the selectors to properly target them with css
+            let siblings = container.parentNode.querySelectorAll("." + type + " .list-subentry:not(.gu-transit)")
+            let siblings_length = siblings.length
 
-         //clean classes beforehand
-         this.$el.querySelectorAll(".will_be_replaced").forEach(el => el.classList.remove("will_be_replaced"))
-         this.$el.querySelectorAll(".unselectable").forEach(el => el.classList.remove("unselectable"))
+            //clean classes beforehand
+            this.$el.querySelectorAll(".will_be_replaced").forEach(el => el.classList.remove("will_be_replaced"))
+            document.querySelectorAll(".unselectable").forEach(el => el.classList.remove("unselectable"))
 
-         if (siblings_length > 0) {
-            el.classList.add("will_replace")
-            siblings.forEach(el => el.classList.add("will_be_replaced"))
-         } else {
-            el.classList.remove("will_replace")
+            if (siblings_length > 0) {
+               el.classList.add("will_replace")
+               siblings.forEach(el => el.classList.add("will_be_replaced"))
+            } else {
+               el.classList.remove("will_replace")
+            }
+         } else if (container.classList.contains("delete-bin")) {
+            container.classList.add("hovering")
          }
       })
       .on("out", (el, container, source) => {
          //sometimes the classes get stuck
          this.$el.querySelectorAll(".will_be_replaced").forEach(el => el.classList.remove("will_be_replaced"))
-         this.$el.querySelectorAll(".unselectable").forEach(el => el.classList.remove("unselectable"))
+         document.querySelectorAll(".unselectable").forEach(el => el.classList.remove("unselectable"))
+         document.querySelectorAll(".hovering").forEach(el => el.classList.remove("hovering"))
       }) 
       .on("drop", (el, target, source, sibling)=> {
          let type = _.without(source.classList, "drag")[0]
@@ -284,51 +297,62 @@ export default {
          let source_entry = source.parentNode.getAttribute("index")
          source_entry = this.shortcuts_list_active[source_entry]
          let target_entry = target.parentNode.getAttribute("index")
-         target_entry = this.shortcuts_list_active[target_entry]
 
-         if (type == "shortcut") {
-            //we only need to emit one change and it will get swapped
-            let change = {
-               old_entry: source_entry,
-               new_entry: {
-                  _shortcut: target_entry._shortcut,
-                  shortcut: target_entry.shortcut,
-                  command: source_entry.command,
-               }
-            }
-            
-            this.$emit("edit", change)
+         if (target.classList.contains("delete-bin")) {
+            this.$emit("delete", source_entry)
+            drake.cancel()
+            return
+         }
+
+         if (target.classList.contains("bin")) {
+            this.$emit("add_to_bin", source_entry)
          } else {
-            //while this is more the equivilent of two edits
-            let change = {
-               old_entry: source_entry,
-               new_entry: {
-                  _shortcut: source_entry._shortcut,
-                  shortcut: source_entry.shortcut,
-                  command: type == "command" ? target_entry.command : source_entry.command,
-                  contexts: type == "command" ? source.contexts : target_entry.contexts,
-               }
-            }
+            target_entry = this.shortcuts_list_active[target_entry]
 
-            let change2 = {
-               old_entry: target_entry,
-               new_entry: {
-                  _shortcut: target_entry._shortcut,
-                  shortcut: target_entry.shortcut,
-                  command: type == "command" ? source_entry.command : target_entry.command,
-                  contexts: type == "command" ? source_entry.contexts : target_entry.contexts,
+            if (type == "shortcut") {
+               //we only need to emit one change and it will get swapped
+               let change = {
+                  old_entry: source_entry,
+                  new_entry: {
+                     _shortcut: target_entry._shortcut,
+                     shortcut: target_entry.shortcut,
+                     command: source_entry.command,
+                  }
                }
+               
+               this.$emit("edit", change)
+            } else {
+               //while this is more the equivilent of two edits
+               let change = {
+                  old_entry: source_entry,
+                  new_entry: {
+                     _shortcut: source_entry._shortcut,
+                     shortcut: source_entry.shortcut,
+                     command: type == "command" ? target_entry.command : source_entry.command,
+                     contexts: type == "command" ? source.contexts : target_entry.contexts,
+                  }
+               }
+
+               let change2 = {
+                  old_entry: target_entry,
+                  new_entry: {
+                     _shortcut: target_entry._shortcut,
+                     shortcut: target_entry.shortcut,
+                     command: type == "command" ? source_entry.command : target_entry.command,
+                     contexts: type == "command" ? source_entry.contexts : target_entry.contexts,
+                  }
+               }
+               
+               this.$emit("edit", change)
+               this.$emit("edit", change2)
             }
-            
-            this.$emit("edit", change)
-            this.$emit("edit", change2)
          }
 
          //we don't actually want to drop the element and change the dom, vue will handle rerendering it in the proper place
          drake.cancel()
       }).on("cancel", (el, target, source, sibling)=> {
          //clean css classes
-         this.$el.querySelectorAll(".unselectable").forEach(el => el.classList.remove("unselectable"))
+         document.querySelectorAll(".unselectable").forEach(el => el.classList.remove("unselectable"))
          this.$el.querySelectorAll(".will_be_replaced").forEach(el => el.classList.remove("will_be_replaced"))
          this.$el.querySelectorAll(".will_replace").forEach(el => el.classList.remove("will_replace"))
          //in case we missed any, set draggint to false on all

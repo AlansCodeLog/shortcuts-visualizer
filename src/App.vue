@@ -4,51 +4,69 @@
       :class="[options.theme_dark ? 'background-dark' : 'background-light']"
    >
       <Options
-         :options="options"
-         :modes="modes"
-         :contexts="contexts"
          @input="change('options', $event)"
+         :contexts="contexts"
+         :modes="modes"
+         :options="options"
       ></Options>
       <Keys
-         :keys="keys"
-         :keymap="keymap"
-         :keymap_active="keymap_active"
-         :shortcuts_active="shortcuts_active"
-         :layout="layout"
-         :chain="chain"
-         :normalize="normalize"
-         :modifiers_names="modifiers_names"
-         :modifiers_order="modifiers_order"
-         :shortcuts="shortcuts"
          @keydown="keydown($event)"
          @keyup="keyup($event)"
+         @delete="delete_entry($event)"
+         @add_to_bin="add_to_bin($event)"
          @chained="chained($event)"
          @edit="shortcut_edit($event)"
          @freeze="change('freeze', $event)"
-         @add="add_to_bin($event)"
-      ></Keys>
-      <Bin
-         :bin="bin"
-         :shortcuts="shortcuts"
+         :chain="chain"
          :keymap="keymap"
-         :modifiers_names="modifiers_names"
-         :modifiers_order="modifiers_order"
-         :shortcuts_active="shortcuts_active"
          :keymap_active="keymap_active"
-         :chain="chain"
-         @add="add_to_bin($event)"
-      ></Bin>
-      <ShortcutsList
-         :chain="chain"
-         :keymap="keymap"
-         :shortcuts="shortcuts"
+         :keys="keys"
+         :layout="layout"
          :modifiers_names="modifiers_names"
          :modifiers_order="modifiers_order"
-         :shortcuts_list_active="shortcuts_list_active"
          :normalize="normalize"
-         :options="options"
+         :shortcuts="shortcuts"
+         :shortcuts_active="shortcuts_active"
+      ></Keys>
+      <!-- tells us what's being pressed, whether we're waiting for a chain, etc -->
+      <div class="status">
+         <div v-if="chain.in_chain">Waiting on chain: {{normalize(chain.start).join("+")}}</div>
+         <div v-if="chain.warning">No chained shortcut {{normalize(chain.last).join("+")}} {{normalize(chain.warning).join("+")}}</div>
+         <div v-if="keymap_active.length > 0">Pressed: {{normalize(keymap_active).join("+")}}</div>
+         <div class="error" v-if="invalid_shortcut_error">{{invalid_shortcut_error}}</div>
+      </div>
+      <div class="bins">
+         <Bin
+            @add="add_to_bin($event)"
+            @delete="delete_entry($event)"
+            @freeze="change('freeze', $event)"
+            :bin="bin"
+            :block_singles="block_singles"
+            :chain="chain"
+            :keymap="keymap"
+            :keymap_active="keymap_active"
+            :modifiers_names="modifiers_names"
+            :modifiers_order="modifiers_order"
+            :options="options"
+            :shortcuts="shortcuts"
+            :shortcuts_active="shortcuts_active"
+            :shortcuts_list_active="shortcuts_list_active"
+         ></Bin>
+         <div class="delete-bin"></div>
+      </div>
+      <ShortcutsList
+         @add_to_bin="add_to_bin($event)"
+         @delete="delete_entry($event)"
          @edit="shortcut_edit($event)"
          @freeze="change('freeze', $event)"
+         :chain="chain"
+         :keymap="keymap"
+         :modifiers_names="modifiers_names"
+         :modifiers_order="modifiers_order"
+         :normalize="normalize"
+         :options="options"
+         :shortcuts="shortcuts"
+         :shortcuts_list_active="shortcuts_list_active"
       ></ShortcutsList>
    </div>
 </template>
@@ -64,13 +82,13 @@ import {keys} from "./settings/keys.js"
 import {shortcuts as settings_shortcuts} from "./settings/shortcuts.js"
 
 import * as _ from "lodash"
-import {find_extra_modifiers, find_extra_keys_pressed, chain_in_active, get_shortcuts_active, create_shortcut_entry, create_shortcuts_list, create_keymap, normalize, keys_from_text, multisplice} from "./helpers/helpers"
+import {chain_in_active, create_keymap, create_shortcut_entry, create_shortcuts_list,find_extra_keys_pressed, find_extra_modifiers, get_shortcuts_active, keys_from_text, multisplice, normalize} from "./helpers/helpers"
 
-let keymap = create_keymap(keys)
-let modifiers_names = _.uniq(Object.keys(keymap).filter(identifier => keymap[identifier].is_modifier).map(identifier => keymap[identifier].name))
-let modifiers_order = ["ctrl", "shift", "alt"]
+// let keymap = create_keymap(keys)
+// let modifiers_names = _.uniq(Object.keys(keymap).filter(identifier => keymap[identifier].is_modifier).map(identifier => keymap[identifier].name))
+// let modifiers_order = ["ctrl", "shift", "alt"]
 
-let {shortcuts_list, context_list} = create_shortcuts_list(settings_shortcuts, keymap, modifiers_order, modifiers_names, this)
+// let {shortcuts_list, context_list} = create_shortcuts_list(settings_shortcuts, keymap, modifiers_order, modifiers_names, this)
 
 
 export default {
@@ -83,20 +101,17 @@ export default {
    },
    data() {  
       return {
-         options: {
-            mode: "Toggle All",
-            theme_dark: true,
-            accept_on_blur: true,
-            context: "Global",
-         },
-         layout: layout,
-         keys: keys,
-         keymap: keymap,
+         //will be set by props
+         layout: [], //layout,
+         keys: {}, //keys,
+         keymap: {}, //keymap,
+         modifiers_names: [], //modifiers_names,
+         modifiers_order: [], //modifiers_order,
+         shortcuts: [], //shortcuts_list,
+         contexts: [], //context_list,
+         timeout: 3000,
+         //private to component
          modes: ["As Pressed", "Toggle Modifiers", "Toggle All"],
-         contexts: context_list,
-         modifiers_names: modifiers_names,
-         modifiers_order: modifiers_order,
-         shortcuts: shortcuts_list,
          chain: {
             //allow: true,
             in_chain: false,
@@ -104,9 +119,17 @@ export default {
             last: [],
             warning: false,
          },
+         options: {
+            mode: "Toggle All",
+            theme_dark: true,
+            accept_on_blur: true,
+            context: "Global",
+         },
          mods_unknown: true,
          freeze: false,
-         bin: []
+         bin: [],
+         block_singles: true,
+         invalid_shortcut_error: false
       }
    },
    computed: {
@@ -148,8 +171,22 @@ export default {
             this.chain.shortcut = ""
             setTimeout(() => {
                this.chain.warning = false
-            }, 1000);
+            }, this.timeout/3);
          }
+      },
+      set_error(error) {
+         this.invalid_shortcut_error = error.message
+         setTimeout(() => {
+            this.invalid_shortcut_error = false
+         }, this.timeout);
+      },
+      delete_entry(entry) {
+         let index = this.shortcuts.findIndex(existing_entry => {
+            return existing_entry.shortcut == entry.shortcut
+            && existing_entry._shortcut.join("") == entry._shortcut.join("")
+            && existing_entry.contexts.join("") == entry.contexts.join("")
+         })
+         this.shortcuts.splice(index, 1)
       },
       shortcut_edit({old_entry, new_entry}, checks = true) {
 
@@ -174,7 +211,13 @@ export default {
          
          let result = create_shortcut_entry(new_entry, this, undefined, true)
          new_entry = result.entry
-         let {extra, remove, error} = result
+         let {extra, remove, error, invalid} = result
+
+         
+         if (invalid) {
+            this.set_error(invalid)
+            return
+         }
          
          //"backup" our objects
          if (error) {
@@ -336,7 +379,7 @@ export default {
             entry.changed = true 
             setTimeout(() => {
                entry.changed = false
-            }, 300);
+            }, this.timeout/10);
          })
       },
       add_to_bin(entry, extra = false) {
@@ -348,7 +391,9 @@ export default {
             })
             this.shortcuts.splice(index, 1)
          }
-         entry.context == ["Global"]
+         let current_context_index = entry.contexts.indexOf(this.options.context)
+         //remove the current context
+         entry.contexts.splice(current_context_index, 1)
          this.bin.push(entry)
          if (!extra && entry.chain_start) {
             let indexes = this.shortcuts.map((existing_entry, index) => {
@@ -389,7 +434,7 @@ export default {
          } else if (this.keymap[identifier].toggle) {
             this.keymap[identifier].active = e.getModifierState(identifier)
          }
-         if (keymap[identifier].RL == true) {
+         if (this.keymap[identifier].RL == true) {
             if (identifier.indexOf("Right") !== -1) {
                this.keymap[identifier.replace("Right", "Left")].active = this.keymap[identifier].active
             } else {
@@ -407,7 +452,7 @@ export default {
             this.keymap[identifier].active = this.keymap[identifier].fake_toggle ? !this.keymap[identifier].active : true
             this.keymap[identifier].timer = setTimeout(() => {
                this.keymap[identifier].active = this.keymap[identifier].fake_toggle ? this.keymap[identifier].active : false
-            }, 300);
+            }, this.timeout/10);
          } else {
             if (this.options.mode == "Toggle Modifiers") {
                if (!this.keymap[identifier].is_modifier){
@@ -424,7 +469,7 @@ export default {
                this.keymap[identifier].active = e.getModifierState(identifier)
             }
          }
-         if (keymap[identifier].RL == true) {
+         if (this.keymap[identifier].RL == true) {
             if (identifier.indexOf("Right") !== -1) {
                this.keymap[identifier.replace("Right", "Left")].active = this.keymap[identifier].active
             } else {
@@ -450,13 +495,67 @@ export default {
          }
       },
    },
-   mounted() {
+   created() {
+      //TODO convert to getting through props
+      //props: layout, keys, modifiers_order, settings_shortcuts aka shortcuts
+      this.layout = layout
+      this.keys = keys
+      // this.block_singles
+      this.keymap = create_keymap(this.keys)
+      this.modifiers_names = _.uniq(Object.keys(this.keymap).filter(identifier => this.keymap[identifier].is_modifier).map(identifier => this.keymap[identifier].identifier))
+      this.modifiers_order = ["ctrl", "shift", "alt"]
+      
+      let lists = create_shortcuts_list(settings_shortcuts, this)
+      this.shortcuts= lists.shortcuts_list
+      this.contexts = lists.context_list
    },
 }
 </script>
 
 <style lang="scss">
 @import "./settings/theme.scss";
+
+.status {
+   margin: 0 $padding-size/2 $padding-size;
+   display: flex;
+   justify-content: center;
+   flex-wrap: wrap;
+   & > div {
+      flex: 1 0 100%;
+      margin: 0.5em;
+      text-align: center;
+   }
+   .error {
+      color: red;
+   }
+}
+
+.bins {
+   display:flex;
+   margin: 0 $padding-size;
+   justify-content: space-between;
+   .temp-bin {
+      flex: 0 1 70%;
+   }
+   .delete-bin {
+      flex: 0 1 30%;
+      margin-left: $padding-size;
+      align-self: stretch;
+      background: transparentize(red, 0.7);
+      border: transparentize(red, 0.7) 0.2em solid;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      &.hovering::after {
+         content: "DELETE";
+         color: red;
+         font-size: 2em;
+      }
+      .bin-entry, .list-subentry, .key-entry {
+         display: none;
+      }
+   }
+}
 
 .background-light {
    background: $theme-light-background;

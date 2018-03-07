@@ -431,12 +431,16 @@ const keys = {
    },
    menu: {
       identifier: "ContextMenu",
+      block_drag: true,
+      block_all: true,
       classes:["key", "modifiers"],
       character: "Menu",
 		
    },
    Lsuper: {
       identifier: "MetaLeft",
+      block_drag: true,
+      block_all: true,
       RL: true,
       classes:["key", "modifiers"],
       character: "Super",
@@ -444,6 +448,8 @@ const keys = {
    },
    Rsuper: {
       identifier: "MetaRight",
+      block_drag: true,
+      block_all: true,
       RL: true,
       classes:["key", "modifiers"],
       character: "Super",
@@ -453,6 +459,7 @@ const keys = {
       identifier: "ShiftRight",
       RL: true,
       is_modifier: true,
+      block_single: true,
       classes:["key", "huge"],
       character: "Shift",
 		
@@ -461,6 +468,7 @@ const keys = {
       identifier: "ShiftLeft",
       RL: true,
       is_modifier: true,
+      block_single: true,
       classes:["key", "medium-large"],
       character: "Shift",
 		
@@ -502,7 +510,7 @@ const keys = {
    space: {
       identifier: "Space",
 		classes:["key", "space"],
-      character: " ",
+      character: "Space",
    },
    tab: {
       identifier: "Tab",

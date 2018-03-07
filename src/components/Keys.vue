@@ -52,12 +52,6 @@
             </div>
          </div>
       </div>
-      <!-- tells us what's being pressed, whether we're waiting for a chain, etc -->
-      <div class="status">
-         <div v-if="chain.in_chain">Waiting on chain: {{normalize(chain.start).join("+")}}</div>
-         <div v-if="chain.warning">No chained shortcut {{normalize(chain.last).join("+")}} {{normalize(chain.warning).join("+")}}</div>
-         <div v-if="keymap_active.length > 0">Pressed: {{normalize(keymap_active).join("+")}}</div>
-      </div>
    </div>
 </template>
 
@@ -90,20 +84,45 @@ export default {
          mirrorContainer: this.$el, //we want to keep the dragged element within this component to style it apropriately
          revertOnSpill: true, //so cancel will revert position of element
          isContainer: function (el) {
-            return el.classList.contains(".key-container") || el.classList.contains("bin")
+            return el.classList.contains(".key-container") || el.classList.contains("bin") || el.classList.contains("delete-bin")
             //TODO allow dragging to shortcut list
          },
          moves: function (el, source, handle, sibling) {
             return el.classList.contains("key-entry")
          },
          accepts: (el, target, source, sibling) => {
-            //if we drag to the bin we always accept
-            if (target.classList.contains("bin")) {return true}
+            //if we drag to the bins we always accept
+            if (target.classList.contains("delete-bin") || target.classList.contains("bin")) {return true}
+
+            //get modifiers in pressed keys
+            let modifiers = _.intersection(this.modifiers_names, this.keymap_active)
             
+            //block individual block_single keys
+            let singles = modifiers.map(key => this.keymap[key].block_single)
+            let non_singles = singles.filter(block => block == false)
+            singles = singles.filter(block => block == true)
+
+            if (singles.length > 0 && non_singles.length == 0) {
+               return false
+            }
+
+            let target_key = target.querySelector(".label").innerText.toLowerCase().replace(" ", "")
+            target_key = keys_from_text(target_key, this)._shortcut[0][0]
+
+            //block individual block all keys
+            let block_all = [...this.keymap_active, target_key].map(key => this.keymap[key].block_all).filter(block => block == true)
+            
+            if (block_all.length > 0) {return false}
+
+            //don't allow dragging to modifiers
+            if (this.keymap[target_key].is_modifier || this.keymap[target_key].block) {
+               return false
+            }
+
             //clean classes
             this.$el.querySelectorAll(".unselectable").forEach(el => el.classList.remove("unselectable"))
-            
-            //if we're not in a chain (where anything can be swapped), don't allow swapping of entries that aren't chain starts with entries that are and vice-versa
+
+            //if we're not in a chain (where almost anything can be swapped), don't allow swapping of entries that aren't chain starts with entries that are and vice-versa
             if (!this.chain.in_chain) {
                //check if the key even has a shortcut assigned
                let target_entry = target.querySelector(".key-entry:not(.gu-transit)")
@@ -134,35 +153,46 @@ export default {
          this.$emit("freeze", true)
       })
       .on("over", (el, container, source) => {
-         let type = _.without(container.classList, "drag")[0]
+         let is_key = container.classList.contains("key-container")
+         //TODO let is_list = container.classList.contains("drag")
+         if (is_key) {
+            //we want to know how many real siblings the target has as sometimes the element might be inserted before/after it's sibling and so we need to manually add the selectors to properly target them with css
+            let siblings = container.parentNode.querySelectorAll(".key-entry:not(.gu-transit)")
+            let siblings_length = siblings.length
 
-         //we want to know how many real siblings the target has as sometimes the element might be inserted before/after it's sibling and so we need to manually add the selectors to properly target them with css
-         let siblings = container.parentNode.querySelectorAll(".key-entry:not(.gu-transit)")
-         let siblings_length = siblings.length
+            //clean classes beforehand
+            this.$el.querySelectorAll(".will_be_replaced").forEach(el => el.classList.remove("will_be_replaced"))
+            this.$el.querySelectorAll(".unselectable").forEach(el => el.classList.remove("unselectable"))
 
-         //clean classes beforehand
-         this.$el.querySelectorAll(".will_be_replaced").forEach(el => el.classList.remove("will_be_replaced"))
-         this.$el.querySelectorAll(".unselectable").forEach(el => el.classList.remove("unselectable"))
-
-         if (siblings_length > 0) {
-            el.classList.add("will_replace")
-            siblings.forEach(el => el.classList.add("will_be_replaced"))
-         } else {
-            el.classList.remove("will_replace")
+            if (siblings_length > 0) {
+               el.classList.add("will_replace")
+               siblings.forEach(el => el.classList.add("will_be_replaced"))
+            } else {
+               el.classList.remove("will_replace")
+            }
+         } else if (container.classList.contains("delete-bin")) {
+            container.classList.add("hovering")
          }
       })
       .on("out", (el, container, source) => {
          //sometimes the classes get stuck
          this.$el.querySelectorAll(".will_be_replaced").forEach(el => el.classList.remove("will_be_replaced"))
          this.$el.querySelectorAll(".unselectable").forEach(el => el.classList.remove("unselectable"))
+         document.querySelectorAll(".hovering").forEach(el => el.classList.remove("hovering"))
       }) 
       .on("drop", (el, target, source, sibling)=> {
          let source_entry = el.getAttribute("active_shortcuts_index")
          source_entry = this.shortcuts_active[source_entry]
 
+         if (target.classList.contains("delete-bin")) {
+            this.$emit("delete", source_entry)
+            drake.cancel()
+            return
+         }
+
          //if we drag to the bin just emit and add (add_to_bin)
          if (target.classList.contains("bin")) {
-            this.$emit("add", source_entry)
+            this.$emit("add_to_bin", source_entry)
          } else {
             //else get target from it's key than calculate the new combo
             let target_key = target.querySelector(".label").innerText

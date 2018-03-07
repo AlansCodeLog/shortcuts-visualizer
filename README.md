@@ -27,12 +27,12 @@ Eventually it would be nice to support some way to import/export them, at least 
 - [x] Editing shortcuts
 - [ ] Adding/Deleting Existing Shortcuts
 - [x] Show active shortcuts on top of keys.
-- [~] Custom Modifier Keys (e.g. use Tab as a modifier, or disable Shift, like for a text editor)
-- [ ] Program Contexts
+- [x] Custom Modifier Keys (e.g. use Tab as a modifier, or disable Shift, like for a text editor)
+- [x] Program Contexts
 - [x] Drag/Drop
-- [ ] Drag/Drop Commands Bin w/ Search
-- [ ] Del Bin
-- [ ] Command Bin
+- [x] Drag/Drop Commands
+- [x] Del Bin
+- [ ] Command Bin w/ Search
 - [ ] Mouse Commands
 - [~] Polishing/Clean/Beta
 - [ ] Demo
@@ -52,7 +52,7 @@ Eventually it would be nice to support some way to import/export them, at least 
 - Shortcuts are matched against a list created from the key's character property. All lowercase, no spaces, empty names are discarded. Can be overridden by setting a name property.
    - In a few rare cases this might be slightly confusing, specifically the super or oskey who's identifier is MetaRight/Left, while meta is sometimes shown on keyboard layouts where the menu key is. And I think meta is something else on macs?
 - Although it should be possible to allow a key to be dragged, then change the shortcut, this seems to break dragula. For now, to avoid the bugs that will likely bring, input is frozen on all dragging.
-
+- Character property cannot be a space, if you want to hide a character (like space) it must be done through css.
 
 # Documentation Snippets
 
@@ -65,7 +65,11 @@ Eventually it would be nice to support some way to import/export them, at least 
       classes:["key", "modifiers"], //classes for layout
       label_classes: [], //classes for key labels
       RL: false, //if a key like Shift which is on both sides
+      is_modifier: false, //whether a key is treated as a modifier
       ignore: false, //whether it's not really a key, and just a key for the layout
+      block_drag: true, //whether to block dragging to it, e.g. a command can't be set to just ctrl
+      block_single: false, //whether to allow the key to be included in a shortcut if it's the only modifier key (e.g. Shift + somekey for editiors), does nothing if the key isn't a modifier
+      block_all: true, //whether to allow the key to be included in a shortcut at all(e.g. Ctrl + Menu or if menu was a modifier Ctrl + Menu + somekey)
       nokeydown: false, //whether the keydown event does not fire e.g. Print Screen doesn't fire a keydown, almost everything else does
       toggle: false, //whether it's a native toggle key (so we can use event.getModifierState to get real state)
       fake_toggle: //emulate key as toggle, overrides input mode

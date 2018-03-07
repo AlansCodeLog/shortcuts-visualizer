@@ -85,10 +85,10 @@ export function chain_in_active (keys_pressed, {shortcuts_active}) { //second ar
    } else {return false}
 }
 
-function _normalize (identifiers, _this, {keymap, modifiers_order, modifiers_names}  = {}) {
+function _normalize (identifiers, _this, {keymap, modifiers_order}  = {}) {
    //setting variables from this when there's no need to override variables
    if (typeof _this !== "undefined") {
-      var {keymap, modifiers_order, modifiers_names} = _this
+      var {keymap, modifiers_order} = _this
    }
    if (identifiers.length == 0) {return []}
    let keys = identifiers.map(identifier => {
@@ -96,7 +96,7 @@ function _normalize (identifiers, _this, {keymap, modifiers_order, modifiers_nam
    })
    keys = _.uniq(keys)
    let keys_mods = keys.filter(key => {
-      return modifiers_names.includes(key)
+      return modifiers_order.includes(key)
    }).sort((a,b)=>{
       return modifiers_order.indexOf(a) - modifiers_order.indexOf(b)
    })
@@ -117,10 +117,10 @@ function _normalize (identifiers, _this, {keymap, modifiers_order, modifiers_nam
 }
 export const normalize = _normalize
 
-function _keys_from_text(shortcut, _this, {keymap, modifiers_order, modifiers_names} = {}) {
+function _keys_from_text(shortcut, _this, {keymap, modifiers_order} = {}) {
    //setting variables from this when there's no need to override variables
    if (typeof _this !== "undefined") {
-      var {keymap, modifiers_order, modifiers_names} = _this
+      var {keymap, modifiers_order} = _this
    }
    // split into parts, when there's more than two there's a chain
    shortcut = shortcut.split(" ").filter(entry => entry !== "")
@@ -159,9 +159,9 @@ function _keys_from_text(shortcut, _this, {keymap, modifiers_order, modifiers_na
       return _.pull(keys, '==BREAK==');
    })
    //normalize key names and create string shortcut property
-   shortcut = [_normalize(_shortcut[0].sort(), undefined, {keymap, modifiers_order, modifiers_names}).join("+")]
+   shortcut = [_normalize(_shortcut[0].sort(), undefined, {keymap, modifiers_order}).join("+")]
    if (_shortcut.length > 1) {
-      shortcut.push(_normalize(_shortcut[1].sort(), undefined, {keymap, modifiers_order, modifiers_names}).join("+"))
+      shortcut.push(_normalize(_shortcut[1].sort(), undefined, {keymap, modifiers_order}).join("+"))
    }
    return {shortcut: shortcut.join(" "), _shortcut: _shortcut}
 }
@@ -185,6 +185,9 @@ export function create_keymap (keys) {
          label_classes: typeof key.label_classes !== "undefined" ? key.label_classes : [],
          RL: typeof key.RL !== "undefined" ? key.RL : false,
          is_modifier: typeof key.is_modifier !== "undefined" ? key.is_modifier : false,
+         block_drag: typeof key.block_drag !== "undefined" ? key.block_drag : false,
+         block_single: typeof key.block_single !== "undefined" ? key.block_single : false,
+         block_all: typeof key.block_all !== "undefined" ? key.block_all : false,
          ignore: typeof key.ignore !== "undefined" ? key.ignore : false,
          nokeydown: typeof key.nokeydown !== "undefined" ? key.nokeydown : false,
          toggle: typeof key.toggle !== "undefined" ? key.toggle : false,
@@ -198,7 +201,10 @@ export function create_keymap (keys) {
    return keymap
 }
 
-export function create_shortcuts_list (settings_shortcuts, keymap, modifiers_order, modifiers_names) {
+export function create_shortcuts_list (settings_shortcuts, _this) {
+   //setting variables from this when there's no need to override variables
+   let {keymap, modifiers_order, modifiers_names, block_singles} = _this
+   
    // create empty array because we might push to it more than once per entry
    let shortcuts = []
    let contexts = []
@@ -206,7 +212,7 @@ export function create_shortcuts_list (settings_shortcuts, keymap, modifiers_ord
    //this way create_shortcut_entry can check existing shortcuts much more cleanly
    ready_all(settings_shortcuts, undefined, {keymap, modifiers_order, modifiers_names})
    settings_shortcuts.map(entry => {
-      let new_entries = create_shortcut_entry(entry, undefined, {shortcuts, keymap, modifiers_order, modifiers_names})
+      let new_entries = create_shortcut_entry(entry, undefined, {shortcuts, keymap, modifiers_order, modifiers_names, block_singles})
       
       if (new_entries.error) {throw new_entries.error}
       if (new_entries.remove) {
@@ -224,14 +230,14 @@ export function create_shortcuts_list (settings_shortcuts, keymap, modifiers_ord
    return {shortcuts_list: shortcuts, context_list: contexts}
 }
 
-export function ready_all(shortcuts, _this, {keymap, modifiers_order, modifiers_names}) {
+export function ready_all(shortcuts, _this, {keymap, modifiers_order, block_singles}) {
    //setting variables from this when there's no need to override variables
    if (typeof _this !== "undefined") {
-      var {shortcuts, keymap, modifiers_order, modifiers_names} = _this
+      var {shortcuts, keymap, modifiers_order, block_singles} = _this
    }
 
    shortcuts.map(entry =>{
-      var {shortcut, _shortcut} = _keys_from_text(entry.shortcut, undefined, {keymap, modifiers_order, modifiers_names})
+      var {shortcut, _shortcut} = _keys_from_text(entry.shortcut, undefined, {keymap, modifiers_order})
       //add to our shortcut entry
       entry.shortcut = shortcut
       entry._shortcut = _shortcut
@@ -263,14 +269,40 @@ function create_error(index, entry, existing_entry, type, editing) {
    if (!editing) {throw error} else {return error}
 }
 
-export function create_shortcut_entry (entry, _this, {shortcuts, keymap, modifiers_order, modifiers_names} = {}, editing = false) {
+export function create_shortcut_entry (entry, _this, {shortcuts, keymap, modifiers_order, modifiers_names, block_singles} = {}, editing = false) {
    //setting variables from this when there's no need to override variables
    if (typeof _this !== "undefined") {
-      var {shortcuts, keymap, modifiers_order, modifiers_names} = _this
+      var {shortcuts, keymap, modifiers_order, modifiers_names, block_singles} = _this
    }
-
+   
    entry.chained = entry._shortcut.length > 1 ? true : false
    entry.chain_start = typeof entry.chain_start !== "undefined" ? entry.chain_start : false
+
+   let invalid_shortcut = false
+
+   entry._shortcut.map((keyset, index) => {
+      let modifiers = _.difference(modifiers_names, keyset)
+      
+      if (block_singles && index == 0 && keyset.length == 1) {
+         invalid_shortcut = {}
+         invalid_shortcut.message = "Invalid shortcut '" + entry.shortcut + "'. Cannot assign shortcuts to single keys."
+         invalid_shortcut.code = "Blocked Singles"
+      }
+      let blocked = keyset.map(key => {
+         if (keymap[key].block_all) {
+            invalid_shortcut = {}
+            invalid_shortcut.message = "Invalid shortcut '" + entry.shortcut + "'. Shortcuts cannot contain key: " + keymap[key].character + ", assignments to the key are blocked."
+            invalid_shortcut.code = "All Blocked"
+            invalid_shortcut.key = key
+         }
+         if (keymap[key].is_modifier && keymap[key].block_single && modifiers.length == 1) {
+            invalid_shortcut = {}
+            invalid_shortcut.message = "Invalid shortcut: '" + entry.shortcut + "'. Shortcut's only modifier cannot be: " + keymap[key].character + ", single assignments to the key are blocked."
+            invalid_shortcut.code = "Single Blocked"
+            invalid_shortcut.key = key
+         }
+      })
+   })
    
    let existing_error = false
    let overwrite = false
@@ -312,7 +344,7 @@ export function create_shortcut_entry (entry, _this, {shortcuts, keymap, modifie
          chain_start: true,
          chained: false,
          _shortcut: [entry._shortcut[0]],
-         shortcut: _normalize(entry._shortcut[0], undefined, {keymap, modifiers_order, modifiers_names}).join("+"),
+         shortcut: _normalize(entry._shortcut[0], undefined, {keymap, modifiers_order}).join("+"),
       }
       
       let existing_index = shortcuts.findIndex((existing_entry, index) => {
@@ -328,9 +360,6 @@ export function create_shortcut_entry (entry, _this, {shortcuts, keymap, modifie
       if (!exists) {
          extra_entry = new_entry
       }
-   }
-   if (entry.chain_start) {
-      console.log("would happen if not for not editing")
    }
    
    //remove any existing chain starts so replacement can be put
@@ -353,5 +382,5 @@ export function create_shortcut_entry (entry, _this, {shortcuts, keymap, modifie
    entry.changed = false
    entry.dragging = false
    
-   return {entry, extra: extra_entry, remove: chain_starts_to_remove, error: existing_error}
+   return {entry, extra: extra_entry, remove: chain_starts_to_remove, error: existing_error, invalid: invalid_shortcut}
 }

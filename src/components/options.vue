@@ -32,7 +32,7 @@
 <script>
 export default {
    name: 'Options',
-   props: ["options", "modes", "contexts"],
+   props: ["contexts", "modes", "options"],
    data () {
       return {
          theme_dark: this.options.theme_dark,
