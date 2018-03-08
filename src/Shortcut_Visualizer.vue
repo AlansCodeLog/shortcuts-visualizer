@@ -1,7 +1,6 @@
 <template>
    <div
-      id="app"
-      :class="[options.theme_dark ? 'background-dark' : 'background-light']"
+      :class="['shortcut-visualizer', options.theme_dark ? 'background-dark' : 'background-light']"
    >
       <Options
          @input="change('options', $event)"
@@ -14,7 +13,6 @@
          @keyup="keyup($event)"
          @delete="delete_entry($event)"
          @add_to_bin="add_to_bin($event)"
-         @chained="chained($event)"
          @edit="shortcut_edit($event)"
          @freeze="change('freeze', $event)"
          :chain="chain"
@@ -82,23 +80,13 @@ import Options from "./components/options"
 import ShortcutsList from "./components/shortcut_list"
 import Bin from "./components/bin"
 
-import {layout} from "./settings/layout.js"
-import {keys} from "./settings/keys.js"
-import {shortcuts as settings_shortcuts} from "./settings/shortcuts.js"
-import {commands} from "./settings/commands.js"
 
 import * as _ from "lodash"
 import {chain_in_active, create_keymap, create_shortcut_entry, create_shortcuts_list, find_extra_keys_pressed, find_extra_modifiers, get_shortcuts_active, keys_from_text, multisplice, normalize} from "./helpers/helpers"
 
-// let keymap = create_keymap(keys)
-// let modifiers_names = _.uniq(Object.keys(keymap).filter(identifier => keymap[identifier].is_modifier).map(identifier => keymap[identifier].name))
-// let modifiers_order = ["ctrl", "shift", "alt"]
-
-// let {shortcuts_list, context_list} = create_shortcuts_list(settings_shortcuts, keymap, modifiers_order, modifiers_names, this)
-
-
 export default {
-   name: 'App',
+   name: 'Shortcut-Visualizer',
+   props: ["ops"],
    components: {
       Keys,
       Options,
@@ -107,7 +95,7 @@ export default {
    },
    data() {  
       return {
-         //will be set by props
+         //will be set by props (handled in created)
          layout: [], //layout,
          keys: {}, //keys,
          keymap: {}, //keymap,
@@ -126,6 +114,7 @@ export default {
             last: [],
             warning: false,
          },
+         //todo allow hiding/overiding by props
          options: {
             mode: "Toggle All",
             theme_dark: true,
@@ -154,10 +143,23 @@ export default {
       },
    },
    methods: {
+      //make normalize accesible to template
+      normalize (identifiers) {
+         return normalize(identifiers, this)
+      },
+      //set property by key (used to set freeze and options)
       change (key, data) {
          this[key] = data
       },
-      chained (data) {
+      //display error messages to user
+      set_error(error, timeout_multiplier = 1) {
+         this.error_message = error.message
+         setTimeout(() => {
+            this.error_message = false
+         }, this.timeout * timeout_multiplier);
+      },
+      //handles the chain state and setting chain not found error
+      toggle_chain(data) {
          this.chain = {...this.chain, ...data}
          if (this.chain.in_chain == true) {
             for (let key of this.chain.start) {
@@ -181,60 +183,70 @@ export default {
             }, this.timeout/3);
          }
       },
-      set_error(error, timeout_multiplier = 1) {
-         this.error_message = error.message
-         setTimeout(() => {
-            this.error_message = false
-         }, this.timeout * timeout_multiplier);
-      },
+      //completely delete an entry, does not do any cleanup //todo? add option
       delete_entry(entry) {
          let index = this.shortcuts.findIndex(existing_entry => {
             return existing_entry.shortcut == entry.shortcut
-            && existing_entry._shortcut.join("") == entry._shortcut.join("")
-            && existing_entry.contexts.join("") == entry.contexts.join("")
+            && existing_entry._shortcut.join() == entry._shortcut.join()
+            && existing_entry.contexts.join() == entry.contexts.join()
          })
          this.shortcuts.splice(index, 1)
       },
+      //just pushes a new entry without any checks, this is because it's easier to do checks and warn the user about an error without chainging a component's temporary state from within that component //todo? change
       shortcut_add(entry) {
          this.shortcuts.push(entry)
       },
+      //for editing any existing entries and/or swapping between them, NOT for adding an entry
       shortcut_edit({old_entry, new_entry}, checks = true) {
-
+         //get our shortcut array if we didn't already
          new_entry._shortcut = typeof new_entry._shortcut !== "undefined"
             ? new_entry._shortcut
             : keys_from_text(new_entry.shortcut, this)._shortcut
-         let index = this.shortcuts.findIndex(entry => _.isEqual(entry.shortcut, old_entry.shortcut))
+         
+         //find the index of our old entry
+         let index = this.shortcuts.findIndex(existing_entry => {
+            return existing_entry.shortcut == entry.shortcut
+            && existing_entry._shortcut.join() == entry._shortcut.join()
+            && existing_entry.contexts.join() == entry.contexts.join()
+         })
 
+         //since we don't allow non-chains to replace chain starts and vice versa, we can always get whether an entry is a chain start from the old entry
          if (old_entry.chain_start) {
             new_entry.chain_start = true
          }
 
+         //if contexts are undefined, just use the old contexts
          if (typeof new_entry.contexts == "undefined") {
             new_entry.contexts = old_entry.contexts
          }
 
+         //check if we need to create any new contexts
          for (let context of new_entry.contexts) {
             if (!this.contexts.includes(context)) {
                this.contexts.push(context)
             }
          }
          
+         //fetch our entry
          let result = create_shortcut_entry(new_entry, this, undefined, true)
+         //we can't spread new entry from the result because it's already defined
          new_entry = result.entry
+         //spread variables returned by result
          let {extra, remove, error, invalid} = result
 
-         
+         //if the shortcut is invalid (any keys are invalid or if a key is blocked)
          if (invalid) {
             this.set_error(invalid)
             return
          }
          
-         //"backup" our objects
+         //get and "backup" the entry to swap if it exists since we will change it
          if (error) {
             var existing_index = error.index
             var entry_swap = this.shortcuts[existing_index]
             var entry_swap_copy = {...this.shortcuts[existing_index]}
          }
+         //"backup" the old object
          let old_entry_copy = {...old_entry}
          let swap_exists = error && old_entry_copy.shortcut !== entry_swap_copy.shortcut
          
@@ -243,7 +255,7 @@ export default {
             old_entry[prop] = new_entry[prop]
          })
 
-
+         //if no chain starts to deal with, swap everything but the shortcut
          if (swap_exists && !old_entry_copy.chain_start && !new_entry.chain_start) {
             
             Object.keys(new_entry).map(prop => {
@@ -255,6 +267,8 @@ export default {
             
          }
          this.shortcut_edit_success([old_entry])
+
+         //checks means whether to check if we need to clean up anything, when called from within here it's set to false
 
          if (checks && !old_entry_copy.chain_start && !new_entry.chain_start) {
             
@@ -307,9 +321,8 @@ export default {
                   this.shortcuts.splice(index_chain_start, 1)
                }
             }
-         } else if (checks) {
+         } else if (checks) { //swapping chain starts is similar but more of a mess
             //if we need to swap chain starts and all their chains, first we have to do the chains
-
             let chain_entry = typeof entry_swap_copy !== "undefined" && entry_swap_copy.chain_start
                ? "entry_swap_copy"
                : old_entry_copy.chain_start
@@ -357,7 +370,6 @@ export default {
                         return entry
                      }
                   })
-                  console.log(chains)
                   
                   let new_start = chain_entry == "entry_swap_copy" ? new_entry : old_entry_copy
                   for (let entry of chains) {
@@ -382,8 +394,8 @@ export default {
             this.shortcut_edit_success([entry_swap])
             this.shortcut_edit_success([old_entry])
          }
-
       },
+      //makes the shortcuts flash to indicate what else changed (like in the case where chain starts are swapped)
       shortcut_edit_success(entries) {
          entries.map(entry => {
             entry.changed = true 
@@ -392,6 +404,7 @@ export default {
             }, this.timeout/10);
          })
       },
+      //add an entry to the bin, note this entries still technically have most of their properties and they are used
       add_to_bin(entry, extra = false) {
          if (!extra) {
             let index = this.shortcuts.findIndex(existing_entry => {
@@ -402,7 +415,7 @@ export default {
             this.shortcuts.splice(index, 1)
          }
          let current_context_index = entry.contexts.indexOf(this.options.context)
-         //remove the current context
+         //remove the current context since a common use should be to change a shortcut's context
          entry.contexts.splice(current_context_index, 1)
          this.bin.push(entry)
          if (!extra && entry.chain_start) {
@@ -417,9 +430,7 @@ export default {
             multisplice(this.shortcuts, indexes)
          }
       },
-      normalize (identifiers) {
-         return normalize(identifiers, this)
-      },
+      //handles keypresses
       keydown (e) {
          let identifier = e.code
          e.preventDefault()
@@ -436,21 +447,8 @@ export default {
          } else {
             this.keymap[identifier].active = this.keymap[identifier].fake_toggle ? !this.keymap[identifier].active : true
          }
-         if (this.mods_unknown) {
-            this.keymap["CapsLock"].active = e.getModifierState("CapsLock")
-            this.keymap["NumLock"].active = e.getModifierState("NumLock")
-            this.keymap["ScrollLock"].active = e.getModifierState("ScrollLock")
-            this.mods_unknown = false
-         } else if (this.keymap[identifier].toggle) {
-            this.keymap[identifier].active = e.getModifierState(identifier)
-         }
-         if (this.keymap[identifier].RL == true) {
-            if (identifier.indexOf("Right") !== -1) {
-               this.keymap[identifier.replace("Right", "Left")].active = this.keymap[identifier].active
-            } else {
-               this.keymap[identifier.replace("Left", "Right")].active = this.keymap[identifier].active
-            }
-         }
+         this.keypress_set_mods(e)
+         this.keypress_set_RL(e)
          this.$emit("input", this.keymap)
       },
       keyup (e) {
@@ -470,15 +468,25 @@ export default {
                }
             } else if (this.options.mode !== "Toggle All") {
             }
-            if (this.mods_unknown) {
-               this.keymap["CapsLock"].active = e.getModifierState("CapsLock")
-               this.keymap["NumLock"].active = e.getModifierState("NumLock")
-               this.keymap["ScrollLock"].active = e.getModifierState("ScrollLock")
-               this.mods_unknown = false
-            } else if (this.keymap[identifier].toggle) {
-               this.keymap[identifier].active = e.getModifierState(identifier)
-            }
+            this.keypress_set_mods(e)
          }
+         this.keypress_set_RL(e)
+         this.$emit("input", this.keymap)
+      },
+      //small helpers for handling keypresses
+      //sets the state of special keys like numlock
+      keypress_set_mods (e) {
+         if (this.mods_unknown) {
+            this.keymap["CapsLock"].active = e.getModifierState("CapsLock")
+            this.keymap["NumLock"].active = e.getModifierState("NumLock")
+            this.keymap["ScrollLock"].active = e.getModifierState("ScrollLock")
+            this.mods_unknown = false
+         } else if (this.keymap[identifier].toggle) {
+            this.keymap[identifier].active = e.getModifierState(identifier)
+         }
+      },
+      //makes both left and right versions of a key active
+      keypress_set_RL (e) {
          if (this.keymap[identifier].RL == true) {
             if (identifier.indexOf("Right") !== -1) {
                this.keymap[identifier.replace("Right", "Left")].active = this.keymap[identifier].active
@@ -486,28 +494,28 @@ export default {
                this.keymap[identifier.replace("Left", "Right")].active = this.keymap[identifier].active
             }
          }
-         this.$emit("input", this.keymap)
       }
    },
    watch: {
-      "keymap_active" (newactive, oldactive) { //checks chain state
+      //handles the chain state
+      "keymap_active" (newactive) {
          if (this.chain.in_chain) {
             let none_modifiers_pressed = newactive.filter(identifier => !this.keymap[identifier].is_modifier).length > 0 ? true : false
             //is there are keys being pressed that aren't modifiers that have not shortcuts
             if (newactive.length > 0 && none_modifiers_pressed && this.shortcuts_active.length == 0) {
-               this.chained({in_chain: false, warning: [...newactive]})
+               this.toggle_chain({in_chain: false, warning: [...newactive]})
             }
          } else {
             let trigger_chain = chain_in_active(newactive, this)
             if (trigger_chain) {
-               this.chained(trigger_chain)
+               this.toggle_chain(trigger_chain)
             }
          }
       },
    },
    created() {
-      //TODO convert to getting through props
-      //props: layout, keys, modifiers_order, settings_shortcuts aka shortcuts
+      //TODO? wrap in another compenent that watches for changes to options but allows this component to name them as it likes
+      let {layout, keys, shortcuts, commands, timeout} = this.ops
       this.layout = layout
       this.keys = keys
       // this.block_singles
@@ -515,7 +523,7 @@ export default {
       this.modifiers_names = _.uniq(Object.keys(this.keymap).filter(identifier => this.keymap[identifier].is_modifier).map(identifier => this.keymap[identifier].identifier))
       this.modifiers_order = ["ctrl", "shift", "alt"]
       
-      let lists = create_shortcuts_list(settings_shortcuts, this)
+      let lists = create_shortcuts_list(shortcuts, this)
       this.shortcuts= lists.shortcuts_list
       this.contexts = lists.context_list.map(entry => entry = entry.toLowerCase()).sort()
       this.commands = commands
@@ -524,107 +532,64 @@ export default {
 </script>
 
 <style lang="scss">
-@import "./settings/theme.scss";
 
-.status {
-   margin: 0 $padding-size/2 $padding-size;
-   display: flex;
-   justify-content: center;
-   flex-wrap: wrap;
-   & > div {
-      flex: 1 0 100%;
-      margin: 0.5em;
-      text-align: center;
+.shortcut-visualizer {
+   @import "./settings/theme.scss";
+   &.background-light {
+      background: $theme-light-background;
+      color: invert($theme-light-background);
+      input {
+         color: invert($theme-light-background);
+      }
    }
-   .error {
-      color: red;
+   &.background-dark {
+      background: $theme-dark-background;
+      color: invert($theme-dark-background);
+      input {
+         color: invert($theme-dark-background);
+      }
    }
-}
-
-.bins {
-   display:flex;
-   margin: 0 $padding-size;
-   justify-content: space-between;
-   .temp-bin {
-      flex: 0 1 70%;
-   }
-   .delete-bin {
-      flex: 0 1 30%;
-      margin-left: $padding-size;
-      align-self: stretch;
-      background: transparentize(red, 0.7);
-      border: transparentize(red, 0.7) 0.2em solid;
+   .status {
+      margin: 0 $padding-size/2 $padding-size;
       display: flex;
       justify-content: center;
-      align-items: center;
-      &.hovering::after {
-         content: "DELETE";
+      flex-wrap: wrap;
+      & > div {
+         flex: 1 0 100%;
+         margin: 0.5em;
+         text-align: center;
+      }
+      .error {
          color: red;
-         font-size: 2em;
-      }
-      .bin-entry, .list-subentry, .key-entry {
-         display: none;
       }
    }
-}
 
-.background-light {
-   background: $theme-light-background;
-   color: invert($theme-light-background);
-   .list div {
-      background: $theme-light-background;
-   }
-   input {
-      color: invert($theme-light-background);
-   }
-   .key > .key-container {
-      background: $cap-light;
-      border: (0.1 * $keyboard-font-size) solid  mix($cap-light, black, 90%);
-      box-shadow: 0 (0.05 * $keyboard-font-size) (0.1 * $keyboard-font-size) (0.1 * $keyboard-font-size) mix($cap-light, black, 50%);
-   }
-   .options {
-      .contexts .contexts-list {
-         background: rgba(0,0,0,0.1);
-         border-color: rgba(0,0,0,0.1);
+   .bins {
+      display:flex;
+      margin: 0 $padding-size;
+      justify-content: space-between;
+      .temp-bin {
+         flex: 0 1 70%;
+      }
+      .delete-bin {
+         flex: 0 1 30%;
+         margin-left: $padding-size;
+         align-self: stretch;
+         background: transparentize(red, 0.7);
+         border: transparentize(red, 0.7) 0.2em solid;
+         display: flex;
+         justify-content: center;
+         align-items: center;
+         &.hovering::after {
+            content: "DELETE";
+            color: red;
+            font-size: 2em;
+         }
+         .bin-entry, .list-subentry, .key-entry {
+            display: none;
+         }
       }
    }
-   .bin-container {
-      background: rgba(0,0,0,0.1);
-      border-color: rgba(0,0,0,0.1);
-   }
-}
-.background-dark {
-   background: $theme-dark-background;
-   color: invert($theme-dark-background);
-   .list div {
-      background: $theme-dark-background;
-   }
-   input {
-      color: invert($theme-dark-background);
-   }
-   .key > .key-container {
-      background: $cap-dark;
-      border: (0.1 * $keyboard-font-size) solid mix($cap-dark, black, 90%);
-      box-shadow: 0 (0.05 * $keyboard-font-size) (0.1 * $keyboard-font-size) (0.1 * $keyboard-font-size) mix($cap-dark, black, 50%);
-   }
-   .options {
-      .contexts .contexts-list {
-         background: rgba(0,0,0,0.25);
-         border-color:rgba(0,0,0,0.3);
-      }
-   }
-   .bin-container {
-      background: rgba(0,0,0,0.25);
-      border-color:rgba(0,0,0,0.3);
-   }
-}
 
-body {
-   margin:0;
 }
-
-#app {
-   font-family: Arial, sans-serif;
-}
-
 </style>

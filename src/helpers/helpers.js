@@ -275,8 +275,17 @@ export function create_shortcut_entry (entry, _this, {shortcuts, keymap, modifie
       var {shortcuts, keymap, modifiers_order, modifiers_names, block_singles} = _this
    }
 
+   let invalid_shortcut = false
+
    if (typeof entry._shortcut == "undefined") {
-      entry.shortcut = _keys_from_text(entry.shortcut, _this)
+      try { //might fail do to invalid keys
+         entry.shortcut = _keys_from_text(entry.shortcut, _this)
+      } catch (error) {
+         invalid_shortcut = {}
+         invalid_shortcut.message = error
+         invalid_shortcut.code = "Invalid Key"
+         return
+      }
       entry._shortcut = entry.shortcut._shortcut
       entry.shortcut = entry.shortcut.shortcut
    }
@@ -284,7 +293,6 @@ export function create_shortcut_entry (entry, _this, {shortcuts, keymap, modifie
    entry.chained = entry._shortcut.length > 1 ? true : false
    entry.chain_start = typeof entry.chain_start !== "undefined" ? entry.chain_start : false
 
-   let invalid_shortcut = false
 
    for (let keyset of entry._shortcut) {
       //get modifiers in keyset

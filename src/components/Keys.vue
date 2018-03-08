@@ -233,78 +233,94 @@ export default {
 <style lang="scss">
 //do not scope! causes problems, also we want to be able to target light/dark theme from within component
 
-@import "../settings/theme.scss";
-@import "../settings/custom_dragula.scss";
-@import "../settings/keyboard_base.scss"; //handles the messy stuff so we can concentrate on styling
-
-.keyboard {
-   padding: 0 $padding-size $padding-size;
-   .key-entry, .bin-entry {
-      cursor: pointer;
-      position: absolute;
-      top:$keyboard-font-size * 1.3;
-      bottom: 0;
-      left: 0;
-      right:0;
-      font-size: $shortcut-font-size;
-      text-align: center;
-      display:flex;
-      align-items: center;
-      background: hsla(hue($accent-color), 100%, 50%, 0.2);
-      border: rgba(0,0,0,0) 0.2em solid;
-      .command {
-         text-align: center;
-         user-select: none;
-         word-break: break-word;
-         max-height: 100%;
-         overflow: hidden;
-         padding: 0.1em;
-         margin: 0 auto;
+.shortcut-visualizer {
+   @import "../settings/theme.scss";
+   @import "../settings/custom_dragula.scss";
+   @import "../settings/keyboard_base.scss"; //handles the messy stuff so we can concentrate on styling
+   &.background-light {
+      .key > .key-container {
+         background: $cap-light;
+         border: (0.1 * $keyboard-font-size) solid  mix($cap-light, black, 90%);
+         box-shadow: 0 (0.05 * $keyboard-font-size) (0.1 * $keyboard-font-size) (0.1 * $keyboard-font-size) mix($cap-light, black, 50%);
       }
    }
-   .bin-entry .remove {
-      display: none;
+   &.background-dark {
+      .key > .key-container {
+         background: $cap-dark;
+         border: (0.1 * $keyboard-font-size) solid mix($cap-dark, black, 90%);
+         box-shadow: 0 (0.05 * $keyboard-font-size) (0.1 * $keyboard-font-size) (0.1 * $keyboard-font-size) mix($cap-dark, black, 50%);
+      }
    }
-   .gu-mirror {
-      font-size: $shortcut-drag-font-size;
-      width: auto !important;
-      height: auto !important;
-      right: auto !important;
-      bottom: auto !important;
-   }
-   .will_replace {
-      display: none;
-   }
-   .will_be_replaced {
-      z-index: 1;
-   }
-   .is_chain {
-      border-color: transparentize($accent-color, 0.7);
-   }
-   .chain-pressed > .key-container::before {
-      content: "";
-      position: absolute;
-      top:-$cap-spacing;
-      bottom:-$cap-spacing;
-      left:-$cap-spacing;
-      right:-$cap-spacing;
-      border-color: mix($accent-color,rgba(0,0,0,0), 50%) !important;
-      border-style: dotted;
-   }
-}
 
-.background-light {
-   .key-container {
-      background: $cap-light;
-      border: (0.1 * $keyboard-font-size) solid  mix($cap-light, black, 90%);
-      box-shadow: 0 (0.05 * $keyboard-font-size) (0.1 * $keyboard-font-size) (0.1 * $keyboard-font-size) mix($cap-light, black, 50%);
+   .keyboard {
+      padding: 0 $padding-size $padding-size;
+      .key-entry, .bin-entry {
+         cursor: pointer;
+         position: absolute;
+         top:$keyboard-font-size * 1.3;
+         bottom: 0;
+         left: 0;
+         right:0;
+         font-size: $shortcut-font-size;
+         text-align: center;
+         display:flex;
+         align-items: center;
+         background: hsla(hue($accent-color), 100%, 50%, 0.2);
+         border: rgba(0,0,0,0) 0.2em solid;
+         .command {
+            text-align: center;
+            user-select: none;
+            word-break: break-word;
+            max-height: 100%;
+            overflow: hidden;
+            padding: 0.1em;
+            margin: 0 auto;
+         }
+      }
+      .bin-entry .remove {
+         display: none;
+      }
+      .gu-mirror {
+         font-size: $shortcut-drag-font-size;
+         width: auto !important;
+         height: auto !important;
+         right: auto !important;
+         bottom: auto !important;
+      }
+      .will_replace {
+         display: none;
+      }
+      .will_be_replaced {
+         z-index: 1;
+      }
+      .is_chain {
+         border-color: transparentize($accent-color, 0.7);
+      }
+      .chain-pressed > .key-container::before {
+         content: "";
+         position: absolute;
+         top:-$cap-spacing;
+         bottom:-$cap-spacing;
+         left:-$cap-spacing;
+         right:-$cap-spacing;
+         border-color: mix($accent-color,rgba(0,0,0,0), 50%) !important;
+         border-style: dotted;
+      }
    }
-}
-.background-dark {
-   .key-container {
-      background: $cap-dark;
-      border: (0.1 * $keyboard-font-size) solid mix($cap-dark, black, 90%);
-      box-shadow: 0 (0.05 * $keyboard-font-size) (0.1 * $keyboard-font-size) (0.1 * $keyboard-font-size) mix($cap-dark, black, 50%);
+
+   .background-light {
+      .key-container {
+         background: $cap-light;
+         border: (0.1 * $keyboard-font-size) solid  mix($cap-light, black, 90%);
+         box-shadow: 0 (0.05 * $keyboard-font-size) (0.1 * $keyboard-font-size) (0.1 * $keyboard-font-size) mix($cap-light, black, 50%);
+      }
+   }
+   .background-dark {
+      .key-container {
+         background: $cap-dark;
+         border: (0.1 * $keyboard-font-size) solid mix($cap-dark, black, 90%);
+         box-shadow: 0 (0.05 * $keyboard-font-size) (0.1 * $keyboard-font-size) (0.1 * $keyboard-font-size) mix($cap-dark, black, 50%);
+      }
    }
 }
 </style>

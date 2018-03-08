@@ -66,31 +66,49 @@ export default {
 }
 </script>
 <style lang="scss" scoped>
-@import "../../node_modules/selectize/dist/css/selectize.css";
-@import "../settings/theme.scss";
 
-.list-input {
-   outline: none;
-}
-.list {
-   position: absolute;
-   top:100%;
-   left: -0.3em;
-   right: -0.3em;
-   div {
-      padding: 0.5em;
-      position: relative;
-      &::before {
-         content: "";
-         position: absolute;
-         top: 0;
-         bottom:0;
-         right:0;
-         left:0;
-         background: rgba(255, 166, 0, 0.1);
+.shortcut-visualizer {
+   @import "../settings/theme.scss";
+   
+   &.background-light {
+      background: $theme-light-background;
+      color: invert($theme-light-background);
+      .list div {
+         background: $theme-light-background;
       }
-      &:hover::before {
-         background: rgba(255, 166, 0, 0.3);
+   }
+   &.background-dark {
+      background: $theme-dark-background;
+      color: invert($theme-dark-background);
+      .list div {
+         background: $theme-dark-background;
+      }
+   }
+
+   .list-input {
+      outline: none;
+   }
+   .list {
+      position: absolute;
+      top:100%;
+      left: -0.3em;
+      right: -0.3em;
+      div {
+         padding: 0.5em;
+         position: relative;
+         &::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            bottom:0;
+            right:0;
+            left:0;
+            background: rgba(255, 166, 0, 0.1);
+         }
+         &:hover::before {
+            background: rgba(255, 166, 0, 0.3);
+            color: #a3480c;
+         }
       }
    }
 }

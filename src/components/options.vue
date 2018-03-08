@@ -54,60 +54,77 @@ export default {
 </script>
 <style lang="scss">
 
-@import "../settings/theme.scss";
+.shortcut-visualizer {
+   @import "../settings/theme.scss";
 
-
-//TODO fix checkbox
-
-
-.options {
-   padding: $padding-size;
-   padding-bottom: $padding-size/2;
-   .row {
-      width:100%;
-      padding: $padding-size/4 0;
-      display: flex;
-      align-items: center;
-      font-size: $regular-font-size;
-      @media (max-width: $regular-media-query){
-         font-size: $regular-shrink-amount * $regular-font-size;
-      }
-      .option {
-         margin: 0 1em;
-      }
-      select {
-         font-size: 1em;
+   &.background-light {
+      .options {
+         .contexts .contexts-list {
+            background: rgba(0,0,0,0.1);
+            border-color: rgba(0,0,0,0.1);
+         }
       }
    }
-   .contexts {
-      .contexts-list {
-         text-transform: capitalize;
-         padding: $padding-size/2 0;
-         margin-top: $padding-size/2;
-         font-weight:bold;
-         flex: 1 1 auto;
+   &.background-dark {
+      .options {
+         .contexts .contexts-list {
+            background: rgba(0,0,0,0.25);
+            border-color:rgba(0,0,0,0.3);
+         }
+      }
+   }
+
+   //TODO fix checkbox
+
+   .options {
+      padding: $padding-size;
+      padding-bottom: $padding-size/2;
+      .row {
+         width:100%;
+         padding: $padding-size/4 0;
          display: flex;
-         justify-content: center;
-         box-sizing: border-box;
-         border: 2px solid rgba(0,0,0,0);
-         .context-select {
-            flex: 0 0 auto;
-            padding: 0 $padding-size;
-            display: block;
-            cursor: pointer;
+         align-items: center;
+         font-size: $regular-font-size;
+         @media (max-width: $regular-media-query){
+            font-size: $regular-shrink-amount * $regular-font-size;
          }
-         .active {
-            color: mix(white, hsla(hue($accent-color), 100%, 50%, 1), 20%);
+         .option {
+            margin: 0 1em;
+         }
+         select {
+            font-size: 1em;
          }
       }
-   }
-   input[type="checkbox"] {
-      transform: scale(1.5);
-      margin:0 0.2em;
-      vertical-align: -0.1em;
-      @media (max-width: $regular-media-query){
-         transform: scale($regular-shrink-amount*1.5);
-         vertical-align: -0.15em;
+      .contexts {
+         .contexts-list {
+            text-transform: capitalize;
+            padding: $padding-size/2 0;
+            margin-top: $padding-size/2;
+            font-weight:bold;
+            flex: 1 1 auto;
+            display: flex;
+            justify-content: center;
+            box-sizing: border-box;
+            border: 2px solid rgba(0,0,0,0);
+            .context-select {
+               flex: 0 0 auto;
+               padding: 0 $padding-size;
+               display: block;
+               cursor: pointer;
+            }
+            .active {
+               color: mix(white, hsla(hue($accent-color), 100%, 50%, 1), 20%);
+            }
+         }
+      }
+      input[type="checkbox"] {
+         transform: scale(1.5);
+         margin:0 0.2em;
+         vertical-align: -0.1em;
+         @media (max-width: $regular-media-query){
+            transform: scale($regular-shrink-amount*1.5);
+            vertical-align: -0.15em;
+         }
       }
    }
 }

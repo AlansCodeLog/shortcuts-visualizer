@@ -91,6 +91,10 @@ The keymap function then creates a keymap from the keys for use internally. It e
    }
 ```
 
+# Code Notes
+
+- Since contexts and keys arrays are always sorted, quickest way to compare them is to join them to a string.
+
 ## Build Setup
 
 Based on Vue's Webpack Template

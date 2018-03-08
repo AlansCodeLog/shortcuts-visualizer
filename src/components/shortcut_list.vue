@@ -491,150 +491,110 @@ export default {
 </script>
 <style lang="scss">
 
+.shortcut-visualizer {
+   @import "../settings/theme.scss";
+   @import "../settings/custom_dragula.scss";
 
-@import "../settings/theme.scss";
-@import "../settings/custom_dragula.scss";
-
-.shortcuts {
-   padding: $padding-size;
-   margin: 0 auto;
-   font-size: $regular-font-size;
-   @media (max-width: $regular-media-query){
-      font-size: $regular-shrink-amount * $regular-font-size;
-   }
-   .gu-mirror {
-      width: auto !important;
-      height: auto !important;
-   }
-   .container {
-      border: 1px solid rgba(0,0,0,0.5);
-      input {
-         font-size: 1em;
-         outline: none;
-         padding: 0;
-         background: none;
-         border: none;
+   .shortcuts {
+      padding: $padding-size;
+      margin: 0 auto;
+      font-size: $regular-font-size;
+      @media (max-width: $regular-media-query){
+         font-size: $regular-shrink-amount * $regular-font-size;
       }
-      .edit {
-         flex: 1 0 2em;
-         order: 1;
+      .gu-mirror {
+         width: auto !important;
+         height: auto !important;
       }
-      .chain {
-         flex: 1 0 1.5em;
-         order: 2;
-      }
-      .shortcut {
-         flex: 1 1 20%;
-         order: 3;
-      }
-      .command {
-         flex: 1 1 60%;
-         order: 4;
-      }
-      .contexts {
-         flex: 1 1 20%;
-         order: 5;
-      }
-      .delete {
-         flex: 1 0 1.5em;
-         order: 6;
-      }
-      .entry, .entry-header, .add, .stop-add, .adding {
-         box-sizing: border-box;
+      .container {
          border: 1px solid rgba(0,0,0,0.5);
-         width:100%;
-         display: flex;
-         user-select: none;
-         & > div { //.shortcut, .command, etc
-            padding: 0.3em;
-            overflow-x: hidden;
-            white-space: nowrap;
+         input {
+            font-size: 1em;
+            outline: none;
+            padding: 0;
+            background: none;
+            border: none;
          }
-         & .list-subentry {
-            display: inline-block;
-            flex: 1 1 100%;
-         }
-         
-      }
-      .entry .contexts {
-         text-transform: capitalize;
-         // input {
-         //    text-transform: capitalize;
-         // }
-      }
-      //because whoever wrote the specs is an idiot
-      .editing .command, .editing .contexts {
-         overflow-x: unset;
-         .list-input {
-            width:100%;
-            overflow-y: visible;
-         } 
-      }
-      .entry-header, .add, .stop-add {
-         font-weight: bold;
-      }
-      .add, .stop-add {
-         text-align: center;
-         margin: 0 auto;
-         padding: 0.3em;
-         display: inline-block;
-         cursor: pointer;
-      }
-      .add, .stop-add {
-         color: $accent-color;
-      }
-      .stop-add {
-         color: $dragging-not-allowed-background;
-      }
-      .adding {
-         background: transparentize($accent-color, 0.7);
          .edit {
-            text-align: center;
-         }
-         & > div {
-            position: relative;
-         }
-         & > div:not(.chain) input {
-               padding: 0.3em;
-               position: absolute;
-               top:0;
-               bottom: 0;
-               right: 0;
-               left:0;
-               width: calc(100% - 0.3em);
+            flex: 1 0 2em;
+            order: 1;
          }
          .chain {
-            input {
-               height: 1em;
-               width: 1em;
-            }
+            flex: 1 0 1.5em;
+            order: 2;
          }
-      }
-      .entry, .adding {
-         & > div { //.shortcut, .command, etc
+         .shortcut {
+            flex: 1 1 20%;
+            order: 3;
+         }
+         .command {
+            flex: 1 1 60%;
+            order: 4;
+         }
+         .contexts {
+            flex: 1 1 20%;
+            order: 5;
+         }
+         .delete {
+            flex: 1 0 1.5em;
+            order: 6;
+         }
+         .entry, .entry-header, .add, .stop-add, .adding {
+            box-sizing: border-box;
+            border: 1px solid rgba(0,0,0,0.5);
+            width:100%;
             display: flex;
-            justify-content: flex-start;
-            &:not(.chain):hover {
-               cursor: pointer;
+            user-select: none;
+            & > div { //.shortcut, .command, etc
+               padding: 0.3em;
+               overflow-x: hidden;
+               white-space: nowrap;
             }
-         }
-         .gu-transit {
-            display: none;
-         }
-         &.dragging .gu-transit  {
-            display: none;
-            &:hover {
-               display: block;
+            & .list-subentry {
+               display: inline-block;
+               flex: 1 1 100%;
             }
+            
          }
-         .bin-entry.will_replace {
-            display: none;
+         .entry .contexts {
+            text-transform: capitalize;
+            // input {
+            //    text-transform: capitalize;
+            // }
          }
-         &.editing{
-            background: transparentize($dragging-will-be-replaced, 0.7);
-            & > div {  //.shortcut, .command, etc
+         //because whoever wrote the specs is an idiot
+         .editing .command, .editing .contexts {
+            overflow-x: unset;
+            .list-input {
+               width:100%;
+               overflow-y: visible;
+            } 
+         }
+         .entry-header, .add, .stop-add {
+            font-weight: bold;
+         }
+         .add, .stop-add {
+            text-align: center;
+            margin: 0 auto;
+            padding: 0.3em;
+            display: inline-block;
+            cursor: pointer;
+         }
+         .add, .stop-add {
+            color: $accent-color;
+         }
+         .stop-add {
+            color: $dragging-not-allowed-background;
+         }
+         .adding {
+            background: transparentize($accent-color, 0.7);
+            .edit {
+               text-align: center;
+            }
+            & > div {
                position: relative;
-               input {
+            }
+            & > div:not(.chain) input {
                   padding: 0.3em;
                   position: absolute;
                   top:0;
@@ -642,17 +602,58 @@ export default {
                   right: 0;
                   left:0;
                   width: calc(100% - 0.3em);
+            }
+            .chain {
+               input {
+                  height: 1em;
+                  width: 1em;
                }
             }
          }
-         .edit {
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-         }
-         transition: background-color 0.3s ease-out;
-         &.changed {
-            background: fade-out($accent-color, 0.7) !important;
+         .entry, .adding {
+            & > div { //.shortcut, .command, etc
+               display: flex;
+               justify-content: flex-start;
+               &:not(.chain):hover {
+                  cursor: pointer;
+               }
+            }
+            .gu-transit {
+               display: none;
+            }
+            &.dragging .gu-transit  {
+               display: none;
+               &:hover {
+                  display: block;
+               }
+            }
+            .bin-entry.will_replace {
+               display: none;
+            }
+            &.editing{
+               background: transparentize($dragging-will-be-replaced, 0.7);
+               & > div {  //.shortcut, .command, etc
+                  position: relative;
+                  input {
+                     padding: 0.3em;
+                     position: absolute;
+                     top:0;
+                     bottom: 0;
+                     right: 0;
+                     left:0;
+                     width: calc(100% - 0.3em);
+                  }
+               }
+            }
+            .edit {
+               display: flex;
+               justify-content: space-around;
+               align-items: center;
+            }
+            transition: background-color 0.3s ease-out;
+            &.changed {
+               background: fade-out($accent-color, 0.7) !important;
+            }
          }
       }
    }
