@@ -81,6 +81,7 @@ export default {
    }
    .contexts {
       .contexts-list {
+         text-transform: capitalize;
          padding: $padding-size/2 0;
          margin-top: $padding-size/2;
          font-weight:bold;

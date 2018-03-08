@@ -43,6 +43,7 @@
             :bin="bin"
             :block_singles="block_singles"
             :chain="chain"
+            :commands="commands"
             :keymap="keymap"
             :keymap_active="keymap_active"
             :modifiers_names="modifiers_names"
@@ -62,6 +63,8 @@
          @edit="shortcut_edit($event)"
          @freeze="change('freeze', $event)"
          :chain="chain"
+         :commands="commands"
+         :contexts="contexts"
          :keymap="keymap"
          :modifiers_names="modifiers_names"
          :modifiers_order="modifiers_order"
@@ -82,9 +85,10 @@ import Bin from "./components/bin"
 import {layout} from "./settings/layout.js"
 import {keys} from "./settings/keys.js"
 import {shortcuts as settings_shortcuts} from "./settings/shortcuts.js"
+import {commands} from "./settings/commands.js"
 
 import * as _ from "lodash"
-import {chain_in_active, create_keymap, create_shortcut_entry, create_shortcuts_list,find_extra_keys_pressed, find_extra_modifiers, get_shortcuts_active, keys_from_text, multisplice, normalize} from "./helpers/helpers"
+import {chain_in_active, create_keymap, create_shortcut_entry, create_shortcuts_list, find_extra_keys_pressed, find_extra_modifiers, get_shortcuts_active, keys_from_text, multisplice, normalize} from "./helpers/helpers"
 
 // let keymap = create_keymap(keys)
 // let modifiers_names = _.uniq(Object.keys(keymap).filter(identifier => keymap[identifier].is_modifier).map(identifier => keymap[identifier].name))
@@ -111,6 +115,7 @@ export default {
          modifiers_order: [], //modifiers_order,
          shortcuts: [], //shortcuts_list,
          contexts: [], //context_list,
+         commands: [], //commands
          timeout: 3000,
          //private to component
          modes: ["As Pressed", "Toggle Modifiers", "Toggle All"],
@@ -125,7 +130,7 @@ export default {
             mode: "Toggle All",
             theme_dark: true,
             accept_on_blur: true,
-            context: "Global",
+            context: "global",
          },
          mods_unknown: true,
          freeze: false,
@@ -176,11 +181,11 @@ export default {
             }, this.timeout/3);
          }
       },
-      set_error(error) {
+      set_error(error, timeout_multiplier = 1) {
          this.error_message = error.message
          setTimeout(() => {
             this.error_message = false
-         }, this.timeout);
+         }, this.timeout * timeout_multiplier);
       },
       delete_entry(entry) {
          let index = this.shortcuts.findIndex(existing_entry => {
@@ -512,7 +517,8 @@ export default {
       
       let lists = create_shortcuts_list(settings_shortcuts, this)
       this.shortcuts= lists.shortcuts_list
-      this.contexts = lists.context_list
+      this.contexts = lists.context_list.map(entry => entry = entry.toLowerCase()).sort()
+      this.commands = commands
    },
 }
 </script>
@@ -564,6 +570,10 @@ export default {
 
 .background-light {
    background: $theme-light-background;
+   color: invert($theme-light-background);
+   .list div {
+      background: $theme-light-background;
+   }
    input {
       color: invert($theme-light-background);
    }
@@ -586,6 +596,9 @@ export default {
 .background-dark {
    background: $theme-dark-background;
    color: invert($theme-dark-background);
+   .list div {
+      background: $theme-dark-background;
+   }
    input {
       color: invert($theme-dark-background);
    }

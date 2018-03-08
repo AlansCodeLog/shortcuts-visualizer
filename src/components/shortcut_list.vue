@@ -54,7 +54,6 @@
             v-for="(entry, index) of shortcuts_list_active" :key="entry.shortcut+entry.command"
             :index = index
          >  
-            <div class="remove" @click="remove(index)">&#10006;</div>
             <!-- COLUMN EDIT -->
             <div :class="['edit']">
                <!-- Edit -->
@@ -112,14 +111,17 @@
                   v-if="!entry.editing"
                >{{entry.command}}</div>
                <!-- EDITING -->
-               <input
+               <list_input
                   class="dont_blur"
                   v-if="entry.editing"
                   v-model="editing.command"
-                  @keydown.enter="toggle_editing(false, entry, index)"
+                  :list="commands"
+                  :allow_chain="false"
+                  @enter="toggle_editing(false, entry, index)"
                   @blur="check_blur($event, entry, index)"
-                  @keydown.esc="cancel_edit(entry)"
-               />
+                  @esc="cancel_edit(entry)"               
+               >
+               </list_input>
             </div>
 
             <!-- COLUMN CONTEXTS -->
@@ -131,14 +133,17 @@
                   v-if="!entry.editing"
                >{{entry.contexts.join(", ")}}</div>
                <!-- EDITING -->
-               <input
+               <list_input
                   class="dont_blur"
                   v-if="entry.editing"
-                  :value="editing.contexts.join(', ')"
-                  @keydown.enter="set_contexts($event.target.value);toggle_editing(false, entry, index)"
-                  @blur="set_contexts($event.target.value);check_blur($event, entry, index)"
-                  @keydown.esc="cancel_edit(entry)"
-               />
+                  v-model="editing.contexts"
+                  :list="contexts"
+                  :allow_chain="true"
+                  @enter="toggle_editing(false, entry, index)"
+                  @blur="check_blur($event, entry, index)"
+                  @esc="cancel_edit(entry)"               
+               >
+               </list_input>
             </div>
             <div class="delete" title="delete" @click="remove(index)">&#10006;</div>
          </div>
@@ -150,21 +155,26 @@
 
 import dragula from "dragula"
 import { keys_from_text, create_shortcut_entry } from '../helpers/helpers';
+import list_input from "./list_input"
+
 export default {
    name: 'Shortcuts',
-   props: ["chain", "keymap", "modifiers_names", "modifiers_order", "normalize", "options", "shortcuts", "shortcuts_list_active"],
+   props: ["chain", "commands", "contexts", "keymap", "modifiers_names", "modifiers_order", "normalize", "options", "shortcuts", "shortcuts_list_active"],
+   components: {
+      list_input
+   },
    data () {
       return {
          editing: {
             shortcut: "",
             command: "",
-            contexts: [],
+            contexts: "",
          },
          adding: false,
          entry_to_add: {
             shortcut: "",
             command: "",
-            contexts: "Global",
+            contexts: "global",
             chain_start: false,
          }
       }
@@ -228,12 +238,9 @@ export default {
          this.entry_to_add.chain_start = false
          this.toggle_adding()
       },
-      set_contexts (value) {
-         //we need to handle transforming the array to text.
-         //contexts can have spaces but we check for extra white space before/after the comma
-         this.editing.contexts = value.split(/\s*,\s*/g)
-      },
       toggle_editing (editing, entry, index, focusto = 'shortcut', check_existing = true) {
+         
+         if (!editing) {this.editing.contexts = this.editing.contexts.toLowerCase().split(/\s*,\s*/g)}
          //we need to keep a reference to the original values in case we accept_on_blur
          let shortcut = this.editing.shortcut
          let command = this.editing.command
@@ -242,7 +249,7 @@ export default {
          //the first time, we want to check if we were editing something (that is we were editing a shortcut then clicked to another) and cancel/accept depending on whether to accept on blur
          //but we don't want to check again when this function calls itself here
          if (check_existing) {
-            let existing = this.shortcuts_list_active.findIndex(entry => entry.editing)
+            let existing = this.shortcuts_list_active.findIndex((existing_entry, existing_index) => existing_entry.editing && existing_index !== index)
             
             if (existing !== -1) {
                let existing_entry = this.shortcuts_list_active[existing]
@@ -260,7 +267,7 @@ export default {
          if (editing) {
             this.editing.shortcut = entry.shortcut
             this.editing.command = entry.command
-            this.editing.contexts = entry.contexts
+            this.editing.contexts = entry.contexts.join(", ").toLowerCase()
             //focus when possible
             this.$nextTick(() => {
                let element_to_focus = this.$el.querySelector(".entry" + index + " ." + focusto + " input")
@@ -276,7 +283,7 @@ export default {
                   });
                }
             })
-         } else if (!check_existing) {
+         } else {
             //else send our change
             let change = {
                old_entry: entry,
@@ -286,16 +293,17 @@ export default {
                   contexts: contexts,
                },
             }
+            
             //only if something changed though
             if (change.new_entry.shortcut !== change.old_entry.shortcut
             || change.new_entry.command !== change.old_entry.command
-            || change.new_entry.contexts !== change.old_entry.contexts) {
+            || change.new_entry.contexts.join() !== change.old_entry.contexts.join()) {
                this.$emit("edit", change)
             }
             //reset our variables
             this.editing.shortcut = ""
             this.editing.command = ""
-            this.editing.contexts = ["Global"]
+            this.editing.contexts = "global"
          }
       },
       cancel_edit(entry) {
@@ -341,21 +349,26 @@ export default {
 
             //otherwise we can only drag to a similar type
             if (target.classList.contains(type)) {
-               let source_entry = source.getAttribute("index")
+               
+               let source_entry = source.parentNode.getAttribute("index")
                source_entry = this.shortcuts_list_active[source_entry]
-               let target_entry = target.getAttribute("index")
+               let target_entry = target.parentNode.getAttribute("index")
                target_entry = this.shortcuts_list_active[target_entry]
                
                if (type == "shortcut") {
                   //chained should not be able to drag to it's chain start and vice versa
-                  if (target._shortcut[0] == source._shortcut[0]) {
-                     if (!(target.chained && source.chain_start) && !(source.chained && target.chain_start)) {
+                  if (target_entry._shortcut[0].join() == source_entry._shortcut[0].join()) {
+                     
+                     if (!(target_entry.chained && source_entry.chain_start) && !(source_entry.chained && target.chain_start)) {
                         return true
                      }
                   } else {
+                     
                      return true
                   }
-               } else if (type !== "shortcut" && source.chain_start == target.chain_start) {
+               } else if (type == "contexts") {
+                  return true
+               } else if (type !== "shortcut" && source_entry.chain_start == target_entry.chain_start) {
                   //only chains can drag to chains and only non-chains to non-chains
                   return true
                }
@@ -534,7 +547,7 @@ export default {
          user-select: none;
          & > div { //.shortcut, .command, etc
             padding: 0.3em;
-            overflow: hidden;
+            overflow-x: hidden;
             white-space: nowrap;
          }
          & .list-subentry {
@@ -543,27 +556,22 @@ export default {
          }
          
       }
+      .entry .contexts {
+         text-transform: capitalize;
+         // input {
+         //    text-transform: capitalize;
+         // }
+      }
+      //because whoever wrote the specs is an idiot
+      .editing .command, .editing .contexts {
+         overflow-x: unset;
+         .list-input {
+            width:100%;
+            overflow-y: visible;
+         } 
+      }
       .entry-header, .add, .stop-add {
          font-weight: bold;
-      }
-      .entry {
-         .remove {
-            position: absolute;
-            top: -0.7em;
-            right: -0.7em;
-            width: 1.2em;
-            height: 1.2em;
-            border: 2px solid mix(red, black, 80%);
-            background: transparentize(red, 0.7);
-            color: red;
-            line-height: 1.2em;
-            border-radius: 100%;
-            text-align: center;
-            cursor: pointer;
-         }
-         &:hover:not(.gu-mirror) .remove {
-            display: block;
-         }
       }
       .add, .stop-add {
          text-align: center;

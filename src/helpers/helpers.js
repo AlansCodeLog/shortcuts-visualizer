@@ -223,11 +223,11 @@ export function create_shortcuts_list (settings_shortcuts, _this) {
          shortcuts.push(new_entries.extra)
       }
       for (let context of entry.contexts) {
-         if (!contexts.includes(context)) {contexts.push(context)}
+         if (!contexts.includes(context)) {contexts.push(context.toLowerCase())}
       }
    })
    
-   return {shortcuts_list: shortcuts, context_list: contexts}
+   return {shortcuts_list: shortcuts, context_list: contexts.sort()}
 }
 
 export function ready_all(shortcuts, _this, {keymap, modifiers_order, block_singles}) {
@@ -243,7 +243,7 @@ export function ready_all(shortcuts, _this, {keymap, modifiers_order, block_sing
       entry._shortcut = _shortcut
       entry.chained = entry._shortcut.length > 1 ? true : false
       entry.chain_start = typeof entry.chain_start !== "undefined" ? entry.chain_start : false
-      entry.contexts = typeof entry.contexts !== "undefined" ? entry.contexts.sort() : ["Global"]
+      entry.contexts = typeof entry.contexts !== "undefined" ? entry.contexts.map(entry => entry = entry.toLowerCase()).sort() : ["global"]
       if (!Array.isArray(entry.contexts)) {
          throw "Entry contexts: " + entry.contexts + " must be an array. See shortcut: " + entry.shortcut + " for command: " + entry.command
       }

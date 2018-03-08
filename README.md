@@ -1,6 +1,6 @@
 # shortcut-visualizer
 
-This is WIP.
+This is WIP. It's almost ready for beta!
 
 I prefer to use a custom set of keyboard shortcuts for most of my programs, but for some, there's just soooo many shortcuts to think about, that it's super hard to plan these out. My idea is to create a keyboard shortcut visualizer/organizer that lets you preview them similar to how this [project](http://waldobronchart.github.io/ShortcutMapper/) does it, but that also allows you to easily customize them (through drag/drop and/or a list) similar to how Adobe Premiere now lets you edit keyboard shortcuts (except even that implementation is still super clunky).
 
@@ -11,6 +11,7 @@ Eventually it would be nice to support some way to import/export them, at least 
 ### Current State
 
 ![Current State](./docs/images/current_state.gif)
+Okay the contexts was a terrible example to show editing suggestions, but you get the idea. You can also drag commands from the list to any of the bins, and at some point dragging between the keyboard and list will be possible.
 
 ### Todos
 - [x] Responsive Keyboard CSS
@@ -32,14 +33,16 @@ Eventually it would be nice to support some way to import/export them, at least 
 - [x] Drag/Drop
 - [x] Drag/Drop Commands
 - [x] Del Bin
-- [ ] Command Bin w/ Search
+- [x] Command Search
 - [~] Polishing/Clean/Beta
+- [ ] Control all dragging from one place?
 - [ ] Demo
 - [~] Documentation
 - [ ] Package as a proper vue component.
 - [ ] Tests...
 
 Possible future features/ideas:
+- [ ] Command Bin
 - [ ] Mouse Commands
 - [ ] Custom Remaps (e.g. Capslock = Ctrl + Alt + Shift)
 
