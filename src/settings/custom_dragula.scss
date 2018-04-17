@@ -1,26 +1,26 @@
 @import "../settings/theme.scss";
 
 .gu-mirror {
-   position: fixed !important;
-   margin: 0 !important;
-   z-index: 9999 !important;
-   font-weight: bold;
-   background: $dragging-background;
-   padding: 5px;
-   opacity: 0.7;
+	position: fixed !important;
+	margin: 0 !important;
+	z-index: 9999 !important;
+	font-weight: bold;
+	background: $dragging-background;
+	padding: 5px;
+	opacity: 0.7;
 }
 .gu-hide {
-   display: none !important;
+	display: none !important;
 }
 .gu-unselectable {
-   user-select: none !important;
+	user-select: none !important;
 }
 .will_be_replaced {
-   color: $dragging-will-be-replaced !important;
-   border-color: transparentize($dragging-will-be-replaced, 0.7) !important;
+	color: $dragging-will-be-replaced !important;
+	border-color: transparentize($dragging-will-be-replaced, 0.7) !important;
 }
 .unselectable {
-   color: $dragging-not-allowed-background !important;
-   background: transparentize($dragging-not-allowed-background, 0.7) !important;
-   border-color: mix($dragging-not-allowed, $dragging-not-allowed-background) !important;
+	color: $dragging-not-allowed-background !important;
+	background: transparentize($dragging-not-allowed-background, 0.7) !important;
+	border-color: mix($dragging-not-allowed, $dragging-not-allowed-background) !important;
 }

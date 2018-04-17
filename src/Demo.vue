@@ -12,21 +12,21 @@ import {shortcuts} from "./settings/shortcuts.js"
 import {commands} from "./settings/commands.js"
 
 export default {
-   name: 'Demo',
-   components: {
-      Shortcut_Visualizer,
-   },
-   data () {
-      return {
-         visualizer_options: {
-            layout: layout,
-            keys: keys,
-            shortcuts: shortcuts,
-            commands: commands,
-            timeout: 3000
-         }
-      }
-   }
+	name: 'Demo',
+	components: {
+		Shortcut_Visualizer,
+	},
+	data () {
+		return {
+			visualizer_options: {
+				layout: layout,
+				keys: keys,
+				shortcuts: shortcuts,
+				commands: commands,
+				timeout: 3000
+			}
+		}
+	}
 }
 </script>
 <style>

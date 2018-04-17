@@ -31,25 +31,25 @@
 
 <script>
 export default {
-   name: 'Options',
-   props: ["contexts", "modes", "options"],
-   data () {
-      return {
-         theme_dark: this.options.theme_dark,
-         mode: this.options.mode,
-         context: this.options.context,
-         accept_on_blur: this.options.accept_on_blur
-      }
-   },
-   methods: {
-      change(key, value) {
-         if (key == "context") {
-            this[key] = value
-         }
-         let current = {theme_dark: this.theme_dark, mode: this.mode, context: this.context, accept_on_blur: this.accept_on_blur}
-         this.$emit("input", current)
-      }
-   },
+	name: 'Options',
+	props: ["contexts", "modes", "options"],
+	data () {
+		return {
+			theme_dark: this.options.theme_dark,
+			mode: this.options.mode,
+			context: this.options.context,
+			accept_on_blur: this.options.accept_on_blur
+		}
+	},
+	methods: {
+		change(key, value) {
+			if (key == "context") {
+				this[key] = value
+			}
+			let current = {theme_dark: this.theme_dark, mode: this.mode, context: this.context, accept_on_blur: this.accept_on_blur}
+			this.$emit("input", current)
+		}
+	},
 }
 </script>
 <style lang="scss">

@@ -21,48 +21,48 @@
 <script>
 
 export default {
-   name: 'List-Input',
-   props: ["value", "list", "allow_chain"],
-   computed: {
-      possible_entries () {
-         let value_low = this.value.toLowerCase().trim()
-         let first_value_low = value_low
-         if (this.allow_chain) {
-            let first_comma = value_low.indexOf(",")
-            first_comma = first_comma !== -1 ? first_comma + 1 : 0
-            value_low = value_low.slice(first_comma, value_low.length).trim()
-         }
+	name: 'List-Input',
+	props: ["value", "list", "allow_chain"],
+	computed: {
+		possible_entries () {
+			let value_low = this.value.toLowerCase().trim()
+			let first_value_low = value_low
+			if (this.allow_chain) {
+				let first_comma = value_low.indexOf(",")
+				first_comma = first_comma !== -1 ? first_comma + 1 : 0
+				value_low = value_low.slice(first_comma, value_low.length).trim()
+			}
          
-         return this.list.filter(entry => {
-            let entry_low = entry.toLowerCase()
-            return entry_low.indexOf(value_low) !== -1
+			return this.list.filter(entry => {
+				let entry_low = entry.toLowerCase()
+				return entry_low.indexOf(value_low) !== -1
             && first_value_low.slice(0, typeof first_comma !== "undefined" ? first_comma : first_value_low.length).indexOf(entry_low) == -1
-         })
-      }
-   },
-   methods: {
-      handle_input (value) {
-         if (this.allow_chain) {
-            if (this.value.indexOf(value) == -1) {
-               let new_value = value
-               let temp_value = this.value.toLowerCase()
-               let first_comma = temp_value.indexOf(",")
-               let no_comma = first_comma !== -1 ? false : true
-               first_comma = first_comma !== -1 ? first_comma + 1 : 0
-               temp_value = temp_value.slice(first_comma, temp_value.length).trim()
-               let temp_index = value.toLowerCase().indexOf(temp_value)
-               let current = this.value
-               if (temp_index !== -1) {
-                  current = this.value.slice(0, no_comma ? first_comma : first_comma - 1)
-               }
-               value = no_comma ? new_value : current + ", " + new_value 
-            } else {
-               value = this.value
-            }
-         } 
-         this.$emit('input', value)
-      }
-   }
+			})
+		}
+	},
+	methods: {
+		handle_input (value) {
+			if (this.allow_chain) {
+				if (this.value.indexOf(value) == -1) {
+					let new_value = value
+					let temp_value = this.value.toLowerCase()
+					let first_comma = temp_value.indexOf(",")
+					let no_comma = first_comma !== -1 ? false : true
+					first_comma = first_comma !== -1 ? first_comma + 1 : 0
+					temp_value = temp_value.slice(first_comma, temp_value.length).trim()
+					let temp_index = value.toLowerCase().indexOf(temp_value)
+					let current = this.value
+					if (temp_index !== -1) {
+						current = this.value.slice(0, no_comma ? first_comma : first_comma - 1)
+					}
+					value = no_comma ? new_value : current + ", " + new_value 
+				} else {
+					value = this.value
+				}
+			} 
+			this.$emit('input', value)
+		}
+	}
 }
 </script>
 <style lang="scss" scoped>

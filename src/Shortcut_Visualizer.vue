@@ -85,449 +85,449 @@ import * as _ from "lodash"
 import {chain_in_active, create_keymap, create_shortcut_entry, create_shortcuts_list, find_extra_keys_pressed, find_extra_modifiers, get_shortcuts_active, keys_from_text, multisplice, normalize} from "./helpers/helpers"
 
 export default {
-   name: 'Shortcut-Visualizer',
-   props: ["ops"],
-   components: {
-      Keys,
-      Options,
-      ShortcutsList,
-      Bin
-   },
-   data() {  
-      return {
+	name: 'Shortcut-Visualizer',
+	props: ["ops"],
+	components: {
+		Keys,
+		Options,
+		ShortcutsList,
+		Bin
+	},
+	data() {  
+		return {
          //will be set by props (handled in created)
-         layout: [], //layout,
-         keys: {}, //keys,
-         keymap: {}, //keymap,
-         modifiers_names: [], //modifiers_names,
-         modifiers_order: [], //modifiers_order,
-         shortcuts: [], //shortcuts_list,
-         contexts: [], //context_list,
-         commands: [], //commands
-         timeout: 3000,
+			layout: [], //layout,
+			keys: {}, //keys,
+			keymap: {}, //keymap,
+			modifiers_names: [], //modifiers_names,
+			modifiers_order: [], //modifiers_order,
+			shortcuts: [], //shortcuts_list,
+			contexts: [], //context_list,
+			commands: [], //commands
+			timeout: 3000,
          //private to component
-         modes: ["As Pressed", "Toggle Modifiers", "Toggle All"],
-         chain: {
+			modes: ["As Pressed", "Toggle Modifiers", "Toggle All"],
+			chain: {
             //allow: true,
-            in_chain: false,
-            start: [],
-            last: [],
-            warning: false,
-         },
+				in_chain: false,
+				start: [],
+				last: [],
+				warning: false,
+			},
          //todo allow hiding/overiding by props
-         options: {
-            mode: "Toggle All",
-            theme_dark: true,
-            accept_on_blur: true,
-            context: "global",
-         },
-         mods_unknown: true,
-         freeze: false,
-         bin: [],
-         block_singles: true,
-         error_message: false
-      }
-   },
-   computed: {
-      keymap_active () {
-         return Object.keys(this.keymap).filter(identifier => {
-            let key = this.keymap[identifier];
-            return key.active
-         }).sort()
-      },
-      shortcuts_active () {
-         return get_shortcuts_active (this, false)
-      },
-      shortcuts_list_active () {
-         return get_shortcuts_active (this, true)
-      },
-   },
-   methods: {
+			options: {
+				mode: "Toggle All",
+				theme_dark: true,
+				accept_on_blur: true,
+				context: "global",
+			},
+			mods_unknown: true,
+			freeze: false,
+			bin: [],
+			block_singles: true,
+			error_message: false
+		}
+	},
+	computed: {
+		keymap_active () {
+			return Object.keys(this.keymap).filter(identifier => {
+				let key = this.keymap[identifier];
+				return key.active
+			}).sort()
+		},
+		shortcuts_active () {
+			return get_shortcuts_active (this, false)
+		},
+		shortcuts_list_active () {
+			return get_shortcuts_active (this, true)
+		},
+	},
+	methods: {
       //make normalize accesible to template
-      normalize (identifiers) {
-         return normalize(identifiers, this)
-      },
+		normalize (identifiers) {
+			return normalize(identifiers, this)
+		},
       //set property by key (used to set freeze and options)
-      change (key, data) {
-         this[key] = data
-      },
+		change (key, data) {
+			this[key] = data
+		},
       //display error messages to user
-      set_error(error, timeout_multiplier = 1) {
-         this.error_message = error.message
-         setTimeout(() => {
-            this.error_message = false
-         }, this.timeout * timeout_multiplier);
-      },
+		set_error(error, timeout_multiplier = 1) {
+			this.error_message = error.message
+			setTimeout(() => {
+				this.error_message = false
+			}, this.timeout * timeout_multiplier);
+		},
       //handles the chain state and setting chain not found error
-      toggle_chain(data) {
-         this.chain = {...this.chain, ...data}
-         if (this.chain.in_chain == true) {
-            for (let key of this.chain.start) {
-               this.keymap[key].active = false
-               this.keymap[key].chain_active = true
-            }
-         } else {
-            for (let key of this.keymap_active) {
-               this.keymap[key].active = false
-               this.keymap[key].chain_active = false
-            }
-            for (let key of this.chain.start) {
-               this.keymap[key].active = false
-               this.keymap[key].chain_active = false
-            }
-            this.chain.last = [...this.chain.start]
-            this.chain.start = []
-            this.chain.shortcut = ""
-            setTimeout(() => {
-               this.chain.warning = false
-            }, this.timeout/3);
-         }
-      },
+		toggle_chain(data) {
+			this.chain = {...this.chain, ...data}
+			if (this.chain.in_chain == true) {
+				for (let key of this.chain.start) {
+					this.keymap[key].active = false
+					this.keymap[key].chain_active = true
+				}
+			} else {
+				for (let key of this.keymap_active) {
+					this.keymap[key].active = false
+					this.keymap[key].chain_active = false
+				}
+				for (let key of this.chain.start) {
+					this.keymap[key].active = false
+					this.keymap[key].chain_active = false
+				}
+				this.chain.last = [...this.chain.start]
+				this.chain.start = []
+				this.chain.shortcut = ""
+				setTimeout(() => {
+					this.chain.warning = false
+				}, this.timeout/3);
+			}
+		},
       //completely delete an entry, does not do any cleanup //todo? add option
-      delete_entry(entry) {
-         let index = this.shortcuts.findIndex(existing_entry => {
-            return existing_entry.shortcut == entry.shortcut
+		delete_entry(entry) {
+			let index = this.shortcuts.findIndex(existing_entry => {
+				return existing_entry.shortcut == entry.shortcut
             && existing_entry._shortcut.join() == entry._shortcut.join()
             && existing_entry.contexts.join() == entry.contexts.join()
-         })
-         this.shortcuts.splice(index, 1)
-      },
+			})
+			this.shortcuts.splice(index, 1)
+		},
       //just pushes a new entry without any checks, this is because it's easier to do checks and warn the user about an error without chainging a component's temporary state from within that component //todo? change
-      shortcut_add(entry) {
-         this.shortcuts.push(entry)
-      },
+		shortcut_add(entry) {
+			this.shortcuts.push(entry)
+		},
       //for editing any existing entries and/or swapping between them, NOT for adding an entry
-      shortcut_edit({old_entry, new_entry}, checks = true) {
+		shortcut_edit({old_entry, new_entry}, checks = true) {
          //get our shortcut array if we didn't already
-         new_entry._shortcut = typeof new_entry._shortcut !== "undefined"
+			new_entry._shortcut = typeof new_entry._shortcut !== "undefined"
             ? new_entry._shortcut
             : keys_from_text(new_entry.shortcut, this)._shortcut
          
          //find the index of our old entry
-         let index = this.shortcuts.findIndex(existing_entry => {
-            return existing_entry.shortcut == entry.shortcut
+			let index = this.shortcuts.findIndex(existing_entry => {
+				return existing_entry.shortcut == entry.shortcut
             && existing_entry._shortcut.join() == entry._shortcut.join()
             && existing_entry.contexts.join() == entry.contexts.join()
-         })
+			})
 
          //since we don't allow non-chains to replace chain starts and vice versa, we can always get whether an entry is a chain start from the old entry
-         if (old_entry.chain_start) {
-            new_entry.chain_start = true
-         }
+			if (old_entry.chain_start) {
+				new_entry.chain_start = true
+			}
 
          //if contexts are undefined, just use the old contexts
-         if (typeof new_entry.contexts == "undefined") {
-            new_entry.contexts = old_entry.contexts
-         }
+			if (typeof new_entry.contexts == "undefined") {
+				new_entry.contexts = old_entry.contexts
+			}
 
          //check if we need to create any new contexts
-         for (let context of new_entry.contexts) {
-            if (!this.contexts.includes(context)) {
-               this.contexts.push(context)
-            }
-         }
+			for (let context of new_entry.contexts) {
+				if (!this.contexts.includes(context)) {
+					this.contexts.push(context)
+				}
+			}
          
          //fetch our entry
-         let result = create_shortcut_entry(new_entry, this, undefined, true)
+			let result = create_shortcut_entry(new_entry, this, undefined, true)
          //we can't spread new entry from the result because it's already defined
-         new_entry = result.entry
+			new_entry = result.entry
          //spread variables returned by result
-         let {extra, remove, error, invalid} = result
+			let {extra, remove, error, invalid} = result
 
          //if the shortcut is invalid (any keys are invalid or if a key is blocked)
-         if (invalid) {
-            this.set_error(invalid)
-            return
-         }
+			if (invalid) {
+				this.set_error(invalid)
+				return
+			}
          
          //get and "backup" the entry to swap if it exists since we will change it
-         if (error) {
-            var existing_index = error.index
-            var entry_swap = this.shortcuts[existing_index]
-            var entry_swap_copy = {...this.shortcuts[existing_index]}
-         }
+			if (error) {
+				var existing_index = error.index
+				var entry_swap = this.shortcuts[existing_index]
+				var entry_swap_copy = {...this.shortcuts[existing_index]}
+			}
          //"backup" the old object
-         let old_entry_copy = {...old_entry}
-         let swap_exists = error && old_entry_copy.shortcut !== entry_swap_copy.shortcut
+			let old_entry_copy = {...old_entry}
+			let swap_exists = error && old_entry_copy.shortcut !== entry_swap_copy.shortcut
          
          //overwrite the old entry 
-         Object.keys(new_entry).map(prop => {
-            old_entry[prop] = new_entry[prop]
-         })
+			Object.keys(new_entry).map(prop => {
+				old_entry[prop] = new_entry[prop]
+			})
 
          //if no chain starts to deal with, swap everything but the shortcut
-         if (swap_exists && !old_entry_copy.chain_start && !new_entry.chain_start) {
+			if (swap_exists && !old_entry_copy.chain_start && !new_entry.chain_start) {
             
-            Object.keys(new_entry).map(prop => {
-               if (["shortcut", "_shortcut"].includes(prop)) {
-                  entry_swap[prop] = old_entry_copy[prop]
-               }
-            })
-            this.shortcut_edit_success([entry_swap])
+				Object.keys(new_entry).map(prop => {
+					if (["shortcut", "_shortcut"].includes(prop)) {
+						entry_swap[prop] = old_entry_copy[prop]
+					}
+				})
+				this.shortcut_edit_success([entry_swap])
             
-         }
-         this.shortcut_edit_success([old_entry])
+			}
+			this.shortcut_edit_success([old_entry])
 
          //checks means whether to check if we need to clean up anything, when called from within here it's set to false
 
-         if (checks && !old_entry_copy.chain_start && !new_entry.chain_start) {
+			if (checks && !old_entry_copy.chain_start && !new_entry.chain_start) {
             
             // if we need to add a chain start
-            if (extra && typeof entry_swap == "undefined") {
-               this.shortcuts.splice(index, 0, extra)
-               this.shortcut_edit_success([this.shortcuts[index]])
-            }
+				if (extra && typeof entry_swap == "undefined") {
+					this.shortcuts.splice(index, 0, extra)
+					this.shortcut_edit_success([this.shortcuts[index]])
+				}
 
             //if either the old or entry swapped with is a chain, then we need to change all the dependent chains
-            let chain_entry = typeof entry_swap_copy !== "undefined" && entry_swap_copy.chain_start
+				let chain_entry = typeof entry_swap_copy !== "undefined" && entry_swap_copy.chain_start
                ? "entry_swap_copy"
                : old_entry_copy.chain_start
                   ? "old_entry_copy"
                   : false
             
-            if (chain_entry && old_entry_copy.shortcut !== entry_swap_copy.shortcut) {
+				if (chain_entry && old_entry_copy.shortcut !== entry_swap_copy.shortcut) {
                
-               let old_start = chain_entry == "entry_swap_copy" ? entry_swap_copy : old_entry_copy
-               let chains = this.shortcuts.filter(entry => {
-                  if (entry.chained && _.isEqual(old_start._shortcut[0], entry._shortcut[0])) {
-                     return entry
-                  }
-               })
-               let new_start = chain_entry == "entry_swap_copy" ? old_entry_copy : new_entry
-               for (let entry of chains) {
-                  let otherchange = {
-                     old_entry: entry,
-                     new_entry: {
-                        shortcut: new_start.shortcut + " " + normalize(entry._shortcut[1], this).join("+"),
-                        command: entry.command,
-                     }
-                  }
+					let old_start = chain_entry == "entry_swap_copy" ? entry_swap_copy : old_entry_copy
+					let chains = this.shortcuts.filter(entry => {
+						if (entry.chained && _.isEqual(old_start._shortcut[0], entry._shortcut[0])) {
+							return entry
+						}
+					})
+					let new_start = chain_entry == "entry_swap_copy" ? old_entry_copy : new_entry
+					for (let entry of chains) {
+						let otherchange = {
+							old_entry: entry,
+							new_entry: {
+								shortcut: new_start.shortcut + " " + normalize(entry._shortcut[1], this).join("+"),
+								command: entry.command,
+							}
+						}
                   
-                  this.shortcut_edit(otherchange, false)
-               }
-            }
+						this.shortcut_edit(otherchange, false)
+					}
+				}
 
             //if the old entry was chained we have to do some cleanup
-            if (old_entry_copy.chained) {
+				if (old_entry_copy.chained) {
                
-               let chain_count = this.shortcuts.reduce((count, entry) => {
-                  if (!entry.chain_start && _.isEqual(entry._shortcut[0], old_entry_copy._shortcut[0])) {
-                     return count + 1
-                  } else {return count + 0}
-               }, 0)
+					let chain_count = this.shortcuts.reduce((count, entry) => {
+						if (!entry.chain_start && _.isEqual(entry._shortcut[0], old_entry_copy._shortcut[0])) {
+							return count + 1
+						} else {return count + 0}
+					}, 0)
                //if there are no other chains dependent on chain start, remove it
-               if (chain_count == 0) {
-                  let index_chain_start = this.shortcuts.findIndex(entry => entry.chain_start && _.xor(entry._shortcut[0], old_entry_copy._shortcut[0]).length == 0)
-                  this.shortcuts.splice(index_chain_start, 1)
-               }
-            }
-         } else if (checks) { //swapping chain starts is similar but more of a mess
+					if (chain_count == 0) {
+						let index_chain_start = this.shortcuts.findIndex(entry => entry.chain_start && _.xor(entry._shortcut[0], old_entry_copy._shortcut[0]).length == 0)
+						this.shortcuts.splice(index_chain_start, 1)
+					}
+				}
+			} else if (checks) { //swapping chain starts is similar but more of a mess
             //if we need to swap chain starts and all their chains, first we have to do the chains
-            let chain_entry = typeof entry_swap_copy !== "undefined" && entry_swap_copy.chain_start
+				let chain_entry = typeof entry_swap_copy !== "undefined" && entry_swap_copy.chain_start
                ? "entry_swap_copy"
                : old_entry_copy.chain_start
                   ? "old_entry_copy"
                   : false
 
-            if (chain_entry && old_entry_copy.shortcut !== entry_swap_copy.shortcut) {
+				if (chain_entry && old_entry_copy.shortcut !== entry_swap_copy.shortcut) {
                //first temporarily overwrite the chain start of our target chain
-               {
-                  let old_start = chain_entry == "entry_swap_copy" ? old_entry_copy : entry_swap_copy
-                  this.shortcuts.map(entry => {
-                     if (entry.chained && _.isEqual(old_start._shortcut[0], entry._shortcut[0])) {
-                        entry._shortcut[0] = "TEMPSWAMP"
-                     }
-                  })
+					{
+						let old_start = chain_entry == "entry_swap_copy" ? old_entry_copy : entry_swap_copy
+						this.shortcuts.map(entry => {
+							if (entry.chained && _.isEqual(old_start._shortcut[0], entry._shortcut[0])) {
+								entry._shortcut[0] = "TEMPSWAMP"
+							}
+						})
                   
-               }
+					}
                //change chains based on source
-               {
-                  let old_start = chain_entry == "entry_swap_copy" ? entry_swap_copy : old_entry_copy
-                  let chains = this.shortcuts.filter(entry => {
-                     if (entry.chained && _.isEqual(old_start._shortcut[0], entry._shortcut[0])) {
-                        return entry
-                     }
-                  })
+					{
+						let old_start = chain_entry == "entry_swap_copy" ? entry_swap_copy : old_entry_copy
+						let chains = this.shortcuts.filter(entry => {
+							if (entry.chained && _.isEqual(old_start._shortcut[0], entry._shortcut[0])) {
+								return entry
+							}
+						})
                   
-                  let new_start = chain_entry == "entry_swap_copy" ? old_entry_copy : new_entry
-                  for (let entry of chains) {
-                     let otherchange = {
-                        old_entry: entry,
-                        new_entry: {
-                           shortcut: new_start.shortcut + " " + normalize(entry._shortcut[1], this).join("+"),
-                           command: entry.command,
-                        }
-                     }
+						let new_start = chain_entry == "entry_swap_copy" ? old_entry_copy : new_entry
+						for (let entry of chains) {
+							let otherchange = {
+								old_entry: entry,
+								new_entry: {
+									shortcut: new_start.shortcut + " " + normalize(entry._shortcut[1], this).join("+"),
+									command: entry.command,
+								}
+							}
                      
-                     this.shortcut_edit(otherchange, false)
-                  }
-               }
+							this.shortcut_edit(otherchange, false)
+						}
+					}
 
                //then the same thing reversed for the chains we previously swapped out //TODO simplify to method
-               {
-                  let chains = this.shortcuts.filter(entry => {
-                     if (entry.chained && entry._shortcut[0] == "TEMPSWAMP") {
-                        return entry
-                     }
-                  })
+					{
+						let chains = this.shortcuts.filter(entry => {
+							if (entry.chained && entry._shortcut[0] == "TEMPSWAMP") {
+								return entry
+							}
+						})
                   
-                  let new_start = chain_entry == "entry_swap_copy" ? new_entry : old_entry_copy
-                  for (let entry of chains) {
-                     let otherchange = {
-                        old_entry: entry,
-                        new_entry: {
-                           shortcut: new_start.shortcut + " " + normalize(entry._shortcut[1], this).join("+"),
-                           command: entry.command,
-                        }
-                     }
+						let new_start = chain_entry == "entry_swap_copy" ? new_entry : old_entry_copy
+						for (let entry of chains) {
+							let otherchange = {
+								old_entry: entry,
+								new_entry: {
+									shortcut: new_start.shortcut + " " + normalize(entry._shortcut[1], this).join("+"),
+									command: entry.command,
+								}
+							}
                      
-                     this.shortcut_edit(otherchange, false)
-                  }
-               }
-            }
+							this.shortcut_edit(otherchange, false)
+						}
+					}
+				}
             //then we do the final chain swap
-            Object.keys(new_entry).map(prop => {
-               if (["shortcut", "_shortcut"].includes(prop)) {
-                  entry_swap[prop] = old_entry_copy[prop]
-               }
-            })
-            this.shortcut_edit_success([entry_swap])
-            this.shortcut_edit_success([old_entry])
-         }
-      },
+				Object.keys(new_entry).map(prop => {
+					if (["shortcut", "_shortcut"].includes(prop)) {
+						entry_swap[prop] = old_entry_copy[prop]
+					}
+				})
+				this.shortcut_edit_success([entry_swap])
+				this.shortcut_edit_success([old_entry])
+			}
+		},
       //makes the shortcuts flash to indicate what else changed (like in the case where chain starts are swapped)
-      shortcut_edit_success(entries) {
-         entries.map(entry => {
-            entry.changed = true 
-            setTimeout(() => {
-               entry.changed = false
-            }, this.timeout/10);
-         })
-      },
+		shortcut_edit_success(entries) {
+			entries.map(entry => {
+				entry.changed = true 
+				setTimeout(() => {
+					entry.changed = false
+				}, this.timeout/10);
+			})
+		},
       //add an entry to the bin, note this entries still technically have most of their properties and they are used
-      add_to_bin(entry, extra = false) {
-         if (!extra) {
-            let index = this.shortcuts.findIndex(existing_entry => {
-            return existing_entry.shortcut == entry.shortcut
+		add_to_bin(entry, extra = false) {
+			if (!extra) {
+				let index = this.shortcuts.findIndex(existing_entry => {
+					return existing_entry.shortcut == entry.shortcut
                && existing_entry.command == entry.command
                && existing_entry.contexts.join("") == existing_entry.contexts.join("")
-            })
-            this.shortcuts.splice(index, 1)
-         }
-         let current_context_index = entry.contexts.indexOf(this.options.context)
+				})
+				this.shortcuts.splice(index, 1)
+			}
+			let current_context_index = entry.contexts.indexOf(this.options.context)
          //remove the current context since a common use should be to change a shortcut's context
-         entry.contexts.splice(current_context_index, 1)
-         this.bin.push(entry)
-         if (!extra && entry.chain_start) {
-            let indexes = this.shortcuts.map((existing_entry, index) => {
-               if (existing_entry.chained && existing_entry._shortcut[0].join("") == entry._shortcut[0].join("")) {
-                  return index
-               }
-            }).filter(entry => typeof entry !== "undefined")
-            for (let entry_index of indexes) {
-               this.add_to_bin(this.shortcuts[entry_index], true)
-            }
-            multisplice(this.shortcuts, indexes)
-         }
-      },
+			entry.contexts.splice(current_context_index, 1)
+			this.bin.push(entry)
+			if (!extra && entry.chain_start) {
+				let indexes = this.shortcuts.map((existing_entry, index) => {
+					if (existing_entry.chained && existing_entry._shortcut[0].join("") == entry._shortcut[0].join("")) {
+						return index
+					}
+				}).filter(entry => typeof entry !== "undefined")
+				for (let entry_index of indexes) {
+					this.add_to_bin(this.shortcuts[entry_index], true)
+				}
+				multisplice(this.shortcuts, indexes)
+			}
+		},
       //handles keypresses
-      keydown (e) {
-         let identifier = e.code
-         e.preventDefault()
-         e.stopPropagation()
-         if (this.freeze) {return}
-         if (this.options.mode == "Toggle All") {
-            this.keymap[identifier].active = !this.keymap[identifier].active
-         } else if (this.options.mode == "Toggle Modifiers") {
-            if (this.keymap[identifier].is_modifier){
-               this.keymap[identifier].active = !this.keymap[identifier].active
-            } else {
-               this.keymap[identifier].active = this.keymap[identifier].fake_toggle ? !this.keymap[identifier].active : true
-            }
-         } else {
-            this.keymap[identifier].active = this.keymap[identifier].fake_toggle ? !this.keymap[identifier].active : true
-         }
-         this.keypress_set_mods(e)
-         this.keypress_set_RL(e)
-         this.$emit("input", this.keymap)
-      },
-      keyup (e) {
-         let identifier = e.code
-         e.preventDefault()
-         e.stopPropagation()
-         if (this.freeze) {return}
-         if (this.keymap[identifier].nokeydown) {
-            this.keymap[identifier].active = this.keymap[identifier].fake_toggle ? !this.keymap[identifier].active : true
-            this.keymap[identifier].timer = setTimeout(() => {
-               this.keymap[identifier].active = this.keymap[identifier].fake_toggle ? this.keymap[identifier].active : false
-            }, this.timeout/10);
-         } else {
-            if (this.options.mode == "Toggle Modifiers") {
-               if (!this.keymap[identifier].is_modifier){
-                  this.keymap[identifier].active = this.keymap[identifier].fake_toggle ? this.keymap[identifier].active : false
-               }
-            } else if (this.options.mode !== "Toggle All") {
-            }
-            this.keypress_set_mods(e)
-         }
-         this.keypress_set_RL(e)
-         this.$emit("input", this.keymap)
-      },
+		keydown (e) {
+			let identifier = e.code
+			e.preventDefault()
+			e.stopPropagation()
+			if (this.freeze) {return}
+			if (this.options.mode == "Toggle All") {
+				this.keymap[identifier].active = !this.keymap[identifier].active
+			} else if (this.options.mode == "Toggle Modifiers") {
+				if (this.keymap[identifier].is_modifier){
+					this.keymap[identifier].active = !this.keymap[identifier].active
+				} else {
+					this.keymap[identifier].active = this.keymap[identifier].fake_toggle ? !this.keymap[identifier].active : true
+				}
+			} else {
+				this.keymap[identifier].active = this.keymap[identifier].fake_toggle ? !this.keymap[identifier].active : true
+			}
+			this.keypress_set_mods(e)
+			this.keypress_set_RL(e)
+			this.$emit("input", this.keymap)
+		},
+		keyup (e) {
+			let identifier = e.code
+			e.preventDefault()
+			e.stopPropagation()
+			if (this.freeze) {return}
+			if (this.keymap[identifier].nokeydown) {
+				this.keymap[identifier].active = this.keymap[identifier].fake_toggle ? !this.keymap[identifier].active : true
+				this.keymap[identifier].timer = setTimeout(() => {
+					this.keymap[identifier].active = this.keymap[identifier].fake_toggle ? this.keymap[identifier].active : false
+				}, this.timeout/10);
+			} else {
+				if (this.options.mode == "Toggle Modifiers") {
+					if (!this.keymap[identifier].is_modifier){
+						this.keymap[identifier].active = this.keymap[identifier].fake_toggle ? this.keymap[identifier].active : false
+					}
+				} else if (this.options.mode !== "Toggle All") {
+				}
+				this.keypress_set_mods(e)
+			}
+			this.keypress_set_RL(e)
+			this.$emit("input", this.keymap)
+		},
       //small helpers for handling keypresses
       //sets the state of special keys like numlock
-      keypress_set_mods (e) {
-         if (this.mods_unknown) {
-            this.keymap["CapsLock"].active = e.getModifierState("CapsLock")
-            this.keymap["NumLock"].active = e.getModifierState("NumLock")
-            this.keymap["ScrollLock"].active = e.getModifierState("ScrollLock")
-            this.mods_unknown = false
-         } else if (this.keymap[identifier].toggle) {
-            this.keymap[identifier].active = e.getModifierState(identifier)
-         }
-      },
+		keypress_set_mods (e) {
+			if (this.mods_unknown) {
+				this.keymap["CapsLock"].active = e.getModifierState("CapsLock")
+				this.keymap["NumLock"].active = e.getModifierState("NumLock")
+				this.keymap["ScrollLock"].active = e.getModifierState("ScrollLock")
+				this.mods_unknown = false
+			} else if (this.keymap[identifier].toggle) {
+				this.keymap[identifier].active = e.getModifierState(identifier)
+			}
+		},
       //makes both left and right versions of a key active
-      keypress_set_RL (e) {
-         if (this.keymap[identifier].RL == true) {
-            if (identifier.indexOf("Right") !== -1) {
-               this.keymap[identifier.replace("Right", "Left")].active = this.keymap[identifier].active
-            } else {
-               this.keymap[identifier.replace("Left", "Right")].active = this.keymap[identifier].active
-            }
-         }
-      }
-   },
-   watch: {
+		keypress_set_RL (e) {
+			if (this.keymap[identifier].RL == true) {
+				if (identifier.indexOf("Right") !== -1) {
+					this.keymap[identifier.replace("Right", "Left")].active = this.keymap[identifier].active
+				} else {
+					this.keymap[identifier.replace("Left", "Right")].active = this.keymap[identifier].active
+				}
+			}
+		}
+	},
+	watch: {
       //handles the chain state
-      "keymap_active" (newactive) {
-         if (this.chain.in_chain) {
-            let none_modifiers_pressed = newactive.filter(identifier => !this.keymap[identifier].is_modifier).length > 0 ? true : false
+		"keymap_active" (newactive) {
+			if (this.chain.in_chain) {
+				let none_modifiers_pressed = newactive.filter(identifier => !this.keymap[identifier].is_modifier).length > 0 ? true : false
             //is there are keys being pressed that aren't modifiers that have not shortcuts
-            if (newactive.length > 0 && none_modifiers_pressed && this.shortcuts_active.length == 0) {
-               this.toggle_chain({in_chain: false, warning: [...newactive]})
-            }
-         } else {
-            let trigger_chain = chain_in_active(newactive, this)
-            if (trigger_chain) {
-               this.toggle_chain(trigger_chain)
-            }
-         }
-      },
-   },
-   created() {
+				if (newactive.length > 0 && none_modifiers_pressed && this.shortcuts_active.length == 0) {
+					this.toggle_chain({in_chain: false, warning: [...newactive]})
+				}
+			} else {
+				let trigger_chain = chain_in_active(newactive, this)
+				if (trigger_chain) {
+					this.toggle_chain(trigger_chain)
+				}
+			}
+		},
+	},
+	created() {
       //TODO? wrap in another compenent that watches for changes to options but allows this component to name them as it likes
-      let {layout, keys, shortcuts, commands, timeout} = this.ops
-      this.layout = layout
-      this.keys = keys
+		let {layout, keys, shortcuts, commands, timeout} = this.ops
+		this.layout = layout
+		this.keys = keys
       // this.block_singles
-      this.keymap = create_keymap(this.keys)
-      this.modifiers_names = _.uniq(Object.keys(this.keymap).filter(identifier => this.keymap[identifier].is_modifier).map(identifier => this.keymap[identifier].identifier))
-      this.modifiers_order = ["ctrl", "shift", "alt"]
+		this.keymap = create_keymap(this.keys)
+		this.modifiers_names = _.uniq(Object.keys(this.keymap).filter(identifier => this.keymap[identifier].is_modifier).map(identifier => this.keymap[identifier].identifier))
+		this.modifiers_order = ["ctrl", "shift", "alt"]
       
-      let lists = create_shortcuts_list(shortcuts, this)
-      this.shortcuts= lists.shortcuts_list
-      this.contexts = lists.context_list.map(entry => entry = entry.toLowerCase()).sort()
-      this.commands = commands
-   },
+		let lists = create_shortcuts_list(shortcuts, this)
+		this.shortcuts= lists.shortcuts_list
+		this.contexts = lists.context_list.map(entry => entry = entry.toLowerCase()).sort()
+		this.commands = commands
+	},
 }
 </script>
 

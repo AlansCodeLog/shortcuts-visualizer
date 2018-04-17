@@ -36,15 +36,17 @@ Okay the contexts was a terrible example to show editing suggestions, but you ge
 - [x] Command Search
 - [~] Polishing/Clean/Beta
 - [ ] Control all dragging from one place?
-- [ ] Demo
+- [~] Demo
 - [~] Documentation
-- [ ] Package as a proper vue component.
 - [ ] Tests...
 
 Possible future features/ideas:
 - [ ] Command Bin
 - [ ] Mouse Commands
 - [ ] Custom Remaps (e.g. Capslock = Ctrl + Alt + Shift)
+- [ ] Per Context Blocks?
+- [ ] Proper exporting (so you can just include a script to use the compoenet).
+	I considered switching to a template that supports this, but did not like any of them. I'm currently waiting for vue-cli 3 and it's plugins, hopefully it'll make this a lot easier.
 
 # Notes 
 
