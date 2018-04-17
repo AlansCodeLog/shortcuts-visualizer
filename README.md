@@ -45,7 +45,7 @@ Possible future features/ideas:
 - [ ] Mouse Commands
 - [ ] Custom Remaps (e.g. Capslock = Ctrl + Alt + Shift)
 - [ ] Per Context Blocks?
-- [ ] Proper exporting (so you can just include a script to use the compoenet).
+- [ ] Proper exporting (so you can just include a script to use the component).
 	I considered switching to a template that supports this, but did not like any of them. I'm currently waiting for vue-cli 3 and it's plugins, hopefully it'll make this a lot easier.
 
 # Notes 

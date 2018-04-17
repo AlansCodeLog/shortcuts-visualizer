@@ -293,7 +293,10 @@ export default {
       .will_be_replaced {
          z-index: 1;
       }
-      .is_chain {
+      .pressed > .key-container { 
+         border-color: $accent-color !important;
+      }
+      .is_chain > .key-container { 
          border-color: transparentize($accent-color, 0.7);
       }
       .chain-pressed > .key-container::before {

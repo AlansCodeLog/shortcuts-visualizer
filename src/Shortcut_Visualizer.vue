@@ -447,8 +447,8 @@ export default {
 			} else {
 				this.keymap[identifier].active = this.keymap[identifier].fake_toggle ? !this.keymap[identifier].active : true
 			}
-			this.keypress_set_mods(e)
-			this.keypress_set_RL(e)
+			this.keypress_set_mods(e, identifier)
+			this.keypress_set_RL(e, identifier)
 			this.$emit("input", this.keymap)
 		},
 		keyup (e) {
@@ -468,14 +468,14 @@ export default {
 					}
 				} else if (this.options.mode !== "Toggle All") {
 				}
-				this.keypress_set_mods(e)
+				this.keypress_set_mods(e, identifier)
 			}
-			this.keypress_set_RL(e)
+			this.keypress_set_RL(e, identifier)
 			this.$emit("input", this.keymap)
 		},
       //small helpers for handling keypresses
       //sets the state of special keys like numlock
-		keypress_set_mods (e) {
+		keypress_set_mods (e, identifier) {
 			if (this.mods_unknown) {
 				this.keymap["CapsLock"].active = e.getModifierState("CapsLock")
 				this.keymap["NumLock"].active = e.getModifierState("NumLock")
@@ -486,7 +486,7 @@ export default {
 			}
 		},
       //makes both left and right versions of a key active
-		keypress_set_RL (e) {
+		keypress_set_RL (e, identifier) {
 			if (this.keymap[identifier].RL == true) {
 				if (identifier.indexOf("Right") !== -1) {
 					this.keymap[identifier.replace("Right", "Left")].active = this.keymap[identifier].active
