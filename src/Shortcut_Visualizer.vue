@@ -205,9 +205,9 @@ export default {
          
          //find the index of our old entry
 			let index = this.shortcuts.findIndex(existing_entry => {
-				return existing_entry.shortcut == entry.shortcut
-            && existing_entry._shortcut.join() == entry._shortcut.join()
-            && existing_entry.contexts.join() == entry.contexts.join()
+				return existing_entry.shortcut == old_entry.shortcut
+            && existing_entry._shortcut.join() == old_entry._shortcut.join()
+            && existing_entry.contexts.join() == old_entry.contexts.join()
 			})
 
          //since we don't allow non-chains to replace chain starts and vice versa, we can always get whether an entry is a chain start from the old entry
@@ -516,6 +516,14 @@ export default {
 	created() {
       //TODO? wrap in another compenent that watches for changes to options but allows this component to name them as it likes
 		let {layout, keys, shortcuts, commands, timeout} = this.ops
+      
+      //they won't be reactive if they aren't cloned
+		layout = _.cloneDeep(layout)
+		keys = _.cloneDeep(keys)
+		shortcuts = _.cloneDeep(shortcuts)
+		commands = _.cloneDeep(commands)
+		timeout = _.cloneDeep(timeout)
+      
 		this.layout = layout
 		this.keys = keys
       // this.block_singles
