@@ -1,7 +1,7 @@
 <template>
-   <Shortcut_Visualizer
-      :ops="visualizer_options"
-   ></Shortcut_Visualizer>
+	<Shortcut_Visualizer
+		:ops="visualizer_options"
+	></Shortcut_Visualizer>
 </template>
 
 <script>
@@ -12,7 +12,7 @@ import {shortcuts} from "./settings/shortcuts.js"
 import {commands} from "./settings/commands.js"
 
 export default {
-	name: 'Demo',
+	name: "Demo",
 	components: {
 		Shortcut_Visualizer,
 	},
@@ -23,7 +23,7 @@ export default {
 				keys: keys,
 				shortcuts: shortcuts,
 				commands: commands,
-				timeout: 3000
+				timeout: 3000,
 			}
 		}
 	}
@@ -31,8 +31,8 @@ export default {
 </script>
 <style>
 body {
-   margin:0;
-   font-family: Arial, sans-serif;
+	margin:0;
+	font-family: Arial, sans-serif;
 }
 
 </style>

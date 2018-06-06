@@ -33,20 +33,31 @@ Okay the contexts was a terrible example to show editing suggestions, but you ge
 - [x] Drag/Drop
 - [x] Drag/Drop Commands
 - [x] Del Bin
-- [x] Command Search
 - [~] Polishing/Clean/Beta
-- [ ] Control all dragging from one place?
+- [x] Unify Dragging Handlers
+- [ ] Split list contexts so individual contexts can be dragged?
+- [ ] Allow passing command list to component.
+- [ ] Mark Shortcut as Binned
+- [ ] Local Storage
+- [ ] Unoverridable Chrome Shortcuts Warning
+- [ ] Properly block singles when editing list.
+- [x] Separate warnings properly into component.
+- [ ] Proper Versioning, I forgot and the package.json said 1.0.0 for a while.
+- [ ] Rework helpers to mixin.
 - [~] Demo
 - [~] Documentation
 - [ ] Tests...
 
 Possible future features/ideas:
-- [ ] Command Bin
+- [ ] Proper Keyboard Accesibility?
+- [ ] Command Search
+- [ ] Full Command Bin (without going through list first to create entry)
+- [ ] Command context restrictions.
 - [ ] Mouse Commands
 - [ ] Custom Remaps (e.g. Capslock = Ctrl + Alt + Shift)
 - [ ] Per Context Blocks?
 - [ ] Proper exporting (so you can just include a script to use the component).
-	I considered switching to a template that supports this, but did not like any of them. I'm currently waiting for vue-cli 3 and it's plugins, hopefully it'll make this a lot easier.
+	I considered switching to a template that supports this, but did not like any of them. I'm currently waiting for vue-cli 3, hopefully it'll make this a lot easier.
 
 # Notes 
 
@@ -74,7 +85,7 @@ Possible future features/ideas:
       RL: false, //if a key like Shift which is on both sides
       is_modifier: false, //whether a key is treated as a modifier
       ignore: false, //whether it's not really a key, and just a key for the layout
-      block_drag: true, //whether to block dragging to it, e.g. a command can't be set to just ctrl
+      block_alone: true, //whether to block dragging to it, e.g. a command can't be set to just ctrl
       block_single: false, //whether to allow the key to be included in a shortcut if it's the only modifier key (e.g. Shift + somekey for editiors), does nothing if the key isn't a modifier
       block_all: true, //whether to allow the key to be included in a shortcut at all(e.g. Ctrl + Menu or if menu was a modifier Ctrl + Menu + somekey)
       nokeydown: false, //whether the keydown event does not fire e.g. Print Screen doesn't fire a keydown, almost everything else does

@@ -1,27 +1,28 @@
 <template>
-   <div class="list-input" tabindex="1000">
-      <input
-      :value="value"
-      @input="$emit('input', $event.target.value)"
-      @keydown.enter="$emit('enter', $event)"
-      @keydown.esc="$emit('esc', $event)"
-      />
-      <div class="list">
-         <div
-         v-for="(entry, index) of possible_entries"
-         :key="entry+index"
-         @click="handle_input(entry)"
-         >
-            {{entry}}
-         </div>
-      </div>
-   </div>
+	<div class="list-input" tabindex="0">
+		<input
+			:value="value"
+			@input="$emit('input', $event.target.value)"
+			@keydown.enter="$emit('enter', $event)"
+			@keydown.esc="$emit('esc', $event)"
+			@blur="$emit('blur', $event)"
+		/>
+		<div class="list">
+			<div
+				v-for="(entry, index) of possible_entries"
+				:key="entry+index"
+				@click="handle_input(entry)"
+			>
+			{{entry}}
+			</div>
+		</div>
+	</div>
 </template>
 
 <script>
 
 export default {
-	name: 'List-Input',
+	name: "List-Input",
 	props: ["value", "list", "allow_chain"],
 	computed: {
 		possible_entries () {
@@ -32,11 +33,10 @@ export default {
 				first_comma = first_comma !== -1 ? first_comma + 1 : 0
 				value_low = value_low.slice(first_comma, value_low.length).trim()
 			}
-         
 			return this.list.filter(entry => {
 				let entry_low = entry.toLowerCase()
 				return entry_low.indexOf(value_low) !== -1
-            && first_value_low.slice(0, typeof first_comma !== "undefined" ? first_comma : first_value_low.length).indexOf(entry_low) == -1
+				&& first_value_low.slice(0, typeof first_comma !== "undefined" ? first_comma : first_value_low.length).indexOf(entry_low) == -1
 			})
 		}
 	},
@@ -60,7 +60,7 @@ export default {
 					value = this.value
 				}
 			} 
-			this.$emit('input', value)
+			this.$emit("input", value)
 		}
 	}
 }
@@ -68,48 +68,48 @@ export default {
 <style lang="scss" scoped>
 
 .shortcut-visualizer {
-   @import "../settings/theme.scss";
-   
-   &.background-light {
-      background: $theme-light-background;
-      color: invert($theme-light-background);
-      .list div {
-         background: $theme-light-background;
-      }
-   }
-   &.background-dark {
-      background: $theme-dark-background;
-      color: invert($theme-dark-background);
-      .list div {
-         background: $theme-dark-background;
-      }
-   }
+	@import "../settings/theme.scss";
+	
+	&.background-light {
+		background: $theme-light-background;
+		color: invert($theme-light-background);
+		.list div {
+			background: $theme-light-background;
+		}
+	}
+	&.background-dark {
+		background: $theme-dark-background;
+		color: invert($theme-dark-background);
+		.list div {
+			background: $theme-dark-background;
+		}
+	}
 
-   .list-input {
-      outline: none;
-   }
-   .list {
-      position: absolute;
-      top:100%;
-      left: -0.3em;
-      right: -0.3em;
-      div {
-         padding: 0.5em;
-         position: relative;
-         &::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            bottom:0;
-            right:0;
-            left:0;
-            background: rgba(255, 166, 0, 0.1);
-         }
-         &:hover::before {
-            background: rgba(255, 166, 0, 0.3);
-            color: #a3480c;
-         }
-      }
-   }
+	// .list-input {
+	// 	outline: none;
+	// }
+	.list {
+		position: absolute;
+		top:100%;
+		left: -0.3em;
+		right: -0.3em;
+		div {
+			padding: 0.5em;
+			position: relative;
+			&::before {
+				content: "";
+				position: absolute;
+				top: 0;
+				bottom:0;
+				right:0;
+				left:0;
+				background: rgba(255, 166, 0, 0.1);
+			}
+			&:hover::before {
+				background: rgba(255, 166, 0, 0.3);
+				color: #a3480c;
+			}
+		}
+	}
 }
 </style>

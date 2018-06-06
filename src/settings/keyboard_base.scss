@@ -1,7 +1,6 @@
 @import "./theme.scss";
 
 .keyboard {
-	outline: none;
 	font-size: $keyboard-font-size;
 	.key-row {
 		padding-bottom: $base-size;
@@ -24,14 +23,20 @@
 		padding-bottom: $base-size;
 		position:relative;
 		.label {
-			margin:0.2em; //must be in ems, else percentages will distort on larger keys
+			right: $cap-spacing;
+			top: $cap-spacing;
+			width: calc(100% - #{$cap-spacing*2});
+			height: calc(100% - #{$cap-spacing*2}); //must be in ems, else percentages will distort on larger keys
 			overflow: hidden;
 			user-select: none;
+			position:absolute;
+			box-sizing: border-box;
 		}
 		.shrink {
 			font-size:0.8em;
 		}
 		.key-container {
+			border: (0.1 * $keyboard-font-size) solid black;
 			position:absolute;
 			right: $cap-spacing;
 			top: $cap-spacing;

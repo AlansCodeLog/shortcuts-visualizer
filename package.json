@@ -1,6 +1,6 @@
 {
    "name": "shortcuts-visualizer",
-   "version": "1.0.0",
+   "version": "0.0.0",
    "description": "WIP",
    "author": "Alan <alanscodelog@gmail.com>",
    "private": true,
@@ -10,13 +10,13 @@
       "unit": "jest --config test/unit/jest.conf.js --coverage",
       "e2e": "node test/e2e/runner.js",
       "test": "npm run unit && npm run e2e",
-      "lint": "eslint --ext .js,.vue src test/unit test/e2e/specs",
+      "lint": "eslint --ext .js,.vue src --fix",
       "build": "node build/build.js"
    },
    "dependencies": {
       "dragula": "^3.7.2",
-      "lodash": "^4.17.5",
-      "vue": "^2.5.13"
+      "lodash": "^4.17.10",
+      "vue": "^2.5.16"
    },
    "devDependencies": {
       "autoprefixer": "^7.1.2",
@@ -67,7 +67,7 @@
       "vue-jest": "^1.0.2",
       "vue-loader": "^13.3.0",
       "vue-style-loader": "^3.1.2",
-      "vue-template-compiler": "^2.5.13",
+      "vue-template-compiler": "^2.5.16",
       "webpack": "^3.11.0",
       "webpack-bundle-analyzer": "^2.9.0",
       "webpack-dev-server": "^2.9.1",

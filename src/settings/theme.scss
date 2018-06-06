@@ -8,8 +8,8 @@ $keyboard-font-size: 1vw;
 //depends on the above
 $cap-spacing: 0.2em;
 
-//padding around containers
-$padding-size: 30px;
+//padding around/between containers
+$padding-size: 15px;
 
 //use this to tweak the overall font size
 $regular-font-size: 1em;
@@ -41,3 +41,10 @@ $dragging-not-allowed-background: red;
 $dragging-not-allowed: black;
 $dragging-will-be-replaced: rgb(255, 166, 0);
 
+//other
+$blocked_single_color: orange;
+
+//status messages
+
+$status_error: red;
+$status_warning: orange;

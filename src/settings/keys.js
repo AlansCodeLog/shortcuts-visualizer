@@ -417,7 +417,8 @@ const keys = {
 		identifier: "ControlLeft",
 		RL: true,
 		is_modifier: true,
-		classes:["key", "modifiers"],
+		block_alone: true,
+		classes:["key"],
 		character: "Ctrl",
 		
 	},
@@ -425,33 +426,37 @@ const keys = {
 		identifier: "ControlRight",
 		RL: true,
 		is_modifier: true,
-		classes:["key", "modifiers"],
+		block_alone: true,
+		classes:["key"],
 		character: "Ctrl",
 		
 	},
 	menu: {
 		identifier: "ContextMenu",
-		block_drag: true,
+		block_alone: true,
 		block_all: true,
-		classes:["key", "modifiers"],
+		is_modifier: true,
+		classes:["key"],
 		character: "Menu",
 		
 	},
 	Lsuper: {
 		identifier: "MetaLeft",
-		block_drag: true,
+		block_alone: true,
 		block_all: true,
+		is_modifier: true,
 		RL: true,
-		classes:["key", "modifiers"],
+		classes:["key"],
 		character: "Super",
 		
 	},
 	Rsuper: {
 		identifier: "MetaRight",
-		block_drag: true,
+		block_alone: true,
 		block_all: true,
+		is_modifier: true,
 		RL: true,
-		classes:["key", "modifiers"],
+		classes:["key"],
 		character: "Super",
 		
 	},
@@ -460,6 +465,7 @@ const keys = {
 		RL: true,
 		is_modifier: true,
 		block_single: true,
+		block_alone: true,
 		classes:["key", "huge"],
 		character: "Shift",
 		
@@ -469,6 +475,7 @@ const keys = {
 		RL: true,
 		is_modifier: true,
 		block_single: true,
+		block_alone: true,
 		classes:["key", "medium-large"],
 		character: "Shift",
 		
@@ -477,7 +484,8 @@ const keys = {
 		identifier: "AltLeft",
 		RL: true,
 		is_modifier: true,
-		classes:["key", "modifiers"],
+		block_alone: true,
+		classes:["key"],
 		character: "Alt",
 		
 	},
@@ -485,7 +493,8 @@ const keys = {
 		identifier: "AltRight",
 		RL: true,
 		is_modifier: true,
-		classes:["key", "modifiers"],
+		block_alone: true,
+		classes:["key"],
 		character: "Alt",
 		
 	},
