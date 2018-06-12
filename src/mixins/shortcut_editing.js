@@ -65,6 +65,7 @@ export const shortcut_editing_handlers = Vue.mixin({
 					existing_entry.shortcut = existing_entry._shortcut.map(keyset => normalize(keyset, this).join("+")).join(" ")
 					//when an item is added to the bin, only it's current context is removed, so here we just add the new current context
 					existing_entry.contexts.push(this.active_context)
+					existing_entry.contexts.sort()
 					this.shortcuts.push(existing_entry)
 				}
 				multisplice(this.bin, indexes)
@@ -74,6 +75,7 @@ export const shortcut_editing_handlers = Vue.mixin({
 			entry.shortcut = new_entry.shortcut
 			//when an item is added to the bin, only it's current context is removed, so here we just add the new current context
 			entry.contexts.push(this.active_context)
+			entry.contexts.sort()
 			this.shortcuts.push(entry)
 		},
 		//makes the shortcuts flash to indicate what else changed (like in the case where chain starts are swapped)
@@ -109,6 +111,7 @@ export const shortcut_editing_handlers = Vue.mixin({
 			if (typeof new_entry.contexts == "undefined") {
 				new_entry.contexts = old_entry.contexts
 			}
+			new_entry.contexts.sort()
 
 			//check if we need to create any new contexts
 			for (let context of new_entry.contexts) {
@@ -116,7 +119,8 @@ export const shortcut_editing_handlers = Vue.mixin({
 					this.contexts.push(context)
 				}
 			}
-			
+			this.contexts.sort()
+
 			//fetch our entry
 			let result = create_shortcut_entry(new_entry, this, undefined, true)
 			//we can't spread new entry from the result because it's already defined
@@ -140,9 +144,6 @@ export const shortcut_editing_handlers = Vue.mixin({
 			let old_entry_copy = {...old_entry}
 			let swap_exists = error && old_entry_copy.shortcut !== entry_swap_copy.shortcut
 
-			console.log(swap_exists)
-			
-			
 			//overwrite the old entry 
 			Object.keys(new_entry).map(prop => {
 				old_entry[prop] = new_entry[prop]

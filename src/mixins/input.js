@@ -2,9 +2,10 @@ import Vue from "vue"
 import {chain_in_active} from "../helpers/helpers"
 
 export const input_handlers = Vue.mixin({
-	watch: {
+	methods: {
 		//handles the chain state
-		"keymap_active" (newactive) {
+		//again actually moving the entire watch function here creates problems
+		watch_keymap_active (newactive) {
 			if (this.chain.in_chain) {
 				let none_modifiers_pressed = newactive.filter(identifier => !this.keymap[identifier].is_modifier).length > 0 ? true : false
 				//is there are keys being pressed that aren't modifiers that have not shortcuts
@@ -18,8 +19,6 @@ export const input_handlers = Vue.mixin({
 				}
 			}
 		},
-	},
-	methods: {
 		//handles the chain state and setting chain not found error
 		toggle_chain(data) {
 			this.chain = {...this.chain, ...data}

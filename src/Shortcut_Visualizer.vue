@@ -146,6 +146,12 @@ export default {
 			error_message: false
 		}
 	},
+	watch: {
+		//handles the chain state
+		"keymap_active" (newactive) {
+			this.watch_keymap_active(newactive)
+		},
+	},
 	computed: {
 		keymap_active () {
 			return Object.keys(this.keymap).filter(identifier => {

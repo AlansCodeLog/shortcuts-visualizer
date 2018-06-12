@@ -172,17 +172,9 @@ export default {
 			background: transparentize($blocked_single_color, 0.8);
 		}
 		// things dragged to here
-		// bin-entries were already handled above since they're really similar to 
-		// .bin-entry .remove { //TODO
-		// 	display: none;
-		// }
-		// .gu-mirror {
-		// 	font-size: $shortcut-drag-font-size;
-		// 	width: auto !important;
-		// 	height: auto !important;
-		// 	right: auto !important;
-		// 	bottom: auto !important;
-		// }
+		.gu-mirror {
+			display:none;
+		}
 		.will_be_replaced {
 			z-index: 1;
 		}

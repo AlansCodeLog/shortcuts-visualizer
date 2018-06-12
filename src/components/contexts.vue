@@ -1,12 +1,17 @@
 <template>
-	<div class="contexts-bar draggable-container" title="Contexts"  v-if="contexts.length > 1">
+	<div class="contexts-bar" title="Contexts"  v-if="contexts.length > 1">
 		<div
+			class="draggable-container contexts-bar-container"
 			tabindex="0"
 			v-for="context in contexts"
 			:key="context"
-			:class="['draggable', 'contexts-bar-entry', context == active ? 'active' : '']"
-			@click="$emit('change', context)"
-		>{{context}}</div>
+		>
+			<div
+				:class="['draggable', 'contexts-bar-entry', context == active ? 'active' : '']"
+				@click="$emit('change', context)"
+			>{{context}}</div>
+		</div>
+		
 	</div>
 </template>
 
@@ -34,28 +39,48 @@ export default {
 	}
 	//when dragged to other places
 	.gu-mirror {
-		&.context-bar-entry {
+		&.contexts-bar-entry {
 			text-transform: capitalize
 		}
 	}
 	.contexts-bar {
 		text-transform: capitalize;
 		margin: $padding-size;
-		padding: $padding-size/2;
+		padding: $padding-size/4;
 		font-weight:bold;
 		flex: 1 1 auto;
 		display: flex;
 		justify-content: center;
 		box-sizing: border-box;
 		border: 2px solid rgba(0,0,0,0);
-		.contexts-bar-entry {
+		.contexts-bar-entry {	
+			padding: $padding-size /4 $padding-size;
+			border-radius: 5px;
+		}
+		.contexts-bar-container {
 			flex: 0 0 auto;
-			padding: 0 $padding-size;
+			padding: 0 $padding-size/6;
 			display: block;
 			cursor: pointer;
+			.gu-mirror {
+				display: none;
+			}
+			&.unselectable {
+				color: auto;
+				background: auto;
+			}
 		}
 		.active {
 			color: mix(white, hsla(hue($accent-color), 100%, 50%, 1), 20%);
+		}
+		.will_be_added_context.contexts-bar-entry {
+			color: mix(white, hsla(hue($accent-color), 100%, 50%, 1), 20%);
+			background: transparentize($accent-color, 0.5)
+		}
+		.unselectable.contexts-bar-entry {
+			color: $dragging-not-allowed-background !important;
+			background: transparentize($dragging-not-allowed-background, 0.7) !important;
+			border-color: mix($dragging-not-allowed, $dragging-not-allowed-background) !important;
 		}
 	}
 }

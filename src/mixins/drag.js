@@ -3,29 +3,27 @@ import _ from "lodash"
 import {keys_from_text} from "../helpers/helpers"
 import dragula from "dragula"
 
-const container_types = ["shortcut", "command", "contexts", "key-container", "bin", "delete-bin", "contexts-bar"]
+const container_types = ["shortcut", "command", "contexts", "key-container", "bin", "delete-bin", "contexts-bar-container"]
 const draggable_types = ["shortcut-entry", "command-entry", "context-entry", "contexts-bar-entry", "key-entry", "bin-entry"]
 
 // LOGIC
-
-//TODO context stuff not done yet, everything else should work
 
 // Dragging to Command
 
 // Shortcut-Entry => Denied
 // Shortcut-Entry Chain Start => Denied
 // Command-Entry=> Swaps Commands, if Chain Start, Swamps with Shortcut
-// Context-Entries => Copies, if Chain Start, adds Context to ALL Chained //todo, check sub-contexts work
+// Context-Entries => Copies Context just to Dragged, not to Chain Starts //maybe add option?
 // Key-Entry => Swaps Commands
 // Key-Entry Chain Start => Swaps Commands/Shortcut
-// Bin-Entry => Swaps Commands //todo check works
+// Bin-Entry => Swaps Commands
 
 // Dragging to Shortcut
 
 // Shortcut-Entry => Swaps Shortcut
 // Shortcut-Entry Chain Start => Swaps Shortcut with Chain Start
 // Command-Entry=> Denied
-// Context-Entries => Copies, if Chain Start, adds Context to ALL Chained //todo, check sub-contexts work
+// Context-Entries => Copies Context just to Dragged, not to Chain Starts //maybe add option?
 // Key-Entry => Denied
 // Key-Entry Chain Start => Denied
 // Bin-Entry => Denied
@@ -35,17 +33,17 @@ const draggable_types = ["shortcut-entry", "command-entry", "context-entry", "co
 // Shortcut-Entry => Denied
 // Shortcut-Entry Chain Start => Denied
 // Command-Entry=> Moves Entire Shortcut, if Exists, Swaps Commands, if Chain Start, Swamps with Shortcut
-// Context-Entries => N/A, if Exists, Adds Context to Shortcut, if Chain Start, adds Context to ALL Chained //todo, check sub-contexts work
+// Context-Entries => N/A, if Exists, Copies Context just to Dragged, not to Chain Starts //maybe add option?
 // Key-Entry => Moves Entire Shortcut, if Exists, Swaps Commands/Shortcut
 // Key-Entry Chain Start => Moves ALL With Chain Start, if Exists, Swaps Commands/Shortcut
-// Bin-Entry => Moves Entire Shortcut, if Exists, Swaps Commands //todo check works
+// Bin-Entry => Moves Entire Shortcut, if Exists, Swaps Commands 
 
 // Dragging to Bin
 
 // Shortcut-Entry => Moves Entire Shortcut
 // Shortcut-Entry Chain Start => Moves ALL With Chain Start
 // Command-Entry=> Moves Entire Shortcut
-// Context-Entries => N/A
+// Context-Entries => N/A // maybe allow? we are keeping a reference to the previous contexts after all
 // Key-Entry => Moves Entire Shortcut
 // Key-Entry Chain Start => Moves ALL With Chain Start
 // Bin-Entry => N/A
@@ -65,11 +63,11 @@ const draggable_types = ["shortcut-entry", "command-entry", "context-entry", "co
 // should not actually drop into place.
 
 // Shortcut-Entry => Adds Context to Shortcut
-// Shortcut-Entry Chain Start => Adds Context to ALL Chained //todo, check sub-contexts work
+// Shortcut-Entry Chain Start => Copies Context just to Dragged, not to Chain Starts //maybe add option?
 // Command-Entry=> Adds Context to Shortcut
 // Context-Entries => N/A
 // Key-Entry => Adds Context to Shortcut
-// Key-Entry Chain Start => Adds Context to ALL Chained //todo, check sub-contexts work
+// Key-Entry Chain Start => Copies Context just to Dragged, not to Chain Starts //maybe add option?
 // Bin-Entry => Adds Context to Shortcut
 
 
@@ -83,6 +81,7 @@ export const drag_handlers = Vue.mixin({
 			this.drake = dragula([...container_keys], {
 				mirrorContainer: this.$el, //we want to keep the dragged element within this component to style it apropriately
 				revertOnSpill: true, //so cancel will revert position of element
+				copy: true, //copy false was causing glitching sometimes, this should be smoother, might introduce new bugs //to test
 				isContainer: (el) => {
 					return this.drag_is_container(el)
 				},
@@ -110,7 +109,7 @@ export const drag_handlers = Vue.mixin({
 				this.drag_on_cancel(el, container, source)
 			})
 		},
-		get_container_info(el, type, is_list, get_entry = false) {
+		get_container_info(el, type, is_list) {
 			let shortcut = false
 			let entry = false
 			if (type == "key-container") {
@@ -122,13 +121,11 @@ export const drag_handlers = Vue.mixin({
 					//then filter the entire thing for empty arrays (to clean an empty chain start)
 					.filter(keyset => keyset.length !== 0)
 
-				if (get_entry) {
-					let existing = el.querySelector(".key-entry")
-					if (existing) {
-						let index = existing.getAttribute("active_shortcuts_index")
-						entry = this.shortcuts_active[index]
-					}
-				} 
+				let existing = el.querySelector(".key-entry")
+				if (existing) {
+					let index = existing.getAttribute("active_shortcuts_index")
+					entry = this.shortcuts_active[index]
+				}
 			}
 			if (is_list) {
 				let index = el.parentNode.getAttribute("index")
@@ -263,15 +260,19 @@ export const drag_handlers = Vue.mixin({
 					if (element.type == "contexts-bar-entry") { return true }
 					return false
 				}
-				case "contexts-bar": {
-					if (["contexts-bar-entry", "context-entry"].includes(element.type)) { return false }
+				case "contexts-bar-container": {
+					if (["contexts-bar-entry", "context-entry"].includes(element.type)) {
+						return false
+					} if (element.entry.contexts.includes(target.children[0].innerText.toLowerCase())) {
+						return false
+					}
 					return true
 				}
 				//KEYS
 				case "key-container": {
 					if (element.type == "shortcut-entry") { return false }
 					if (["contexts-bar-entry", "context-entry"].includes(element.type)) {
-						if (target_container.is_filled) {
+						if (target_container.is_filled && !target_container.entry.contexts.includes(el.innerText.toLowerCase())) {
 							return true
 						}
 						return false
@@ -296,7 +297,11 @@ export const drag_handlers = Vue.mixin({
 			this.$el.querySelectorAll(".unselectable").forEach(el => el.classList.remove("unselectable"))
 			this.$el.querySelectorAll(".hovering").forEach(el => el.classList.remove("hovering"))
 			if (source !== target) {
-				target.classList.add("unselectable")
+				if (this.d.target_container.type !== "contexts-bar-container") {
+					target.classList.add("unselectable")
+				} else {
+					target.children[0].classList.add("unselectable")
+				}
 			}
 			
 		},
@@ -347,6 +352,9 @@ export const drag_handlers = Vue.mixin({
 					//css doesn't handle hover when dragging
 					this.$el.querySelectorAll(".hovering").forEach(el => el.classList.remove("hovering"))
 				}
+				if (target_container.type == "contexts-bar-container") {
+					target.children[0].classList.add("will_be_added_context")
+				}
 			}
 		},
 		drag_on_drop(el, target, source, sibling) {
@@ -359,19 +367,25 @@ export const drag_handlers = Vue.mixin({
 					shortcut: target_container.shortcut.map(keyset => this.normalize(keyset).join("+")).join(" "),
 					_shortcut: target_container.shortcut, //optional
 				}
-				if (element.type !== "bin-entry") {
+				if (element.type == "bin-entry"){
+					if (target_container.is_filled) {
+						//add existing shortcut to bin
+						this.add_to_bin(target_container.entry)
+					}
+					this.move_from_bin(element.bin_index, new_entry)
+				} else if (["context-entry", "contexts-bar-entry"].includes(element.type)) {
+					let change = {
+						old_entry: target_container.entry,
+						new_entry: {...target_container.entry, contexts:_.uniq([...target_container.entry.contexts, el.innerText])}
+					}
+					this.shortcut_edit(change)
+				} else {
 					new_entry.command = element.entry.command
 					let change = {
 						old_entry: element.entry,
 						new_entry: new_entry
 					}
 					this.shortcut_edit(change)
-				} else {
-					if (target_container.is_filled) {
-						//add existing shortcut to bin
-						this.add_to_bin(target_container.entry)
-					}
-					this.move_from_bin(element.bin_index, new_entry)
 				}
 			}
 			if (target_container.type == "bin") {
@@ -381,6 +395,13 @@ export const drag_handlers = Vue.mixin({
 				if (["key-entry", "shortcut-entry", "command-entry"].includes(element.type)) {
 					this.$emit("delete", element.entry)
 				}
+			}
+			if (target_container.type == "contexts-bar-container") {
+				let change = {
+					old_entry: element.entry,
+					new_entry: {...element.entry, contexts: _.uniq([...element.entry.contexts, target.children[0].innerText.toLowerCase()])}
+				}
+				this.shortcut_edit(change)
 			}
 			//we don't actually want to drop the element and change the dom, vue will handle rerendering it in the proper place
 			this.drake.cancel()
