@@ -89,7 +89,7 @@
 			class="draggable list-entry shortcut-entry"
 			v-if="!entry.editing"
 			@click="toggle_editing(true, entry, index)"
-			>{{entry._shortcut.map(keyset => normalize(keyset, this).join("+")).join(" ")}}</div>
+			>{{entry._shortcut.map(keyset => normalize(keyset).join("+")).join(" ")}}</div>
 			<!-- EDITING -->
 			<input
 			class="dont_blur"
@@ -154,12 +154,11 @@
 <script>
 
 import dragula from "dragula"
-import { keys_from_text, create_shortcut_entry } from "../helpers/helpers"
 import list_input from "./list_input"
 
 export default {
 	name: "Shortcuts",
-	props: ["chain", "commands", "contexts", "keymap", "modifiers_names", "modifiers_order", "normalize", "options", "shortcuts", "shortcuts_list_active"],
+	props: ["commands", "contexts", "keymap", "options", "shortcuts_list_active", "normalize"],
 	components: {
 		list_input
 	},
@@ -209,7 +208,7 @@ export default {
 				return
 			}
 			try {
-				var result = create_shortcut_entry(entry, this, undefined, true)
+				var result = this.create_shortcut_entry(entry, true)
 			} catch (error) {
 				this.$emit("error", {message: error})
 				return

@@ -63,12 +63,11 @@
 
 <script>
 import dragula from "dragula"
-import {keys_from_text, normalize} from "../helpers/helpers"
 
 export default {
 	name: "Keys",
 	//any props that look like they weren't used are being used by the helpers!
-	props: ["chain", "keymap", "keymap_active", "keys", "layout", "modifiers_names", "modifiers_order", "normalize", "pressed", "shortcuts", "shortcuts_active", "blocked_singles"],
+	props: ["chain", "keymap", "keys", "layout", "pressed", "shortcuts_active", "blocked_singles"],
 	computed: {
 		active_keys () {
 			let active_keys = {}

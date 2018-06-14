@@ -1,6 +1,5 @@
 import Vue from "vue"
 import _ from "lodash"
-import {keys_from_text} from "../helpers/helpers"
 import dragula from "dragula"
 
 const container_types = ["shortcut", "command", "contexts", "key-container", "bin", "delete-bin", "contexts-bar-container"]
@@ -115,7 +114,7 @@ export const drag_handlers = Vue.mixin({
 			if (type == "key-container") {
 				let key = el.previousElementSibling.innerText.toLowerCase().replace(" ", "")
 				//keysss because modifiers might be right/left and keys_from_text will add both for us
-				let keys = keys_from_text(key, this)._shortcut[0]
+				let keys = this.keys_from_text(key)._shortcut[0]
 				//all this means is get the chain start, mix the active keys with the keys, remove any duplicates, sort them
 				shortcut = [this.chain.start, _.uniq([...this.keymap_active, ...keys]).sort()]
 					//then filter the entire thing for empty arrays (to clean an empty chain start)

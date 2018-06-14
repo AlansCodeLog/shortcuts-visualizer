@@ -38,12 +38,11 @@ Okay the contexts was a terrible example to show editing suggestions, but you ge
 - [ ] Split list contexts so individual contexts can be dragged?
 - [ ] Allow passing command list to component.
 - [ ] Mark Shortcut as Binned
-- [ ] Local Storage
+- [ ] Local Storage in Demo
 - [ ] Unoverridable Chrome Shortcuts Warning
 - [ ] Properly block singles when editing list.
 - [x] Separate warnings properly into component.
-- [ ] Proper Versioning, I forgot and the package.json said 1.0.0 for a while.
-- [ ] Rework helpers to mixin.
+- [x] Rework helpers to mixin.
 - [~] Demo
 - [~] Documentation
 - [ ] Tests...

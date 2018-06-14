@@ -88,10 +88,10 @@ import ShortcutsList from "./components/shortcut_list"
 
 import * as _ from "lodash"
 import dragula from "dragula"
-import {create_keymap, create_shortcuts_list, get_shortcuts_active, normalize} from "./helpers/helpers"
 import {drag_handlers} from "./mixins/drag"
 import {shortcut_editing_handlers} from "./mixins/shortcut_editing"
 import {input_handlers} from "./mixins/input"
+import {helpers} from "./mixins/helpers"
 
 export default {
 	name: "Shortcut-Visualizer",
@@ -108,7 +108,8 @@ export default {
 		//most of the logic of the component lives in one of the following mixins
 		drag_handlers,
 		shortcut_editing_handlers,
-		input_handlers
+		input_handlers,
+		helpers
 	],
 	data() {  
 		return {
@@ -180,16 +181,16 @@ export default {
 			}
 		},
 		shortcuts_active () {
-			return get_shortcuts_active (this, false)
+			return this.get_shortcuts_active (false)
 		},
 		shortcuts_list_active () {
-			return get_shortcuts_active (this, true)
+			return this.get_shortcuts_active (true)
 		},
 	},
 	methods: {
-		//make normalize accesible to template
+		//not sure why mixing throws error
 		normalize (identifiers) {
-			return normalize(identifiers, this)
+			return this._normalize(identifiers)
 		},
 		//set property by key (used to set freeze and options)
 		change (key, data) {
@@ -221,11 +222,11 @@ export default {
 		this.layout = layout
 		this.keys = keys
 		// this.block_singles
-		this.keymap = create_keymap(this.keys)
+		this.keymap = this.create_keymap()
 		this.modifiers_names = _.uniq(Object.keys(this.keymap).filter(identifier => this.keymap[identifier].is_modifier).map(identifier => this.keymap[identifier].identifier))
 		this.modifiers_order = ["ctrl", "shift", "alt"]
 		
-		let lists = create_shortcuts_list(shortcuts, this)
+		let lists = this.create_shortcuts_list(shortcuts, this)
 		this.shortcuts= lists.shortcuts_list
 		this.contexts = lists.context_list.map(entry => entry = entry.toLowerCase()).sort()
 		this.commands = commands

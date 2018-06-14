@@ -1,6 +1,6 @@
 import Vue from "vue"
 import _ from "lodash"
-import {keys_from_text, create_shortcut_entry, find_extra_keys_pressed,  find_extra_modifiers, multisplice, normalize} from "../helpers/helpers"
+// import {keys_from_text, create_shortcut_entry, find_extra_keys_pressed,  find_extra_modifiers, normalize} from "../helpers/helpers"
 
 export const shortcut_editing_handlers = Vue.mixin({
 	methods: {
@@ -46,7 +46,7 @@ export const shortcut_editing_handlers = Vue.mixin({
 					remove_context(this.shortcuts[entry_index])
 					this.bin.push(this.shortcuts[entry_index])
 				}
-				multisplice(this.shortcuts, indexes)
+				this.multisplice(this.shortcuts, indexes)
 			}
 		},
 		//move an entry from the bin to "somewhere else" aka a different shortcut
@@ -62,13 +62,13 @@ export const shortcut_editing_handlers = Vue.mixin({
 				for (let entry_index of indexes) {
 					let existing_entry = this.bin[entry_index]
 					existing_entry._shortcut[0] = new_entry._shortcut[0]
-					existing_entry.shortcut = existing_entry._shortcut.map(keyset => normalize(keyset, this).join("+")).join(" ")
+					existing_entry.shortcut = existing_entry._shortcut.map(keyset => this.normalize(keyset, this).join("+")).join(" ")
 					//when an item is added to the bin, only it's current context is removed, so here we just add the new current context
 					existing_entry.contexts.push(this.active_context)
 					existing_entry.contexts.sort()
 					this.shortcuts.push(existing_entry)
 				}
-				multisplice(this.bin, indexes)
+				this.multisplice(this.bin, indexes)
 			}
 			this.bin.splice(index, 1)
 			entry._shortcut = new_entry._shortcut
@@ -93,7 +93,7 @@ export const shortcut_editing_handlers = Vue.mixin({
 			//get our shortcut array if we didn't already
 			new_entry._shortcut = typeof new_entry._shortcut !== "undefined"
 				? new_entry._shortcut
-				: keys_from_text(new_entry.shortcut, this)._shortcut
+				: this.keys_from_text(new_entry.shortcut)._shortcut
 			
 			//find the index of our old entry
 			let index = this.shortcuts.findIndex(existing_entry => {
@@ -122,7 +122,7 @@ export const shortcut_editing_handlers = Vue.mixin({
 			this.contexts.sort()
 
 			//fetch our entry
-			let result = create_shortcut_entry(new_entry, this, undefined, true)
+			let result = this.create_shortcut_entry(new_entry, true)
 			//we can't spread new entry from the result because it's already defined
 			new_entry = result.entry
 			//spread variables returned by result
@@ -192,7 +192,7 @@ export const shortcut_editing_handlers = Vue.mixin({
 						let otherchange = {
 							old_entry: entry,
 							new_entry: {
-								shortcut: new_start.shortcut + " " + normalize(entry._shortcut[1], this).join("+"),
+								shortcut: new_start.shortcut + " " + this.normalize(entry._shortcut[1]).join("+"),
 								command: entry.command,
 							}
 						}
@@ -248,7 +248,7 @@ export const shortcut_editing_handlers = Vue.mixin({
 							let otherchange = {
 								old_entry: entry,
 								new_entry: {
-									shortcut: new_start.shortcut + " " + normalize(entry._shortcut[1], this).join("+"),
+									shortcut: new_start.shortcut + " " + this.normalize(entry._shortcut[1]).join("+"),
 									command: entry.command,
 								}
 							}
@@ -270,7 +270,7 @@ export const shortcut_editing_handlers = Vue.mixin({
 							let otherchange = {
 								old_entry: entry,
 								new_entry: {
-									shortcut: new_start.shortcut + " " + normalize(entry._shortcut[1], this).join("+"),
+									shortcut: new_start.shortcut + " " + this.normalize(entry._shortcut[1]).join("+"),
 									command: entry.command,
 								}
 							}

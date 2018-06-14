@@ -15,10 +15,10 @@
 
 <script>
 import dragula from "dragula"
-import {keys_from_text, normalize, multisplice} from "../helpers/helpers"
+
 export default {
 	name: "Bin",
-	props: ["bin", "chain", "context", "keymap", "keymap_active", "modifiers_names", "modifiers_order", "options", "shortcuts", "shortcuts_active", "shortcuts_list_active"],
+	props: ["bin"],
 }
 </script>
 

@@ -1,5 +1,4 @@
 import Vue from "vue"
-import {chain_in_active} from "../helpers/helpers"
 
 export const input_handlers = Vue.mixin({
 	methods: {
@@ -13,7 +12,7 @@ export const input_handlers = Vue.mixin({
 					this.toggle_chain({in_chain: false, warning: [...newactive]})
 				}
 			} else {
-				let trigger_chain = chain_in_active(newactive, this)
+				let trigger_chain = this.chain_in_active()
 				if (trigger_chain) {
 					this.toggle_chain(trigger_chain)
 				}
