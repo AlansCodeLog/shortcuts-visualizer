@@ -21,13 +21,8 @@
 			@keyup="keyup($event)"
 			:chain="chain"
 			:keymap="keymap"
-			:keymap_active="keymap_active"
 			:keys="keys"
 			:layout="layout"
-			:modifiers_names="modifiers_names"
-			:modifiers_order="modifiers_order"
-			:normalize="normalize"
-			:shortcuts="shortcuts"
 			:shortcuts_active="shortcuts_active"
 			:blocked_singles="blocked_singles"
 		></Keys>
@@ -43,16 +38,6 @@
 			<Bin
 				tabindex="0"
 				:bin="bin"
-				:chain="chain"
-				:commands="commands"
-				:keymap="keymap"
-				:keymap_active="keymap_active"
-				:modifiers_names="modifiers_names"
-				:modifiers_order="modifiers_order"
-				:options="options"
-				:shortcuts="shortcuts"
-				:shortcuts_active="shortcuts_active"
-				:shortcuts_list_active="shortcuts_list_active"
 			></Bin>
 			<div tabindex="0" class="draggable-container delete-bin"></div>
 		</div>
@@ -63,15 +48,11 @@
 			@delete="delete_entry($event)"
 			@edit="shortcut_edit($event)"
 			@freeze="change('freeze', $event)"
-			:chain="chain"
 			:commands="commands"
 			:contexts="contexts"
 			:keymap="keymap"
-			:modifiers_names="modifiers_names"
-			:modifiers_order="modifiers_order"
 			:normalize="normalize"
 			:options="options"
-			:shortcuts="shortcuts"
 			:shortcuts_list_active="shortcuts_list_active"
 		></ShortcutsList>
 	</div>
@@ -118,7 +99,6 @@ export default {
 			keys: {}, //keys,
 			keymap: {}, //keymap,
 			modifiers_names: [], //modifiers_names,
-			modifiers_order: [], //modifiers_order,
 			shortcuts: [], //shortcuts_list,
 			contexts: [], //context_list,
 			active_context: "", //for context-bar, set by options
@@ -140,6 +120,7 @@ export default {
 				accept_on_blur: true,
 				allow_tab_out: false,
 				default_context: "global",
+				modifiers_order: [] //there is no default order as we don't know what they're actually being called
 			},
 			mods_unknown: true,
 			freeze: false,
@@ -161,24 +142,7 @@ export default {
 			}).sort()
 		},
 		blocked_singles() {
-			let blocked_modifiers = []
-			//set limit to check length again because we might have 2 blocked single keys pressed
-			//in which case it's allowed
-			//but the following function might give us an array of 2 blocked modifiers
-			//which if they are right/left means we have to up the limit to 2
-			let limit = 1 
-			let unblocked_modifiers = this.get_active_modifiers().filter(keyname => {
-				if (this.keymap[keyname].block_single) {
-					blocked_modifiers.push(keyname)
-					if (this.keymap[keyname].RL) {limit = 2}
-				}
-				return !this.keymap[keyname].block_single
-			})
-			if (blocked_modifiers.length == limit && unblocked_modifiers.length == 0) {
-				return blocked_modifiers
-			} else {
-				return false
-			}
+			return this.get_blocked_singles(this.get_active_modifiers())
 		},
 		shortcuts_active () {
 			return this.get_shortcuts_active (false)
@@ -204,13 +168,17 @@ export default {
 			}, this.timeout * timeout_multiplier)
 		},
 		get_active_modifiers() {
-			return _.intersection(this.modifiers_names, this.keymap_active)
+			return this.keymap_active.filter(key => this.keymap[key].is_modifier)
 		},
 		//TODO list mixin methods
 	},
 	created() {
 		//TODO? wrap in another compenent that watches for changes to options but allows this component to name them as it likes
-		let {layout, keys, shortcuts, commands, timeout} = this.ops
+		let {layout, keys, shortcuts, commands, timeout, options} = this.ops
+
+		for (let key in this.options) {
+			this.options[key] = options[key] !== undefined ? options[key] : this.options[key]
+		}
 		
 		//they won't be reactive if they aren't cloned
 		layout = _.cloneDeep(layout)
@@ -221,10 +189,8 @@ export default {
 		
 		this.layout = layout
 		this.keys = keys
-		// this.block_singles
 		this.keymap = this.create_keymap()
 		this.modifiers_names = _.uniq(Object.keys(this.keymap).filter(identifier => this.keymap[identifier].is_modifier).map(identifier => this.keymap[identifier].identifier))
-		this.modifiers_order = ["ctrl", "shift", "alt"]
 		
 		let lists = this.create_shortcuts_list(shortcuts, this)
 		this.shortcuts= lists.shortcuts_list

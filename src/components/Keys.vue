@@ -67,7 +67,7 @@ import dragula from "dragula"
 export default {
 	name: "Keys",
 	//any props that look like they weren't used are being used by the helpers!
-	props: ["chain", "keymap", "keys", "layout", "pressed", "shortcuts_active", "blocked_singles"],
+	props: ["chain", "keymap", "keys", "layout", "shortcuts_active", "blocked_singles"],
 	computed: {
 		active_keys () {
 			let active_keys = {}

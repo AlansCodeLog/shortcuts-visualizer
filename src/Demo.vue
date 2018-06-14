@@ -7,7 +7,7 @@
 <script>
 import Shortcut_Visualizer from "./Shortcut_Visualizer"
 import {layout} from "./settings/layout.js"
-import {keys} from "./settings/keys.js"
+import {keys, modifiers_order} from "./settings/keys.js"
 import {shortcuts} from "./settings/shortcuts.js"
 import {commands} from "./settings/commands.js"
 
@@ -24,6 +24,9 @@ export default {
 				shortcuts: shortcuts,
 				commands: commands,
 				timeout: 3000,
+				options: {
+					modifiers_order: modifiers_order
+				}
 			}
 		}
 	}

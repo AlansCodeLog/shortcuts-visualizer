@@ -672,4 +672,5 @@ const keys = {
 	}
 }
 
-export {keys}
+const modifiers_order = ["super", "menu", "ctrl", "shift", "alt"]
+export {keys, modifiers_order}

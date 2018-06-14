@@ -39,8 +39,7 @@ Okay the contexts was a terrible example to show editing suggestions, but you ge
 - [ ] Allow passing command list to component.
 - [ ] Mark Shortcut as Binned
 - [ ] Local Storage in Demo
-- [ ] Unoverridable Chrome Shortcuts Warning
-- [ ] Properly block singles when editing list.
+- [x] Properly block singles when editing list.
 - [x] Separate warnings properly into component.
 - [x] Rework helpers to mixin.
 - [~] Demo
@@ -63,13 +62,14 @@ Possible future features/ideas:
 - Print Screen only fires on keyup so it has a timeout to set it off.
 - Caps/Scroll/Num Locks need to be `toggle: true`.
 - `toggle: true` overrides input mode.
-- If input mode is `toggle-modifers`, the modifiers that will toggle are: Ctrl, Shift, Alt.
+- `modifiers_order` should just contain the character names of the keys (e.g. "Super", "Ctrl", etc) not the identifier.
 - The names of the keys do not matter so long as the identifier is correct (`e.code`). `e.keycode` isn't used because I found it inconsistent (`Enter == NumpadEnter`). `e.code` can also differentiate between L/R.
    - So the keys object keys can be changed to anything you want, as can the text, etc, and it only matters what those are named for the layout, it's the identifier that's being listened to to actually set the active classes.
 - Shortcuts are matched against a list created from the key's character property. All lowercase, no spaces, empty names are discarded. Can be overridden by setting a name property.
    - In a few rare cases this might be slightly confusing, specifically the super or oskey who's identifier is MetaRight/Left, while meta is sometimes shown on keyboard layouts where the menu key is. And I think meta is something else on macs?
-- Although it should be possible to allow a key to be dragged, then change the shortcut, this seems to break dragula. For now, to avoid the bugs that will likely bring, input is frozen on all dragging.
+- Although it might technically be possible to allow a key to be dragged, then change the keys being pressed, this seems to break dragula. To avoid the bugs and not make the code more complex, input is frozen on all dragging.
 - Character property cannot be a space, if you want to hide a character (like space) it must be done through css.
+- Some shortcuts are not overridable (e.g. in chrome Ctrl+W will close the tab, you cannot preventDefault it).
 
 # Documentation Snippets
 
@@ -84,7 +84,7 @@ Possible future features/ideas:
       RL: false, //if a key like Shift which is on both sides
       is_modifier: false, //whether a key is treated as a modifier
       ignore: false, //whether it's not really a key, and just a key for the layout
-      block_alone: true, //whether to block dragging to it, e.g. a command can't be set to just ctrl
+      block_alone: true, //a shortcut cannot contain just blocked alone keys //useful for whether to block dragging to it, e.g. a command can't be set to just ctrl, and typing in shortcuts like just "ctrl+shift"
       block_single: false, //whether to allow the key to be included in a shortcut if it's the only modifier key (e.g. Shift + somekey for editiors), does nothing if the key isn't a modifier
       block_all: true, //whether to allow the key to be included in a shortcut at all(e.g. Ctrl + Menu or if menu was a modifier Ctrl + Menu + somekey)
       nokeydown: false, //whether the keydown event does not fire e.g. Print Screen doesn't fire a keydown, almost everything else does

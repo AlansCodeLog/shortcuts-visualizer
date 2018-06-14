@@ -84,9 +84,9 @@ export const helpers = Vue.mixin({
 			})
 			keys = _.uniq(keys)
 			let keys_mods = keys.filter(key => {
-				return this.modifiers_order.includes(key)
+				return this.options.modifiers_order.includes(key)
 			}).sort((a,b)=>{
-				return this.modifiers_order.indexOf(a) - this.modifiers_order.indexOf(b)
+				return this.options.modifiers_order.indexOf(a) - this.options.modifiers_order.indexOf(b)
 			})
 			let keys_none_mods = _.xor(keys, keys_mods)
 			keys = [...keys_mods, ...keys_none_mods]
@@ -248,6 +248,27 @@ export const helpers = Vue.mixin({
 			}
 			if (!editing) {throw error} else {return error}
 		},
+		get_blocked_singles(modifiers) {
+			
+			let blocked_modifiers = []
+			//set limit to check length again because we might have 2 blocked single keys pressed
+			//in which case it's allowed
+			//but the following function might give us an array of 2 blocked modifiers
+			//which if they are right/left means we have to up the limit to 2
+			let limit = 1 
+			let unblocked_modifiers = modifiers.filter(keyname => {
+				if (this.keymap[keyname].block_single) {
+					blocked_modifiers.push(keyname)
+					if (this.keymap[keyname].RL) {limit = 2}
+				}
+				return !this.keymap[keyname].block_single
+			})
+			if (blocked_modifiers.length == limit && unblocked_modifiers.length == 0) {
+				return blocked_modifiers
+			} else {
+				return false
+			}
+		},
 		create_shortcut_entry (entry, editing = false) {
 			let invalid_shortcut = false
 		
@@ -270,42 +291,47 @@ export const helpers = Vue.mixin({
 		
 			for (let keyset of entry._shortcut) {
 				//get modifiers in keyset
-				let modifiers = _.difference(this.modifiers_names, keyset)
+				let modifiers = keyset.filter(key => this.keymap[key].is_modifier)
+
+				//BLOCKED ALONE
+				//blocked_alone should be checked before blocked_single
+				let not_blocked_alone = []
+				let blocked_alone = keyset.filter(key => {
+					if (!this.keymap[key].block_alone) {
+						not_blocked_alone.push(key)
+					}
+					return this.keymap[key].block_alone
+				})
 				
-				//global this.block_singles
-				if (this.block_singles && modifiers == 0) {
+				if (not_blocked_alone.length == 0) {
 					invalid_shortcut = {}
-					invalid_shortcut.message = "Invalid shortcut '" + entry.shortcut + "'. Cannot assign this.shortcuts to single keys."
-					invalid_shortcut.code = "Blocked Singles"
+					invalid_shortcut.message = `Invalid shortcut ${entry.shortcut}. Shortcuts with just "${this.normalize(blocked_alone).join(", ")}" as their only key/s are blocked.`
+					invalid_shortcut.code = "Blocked Alone"
 					break
 				}
-				let singles = modifiers.map(key => this.keymap[key].block_single)
-				let non_singles = singles.filter(block => block == false)
-				singles = singles.filter(block => block == true)
-		
-				//block single blocked keys
-				if (singles.length > 0 && non_singles.length == 0) {
+				
+				//BLOCKED SINGLE
+				let blocked_singles = this.get_blocked_singles(modifiers)
+				if (blocked_singles) {
 					invalid_shortcut = {}
-					invalid_shortcut.message = "Invalid shortcut: '" + entry.shortcut + "'. Shortcut's only modifier cannot be: [" + block_all.join(", ") + "], single assignments to the key are blocked."
-					invalid_shortcut.code = "Single Blocked"
+					invalid_shortcut.message = `Invalid shortcut ${entry.shortcut} Shortcuts containing only "${this.normalize(blocked_singles).join("")}" as a modifier are blocked.`
+					invalid_shortcut.code = "Blocked Single"
 					break
 				}
-				//block individual block all keys
-				let block_all = keyset.map(key => this.keymap[key].block_all).filter(block => block == true)
+
+				//BLOCKED ALL
+				let block_all = keyset.filter(key => this.keymap[key].block_all)
 				if (block_all.length > 0) {
+					if (entry.chained) {
+						entry._shortcut[1].map(key => {
+							if (this.keymap[key].block_all) {
+								block_all.push(key)
+							}
+						})
+					}
 					invalid_shortcut = {}
-					invalid_shortcut.message = "Invalid shortcut '" + entry.shortcut + "'. Shortcuts cannot contain keys: [" + block_all.join(", ") + "], assignments to the key are blocked."
-					invalid_shortcut.code = "All Blocked"
-					break
-				}
-		
-				let regulars = _.difference(keyset, this.modifiers_names)
-		
-				//don't allow this.shortcuts to be only modifiers
-				if (regulars.length == 0) {
-					invalid_shortcut = {}
-					invalid_shortcut.message = "Invalid shortcut '" + entry.shortcut + "'. Shortcuts cannot be just modifiers."
-					invalid_shortcut.code = "Modifier Only"
+					invalid_shortcut.message = `Invalid shortcut " + entry.shortcut + ". Shortcuts cannot contain keys: ["${this.normalize(block_all).join(", ")}"], assignments to the keys are blocked.`
+					invalid_shortcut.code = "Blocked All"
 					break
 				}
 			}
@@ -313,7 +339,7 @@ export const helpers = Vue.mixin({
 			let existing_error = false
 			let overwrite = false
 			this.shortcuts.findIndex((existing_entry, index) => {
-				if (existing_entry.shortcut == entry.shortcut) { //if the two this.shortcuts are exactly the same
+				if (existing_entry.shortcut == entry.shortcut) { //if the two shortcuts are exactly the same
 					if (entry.chain_start == existing_entry.chain_start) { 
 						if (entry.chain_start) {//if they're both chain starts
 							overwrite = true
