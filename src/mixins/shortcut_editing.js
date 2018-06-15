@@ -84,7 +84,7 @@ export const shortcut_editing_handlers = Vue.mixin({
 				entry.changed = true 
 				setTimeout(() => {
 					entry.changed = false
-				}, this.timeout/10)
+				}, this.dev_options.timeout_edit_success)
 			})
 		},
 		//for editing any existing entries and/or swapping between them, NOT for adding an entry

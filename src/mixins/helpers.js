@@ -84,9 +84,9 @@ export const helpers = Vue.mixin({
 			})
 			keys = _.uniq(keys)
 			let keys_mods = keys.filter(key => {
-				return this.options.modifiers_order.includes(key)
+				return this.dev_options.modifiers_order.includes(key)
 			}).sort((a,b)=>{
-				return this.options.modifiers_order.indexOf(a) - this.options.modifiers_order.indexOf(b)
+				return this.dev_options.modifiers_order.indexOf(a) - this.dev_options.modifiers_order.indexOf(b)
 			})
 			let keys_none_mods = _.xor(keys, keys_mods)
 			keys = [...keys_mods, ...keys_none_mods]

@@ -36,9 +36,11 @@ Okay the contexts was a terrible example to show editing suggestions, but you ge
 - [~] Polishing/Clean/Beta
 - [x] Unify Dragging Handlers
 - [ ] Split list contexts so individual contexts can be dragged?
-- [ ] Allow passing command list to component.
-- [ ] Mark Shortcut as Binned
+- [x] Split props up.
+- [~] Allow handling of changed options.
+- [ ] Emit changes up to parent.
 - [ ] Local Storage in Demo
+- [ ] Check all modes work.
 - [x] Properly block singles when editing list.
 - [x] Separate warnings properly into component.
 - [x] Rework helpers to mixin.
@@ -46,7 +48,8 @@ Okay the contexts was a terrible example to show editing suggestions, but you ge
 - [~] Documentation
 - [ ] Tests...
 
-Possible future features/ideas:
+Possible future changes/features/ideas:
+- [ ] Have shortcuts contain all shortcuts, marking binned as binned, and assigning each an index property to each, so no more different indexes per type. 
 - [ ] Proper Keyboard Accesibility?
 - [ ] Command Search
 - [ ] Full Command Bin (without going through list first to create entry)

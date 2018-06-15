@@ -40,19 +40,19 @@ export const input_handlers = Vue.mixin({
 				this.chain.shortcut = ""
 				setTimeout(() => {
 					this.chain.warning = false
-				}, this.timeout/3 * timeout_multiplier)
+				}, this.dev_options.timeout_chain_warning)
 			}
 		},
 		//handles keypresses
 		keydown (e) {
 			let identifier = e.code
-			if (identifier !== "Tab" || (identifier == "Tab" && !this.options.allow_tab_out)) {
+			if (identifier !== "Tab" || (identifier == "Tab" && !this.user_options.allow_tab_out)) {
 				e.preventDefault()
 				e.stopPropagation()
 				if (this.freeze) {return}
-				if (this.options.mode == "Toggle All") {
+				if (this.user_options.mode == "Toggle All") {
 					this.keymap[identifier].active = !this.keymap[identifier].active
-				} else if (this.options.mode == "Toggle Modifiers") {
+				} else if (this.user_options.mode == "Toggle Modifiers") {
 					if (this.keymap[identifier].is_modifier){
 						this.keymap[identifier].active = !this.keymap[identifier].active
 					} else {
@@ -75,15 +75,15 @@ export const input_handlers = Vue.mixin({
 				this.keymap[identifier].active = this.keymap[identifier].fake_toggle ? !this.keymap[identifier].active : true
 				this.keymap[identifier].timer = setTimeout(() => {
 					this.keymap[identifier].active = this.keymap[identifier].fake_toggle ? this.keymap[identifier].active : false
-				}, this.timeout/10)
+				}, timeout_no_key_down)
 			} else {
-				if (this.options.mode == "Toggle Modifiers") {
+				if (this.user_options.mode == "Toggle Modifiers") {
 					if (!this.keymap[identifier].is_modifier){
 						this.keymap[identifier].active = this.keymap[identifier].fake_toggle ? this.keymap[identifier].active : false
 					} else {
 						this.keymap[identifier].active = this.keymap[identifier].fake_toggle ? !this.keymap[identifier].active : false
 					}
-				} else if (this.options.mode !== "Toggle Modifiers"){
+				} else if (this.user_options.mode !== "Toggle Modifiers"){
 					this.keymap[identifier].active = this.keymap[identifier].fake_toggle ? !this.keymap[identifier].active : false
 				}
 				this.keypress_set_mods(e, identifier)

@@ -1,7 +1,16 @@
 <template>
-	<Shortcut_Visualizer
-		:ops="visualizer_options"
-	></Shortcut_Visualizer>
+	<div id="Demo">
+		<Shortcut_Visualizer
+			:keyboard_layout="visualizer_options.layout"
+			:keys_list="visualizer_options.keys"
+			:shortcuts_list="visualizer_options.shortcuts"
+			:commands_list="visualizer_options.commands"
+			:options_user="visualizer_options.options_user"
+			:options_dev="visualizer_options.options_dev"
+		></Shortcut_Visualizer>
+		{{visualizer_options.options_user.theme_dark}}
+		<button @click="toggle()">Toggle Theme from Parent</button>
+	</div>
 </template>
 
 <script>
@@ -23,19 +32,42 @@ export default {
 				keys: keys,
 				shortcuts: shortcuts,
 				commands: commands,
-				timeout: 3000,
-				options: {
-					modifiers_order: modifiers_order
+				options_dev: {
+					timeout: 3000,
+				},
+				options_user: {
+					modifiers_order: modifiers_order,
+					theme_dark: false,
 				}
 			}
+		}
+	},
+	methods: {
+		toggle () {
+			this.visualizer_options.options_user.theme_dark = !this.visualizer_options.options_user.theme_dark
+			console.log(this.visualizer_options.options_user.theme_dark)
+			
 		}
 	}
 }
 </script>
-<style>
+<style lang="scss">
 body {
 	margin:0;
 	font-family: Arial, sans-serif;
+	background:darkgray;
 }
-
+#Demo > button {
+	text-align: center;
+	display: block;
+	border: 2px solid rgb(77, 77, 77);
+	padding: 5px;
+	margin:30px auto;
+	background: lightgray;
+	&:hover {
+		cursor: pointer;
+		color: rgb(0, 110, 255);
+		border-color: rgb(0, 110, 255);
+	}
+}
 </style>
