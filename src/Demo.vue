@@ -1,12 +1,7 @@
 <template>
 	<div id="Demo">
 		<Shortcut_Visualizer
-			:keyboard_layout="visualizer_options.layout"
-			:keys_list="visualizer_options.keys"
-			:shortcuts_list="visualizer_options.shortcuts"
-			:commands_list="visualizer_options.commands"
-			:options_user="visualizer_options.options_user"
-			:options_dev="visualizer_options.options_dev"
+			v-bind="visualizer_options"
 		></Shortcut_Visualizer>
 		{{visualizer_options.options_user.theme_dark}}
 		<button @click="toggle()">Toggle Theme from Parent</button>
@@ -28,10 +23,10 @@ export default {
 	data () {
 		return {
 			visualizer_options: {
-				layout: layout,
-				keys: keys,
-				shortcuts: shortcuts,
-				commands: commands,
+				keyboard_layout: layout,
+				keys_list: keys,
+				shortcuts_list: shortcuts,
+				commands_list: commands,
 				options_dev: {
 					timeout: 3000,
 				},
@@ -53,16 +48,16 @@ export default {
 </script>
 <style lang="scss">
 body {
-	margin:0;
+	margin: 0;
 	font-family: Arial, sans-serif;
-	background:darkgray;
+	background: darkgray;
 }
 #Demo > button {
 	text-align: center;
 	display: block;
 	border: 2px solid rgb(77, 77, 77);
 	padding: 5px;
-	margin:30px auto;
+	margin: 30px auto;
 	background: lightgray;
 	&:hover {
 		cursor: pointer;

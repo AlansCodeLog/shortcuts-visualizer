@@ -5,12 +5,12 @@
 	>
 		<Options
 			@input="change('options', $event)"
-			:modes="modes"
+			v-bind="{modes}"
 			:options="user_options"
 		></Options>
 		<contexts-bar
 			tabindex="0"
-			:contexts="contexts"
+			v-bind="{contexts}"
 			:active="active_context"
 			@change="change('active_context', $event)"
 		></contexts-bar>
@@ -19,12 +19,7 @@
 			tabindex="0" 
 			@keydown="keydown($event)"
 			@keyup="keyup($event)"
-			:chain="chain"
-			:keymap="keymap"
-			:keys="keys"
-			:layout="layout"
-			:shortcuts_active="shortcuts_active"
-			:blocked_singles="blocked_singles"
+			v-bind="{chain, keymap, keys, layout, shortcuts_active, blocked_singles}"
 		></Keys>
 		<!-- tells us what's being pressed, whether we're waiting for a chain, etc -->
 		<Status
@@ -33,11 +28,8 @@
 			:blocked_singles="blocked_singles"
 			:error_message="error_message"
 			:normalize="normalize"
-		></Status>
-		<div class="bins">
-			<Bin
-				tabindex="0"
-				:bin="bin"
+			v-bind="{keymap_active, chain, blocked_singles, error_message, normalize}"
+				v-bind="{bin}"
 			></Bin>
 			<div tabindex="0" class="draggable-container delete-bin"></div>
 		</div>
@@ -48,10 +40,7 @@
 			@delete="delete_entry($event)"
 			@edit="shortcut_edit($event)"
 			@freeze="change('freeze', $event)"
-			:commands="commands"
-			:contexts="contexts"
-			:keymap="keymap"
-			:normalize="normalize"
+			v-bind="{commands, contexts, keymap, normalize, shortcuts_list_active}"
 			:options="user_options"
 			:shortcuts_list_active="shortcuts_list_active"
 		></ShortcutsList>
