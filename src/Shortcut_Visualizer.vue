@@ -23,12 +23,11 @@
 		></Keys>
 		<!-- tells us what's being pressed, whether we're waiting for a chain, etc -->
 		<Status
-			:keymap_active="keymap_active"
-			:chain="chain"
-			:blocked_singles="blocked_singles"
-			:error_message="error_message"
-			:normalize="normalize"
 			v-bind="{keymap_active, chain, blocked_singles, error_message, normalize}"
+		></Status>
+		<div class="bins">
+			<Bin
+				tabindex="0"
 				v-bind="{bin}"
 			></Bin>
 			<div tabindex="0" class="draggable-container delete-bin"></div>
@@ -42,7 +41,6 @@
 			@freeze="change('freeze', $event)"
 			v-bind="{commands, contexts, keymap, normalize, shortcuts_list_active}"
 			:options="user_options"
-			:shortcuts_list_active="shortcuts_list_active"
 		></ShortcutsList>
 	</div>
 </template>
@@ -68,7 +66,7 @@ export default {
 	props: {
 		shortcuts_list: {
 			type: Array,
-			required:true,
+			required: true,
 		},
 		keyboard_layout: {
 			type: Array,
@@ -84,7 +82,7 @@ export default {
 		},
 		options_user: {
 			type: Object,
-			required:  false,
+			required: false,
 		},
 		options_dev: {
 			type: Object,
