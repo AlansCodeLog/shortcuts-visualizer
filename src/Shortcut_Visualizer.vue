@@ -4,13 +4,14 @@
 		:class="['shortcut-visualizer', user_options.theme_dark ? 'background-dark' : 'background-light']"
 	>
 		<Options
-			@input="change('options', $event)"
+			v-if="!dev_options.hide_options"
+			@change="$emit('options', $event)"
 			v-bind="{modes}"
 			:options="user_options"
 		></Options>
 		<contexts-bar
 			tabindex="0"
-			v-bind="{contexts}"
+			v-bind="{contexts, capitalize}"
 			:active="active_context"
 			@change="change('active_context', $event)"
 		></contexts-bar>
@@ -39,7 +40,7 @@
 			@delete="delete_entry($event)"
 			@edit="shortcut_edit($event)"
 			@freeze="change('freeze', $event)"
-			v-bind="{commands, contexts, keymap, normalize, shortcuts_list_active}"
+			v-bind="{commands, contexts, keymap, shortcuts_list_active, normalize, capitalize}"
 			:options="user_options"
 		></ShortcutsList>
 	</div>
@@ -53,41 +54,27 @@ import Status from "./components/status"
 import Bin from "./components/bin"
 import ShortcutsList from "./components/shortcut_list"
 
-
 import * as _ from "lodash"
 import dragula from "dragula"
-import {drag_handlers} from "./mixins/drag"
-import {shortcut_editing_handlers} from "./mixins/shortcut_editing"
-import {input_handlers} from "./mixins/input"
-import {helpers} from "./mixins/helpers"
+import {init, helpers, shortcut_editing, input_handlers, drag_handlers} from "./mixins/index.js"
 
 export default {
 	name: "Shortcut-Visualizer",
 	props: {
-		shortcuts_list: {
-			type: Array,
-			required: true,
-		},
-		keyboard_layout: {
-			type: Array,
-			required: true,
-		},
-		keys_list: {
-			type: Object,
-			required: true,
-		},
-		commands_list: {
-			type: Array,
-			required: true,
-		},
-		options_user: {
-			type: Object,
-			required: false,
-		},
-		options_dev: {
-			type: Object,
-			required: false,
-		}
+		//required, used directly
+		layout: {type: Array, required: true},
+		commands: {type: Array, required: true},
+		//required
+		shortcuts_list: {type: Array, required: true},
+		keys_list: {type: Object, required: true},
+		//not required, used directly
+		//there is no default order as we don't know what they're actually being called
+		//will get filled in created using modifiers_names if nothing is passed
+		modifiers_order: {type: Array, required: false},
+		//not required
+		//see *_options computed properties below for defaults
+		options_user: {type: Object, required: false},
+		options_dev: {type: Object, required: false},
 	},
 	components: {
 		ContextsBar,
@@ -99,38 +86,22 @@ export default {
 	},
 	mixins: [
 		//most of the logic of the component lives in one of the following mixins
-		drag_handlers,
-		shortcut_editing_handlers,
+		init,
+		helpers,
+		shortcut_editing,
 		input_handlers,
-		helpers
+		drag_handlers,
 	],
-	data() {  
+	data() {
 		return {
 			//will be set by props (handled in created)
-			layout: [], //layout,
 			keys: {}, //keys,
 			keymap: {}, //keymap,
 			modifiers_names: [], //modifiers_names,
 			shortcuts: [], //shortcuts_list,
 			contexts: [], //context_list,
 			active_context: "", //for context-bar, set by options
-			commands: [], //commands
 			//also will be set by props if overriden, else these are the defaults
-			user_options: {
-				mode: "Toggle All",
-				theme_dark: true,
-				accept_on_blur: true,
-				allow_tab_out: false,
-			},
-			dev_options: {
-				timeout: 3000,
-				timeout_chain_warning: 1000,
-				timeout_no_key_down: 3000/10,
-				timeout_edit_success: 3000/10,
-				default_context: "global",
-				modifiers_order: [] //there is no default order as we don't know what they're actually being called
-				//will get filled in created using modifiers_names if nothing is passed
-			},
 			//private to component
 			modes: ["As Pressed", "Toggle Modifiers", "Toggle All"],
 			chain: {
@@ -148,21 +119,9 @@ export default {
 	},
 	watch: {
 		//handles the chain state
-		"keymap_active" (newactive) {
+		keymap_active (newactive) {
 			this.watch_keymap_active(newactive)
 		},
-		"options_user": {
-			handler: function (new_value) {
-				this.process_options(new_value, "user_options")
-			},
-			deep: true,
-		},
-		"options_dev": {
-			handler: function (new_value) {
-				this.process_options(new_value, "dev_options")
-			},
-			deep: true,
-		}
 	},
 	computed: {
 		keymap_active () {
@@ -171,72 +130,57 @@ export default {
 				return key.active
 			}).sort()
 		},
-		blocked_singles() {
+		blocked_singles () {
 			return this.get_blocked_singles(this.get_active_modifiers())
 		},
 		shortcuts_active () {
-			return this.get_shortcuts_active (false)
+			return this.get_shortcuts_active(false)
 		},
 		shortcuts_list_active () {
-			return this.get_shortcuts_active (true)
+			return this.get_shortcuts_active(true)
 		},
+		//mix in options with defaults
+		user_options () {
+			return {
+				mode: "Toggle All",
+				theme_dark: true,
+				accept_on_blur: true,
+				allow_tab_out: false,
+				...this.options_user
+			}
+		},
+		dev_options () {
+			return {
+				timeout: 3000,
+				timeout_chain_warning: 1000,
+				timeout_no_key_down: 3000/10,
+				timeout_edit_success: 3000/10,
+				default_context: "global",
+				auto_capitalize_contexts: true,
+				hide_options: false,
+				...this.options_dev
+			}
+		}
 	},
 	methods: {
-		//not sure why mixing throws error
-		normalize (identifiers) {
-			return this._normalize(identifiers)
-		},
 		//set property by key (used to set freeze and options)
 		change (key, data) {
 			this[key] = data
 		},
+		change_options ({key, value}) {
+			this[key] = value
+		},
 		//display error messages to user
 		set_error(error) {
+			this.$emit("warning", error)
 			this.error_message = error.message
 			setTimeout(() => {
 				this.error_message = false
 			}, this.dev_options.timeout_error)
 		},
-		get_active_modifiers() {
-			return this.keymap_active.filter(key => this.keymap[key].is_modifier)
-		},
-		process_options(new_value, type) {
-			for (let key in this[type]) {
-				if (new_value[key] !== undefined) { //mix in with defaults (using props defaults function doesn't mix the properties)
-					this[type][key] = new_value[key]
-				}
-			}
-		}
-		//TODO list mixin methods
 	},
 	created() {
-		//TODO emit changes back
-		//note properties won't be reactive sometimes if they aren't cloned/copied, that's why all the clone deep
-		//also we don't want to modify the parent props, all modifications should be emitted up.
-
-
-		if (this.options_user !== undefined) {
-			this.process_options(this.user_options, "user_options")
-		}
-		if (this.options_dev !== undefined) { //TODO
-			this.process_options(this.dev_options, "dev_options")
-		}
-		
-		this.layout = _.cloneDeep(this.keyboard_layout)
-		this.keys = _.cloneDeep(this.keys_list)
-		this.commands = _.cloneDeep(this.commands_list)
-
-		
-		this.keymap = this.create_keymap()
-		this.modifiers_names = _.uniq(Object.keys(this.keymap).filter(identifier => this.keymap[identifier].is_modifier).map(identifier => this.keymap[identifier].identifier)).sort()
-		let lists = this.create_shortcuts_list(_.cloneDeep(this.shortcuts_list), this)
-		this.shortcuts= lists.shortcuts_list
-		this.contexts = lists.context_list.map(entry => entry = entry.toLowerCase()).sort()
-		this.active_context = this.dev_options.default_context
-
-		if (this.options_dev.modifiers_order == undefined || this.options_dev.modifiers_order.length == 0) {
-			this.dev_options.modifiers_order = _.uniq(this.modifiers_names.map(identifier => this.keymap[identifier].character)).sort()
-		}
+		this.init({all: true})
 	},
 	mounted () {
 		this.drag_init()
@@ -245,10 +189,13 @@ export default {
 </script>
 
 <style lang="scss">
-
 .shortcut-visualizer {
 	@import "./settings/theme.scss";
 	@import "./settings/custom_dragula.scss";
+	input, button {
+		color:inherit;
+		background: inherit;
+	}
 	padding: $padding-size;
 	&.background-light {
 		background: $theme-light-background;
@@ -266,7 +213,7 @@ export default {
 	}
 
 	.bins {
-		display:flex;
+		display: flex;
 		margin: $padding-size;
 		justify-content: space-between;
 		.temp-bin {

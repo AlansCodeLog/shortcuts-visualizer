@@ -1,4 +1,3 @@
-import Vue from "vue"
 import _ from "lodash"
 import dragula from "dragula"
 
@@ -70,9 +69,9 @@ const draggable_types = ["shortcut-entry", "command-entry", "context-entry", "co
 // Bin-Entry => Adds Context to Shortcut
 
 
-export const drag_handlers = Vue.mixin({
+export default {
 	methods: {
-		//for some reason moving the entire mounted hook to this mixin produces weeeeird behavior, but a method works
+		//for some reason moving the entire mounted hook to this mixin produces weeeeird behavior, but a method works //todo might have fixed this
 		drag_init() {
 			let container_keys = this.$el.querySelectorAll(".draggable-container")
 			//some place to store info about what we're dragging between handlers
@@ -127,6 +126,7 @@ export const drag_handlers = Vue.mixin({
 				}
 			}
 			if (is_list) {
+				// let index = type == "context-entry" ? el.parentNode.parentNode.getAttribute("index") : el.parentNode.getAttribute("index")
 				let index = el.parentNode.getAttribute("index")
 				entry = this.shortcuts_list_active[index]
 				shortcut = entry._shortcut
@@ -144,21 +144,6 @@ export const drag_handlers = Vue.mixin({
 						is_filled = true
 						is_list = true
 					}
-					let is_chain = false
-					if (is_filled) {
-						if (type == "key-container") {
-							is_chain = target.querySelector(".is_chain") == null ? false : true
-						} else {//has to be to list-entry
-							//BEWARE this is super fast, but if the order of the divs is changed this will break
-							//todo check flexbox reordering doesn't break this?
-							let chain_column = target.parentNode.childNodes[2]
-							if (chain_column.classList.contains("is_chain")) {
-								is_chain = true
-							}
-						}
-					} else {
-						is_chain = false
-					}
 					let is_modifier = false
 					let is_block_all = false
 					let is_block_alone = false
@@ -169,36 +154,24 @@ export const drag_handlers = Vue.mixin({
 						if (class_name == "block_alone") {is_block_alone = true}
 						if (class_name == "block_single") {is_block_single = true}
 					}
-
+					
 					let {shortcut, entry} = this.get_container_info(target, type, is_list)
+					let is_chain = entry.chain_start ? true : false
 
 					return {type, is_filled, is_list, entry, is_chain, is_modifier, is_block_all, is_block_alone, is_block_single, shortcut}
 				}
 			}
 			//should never happen
-			throw `Shortcut Typechecker Error, ${el.classList} of element does not contain permitted class.\
+			throw `Shortcut Typechecker Error, ${target.classList} of element does not contain permitted class.\
 			This error should never happen, please report an issue for the Shortcut-Visualizer component if it does.`
 		},
 		get_draggabled_element_info(el, source) {
 			let info = {}
 			for (let type of draggable_types) {
-				let is_chain = false
 				if (el.classList.contains(type)) {
-					let is_list_entry = el.classList.contains("list-entry") == true ? true : false
-					if (is_list_entry) {
-						//BEWARE this is super fast, but if the order of the divs is changed this will break
-						//todo check flexbox reordering doesn't break this?
-						let chain_column = source.parentNode.childNodes[2]
-						if (chain_column.classList.contains("is_chain")) {
-							is_chain = true
-						}
-						info = {type, is_chain, is_list_entry}
-						break
-					} else {
-						is_chain = el.classList.contains("is_chain") == true ? true : false
-						info = {type, is_chain, is_list_entry}
-						break
-					}
+					info.type = type
+					info.is_list_entry = el.classList.contains("list-entry") == true ? true : false
+					break
 				}
 			}
 			
@@ -211,19 +184,21 @@ export const drag_handlers = Vue.mixin({
 					let element_index = el.getAttribute("active_shortcuts_index")
 					info.entry = this.shortcuts_active[element_index]
 					info.shortcut = info.entry._shortcut
+					info.is_chain = info.entry.chain_start ? true : false
 				}
 				if (info.is_list_entry) {
+					// let element_index = info.type == "context-entry" ? source.parentNode.parentNode.getAttribute("index") : source.parentNode.getAttribute("index")
 					let element_index = source.parentNode.getAttribute("index")
 					info.entry = this.shortcuts_list_active[element_index]
 					info.shortcut = info.entry._shortcut
+					info.is_chain = info.entry.chain_start ? true : false
 				}
 				if (info.type == "bin-entry") {
 					let element_index = source.querySelector(".command").getAttribute("index")
-					// not needed
-					// info.entry = this.bin[element_index]
-					// info.shortcut = info.entry._shortcut
+					// info.entry, etc not needed
 					info.bin_index = element_index
 				}
+
 				return info
 			}
 		},
@@ -429,4 +404,4 @@ export const drag_handlers = Vue.mixin({
 			this.$el.querySelectorAll(".hovering").forEach(el => el.classList.remove("hovering"))
 		}
 	},
-})
+}

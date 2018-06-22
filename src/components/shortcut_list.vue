@@ -17,62 +17,62 @@
 		</div>
 		<div class="chain" title="Chain Start">
 			<input
-			type="checkbox"
-			@keydown.enter="add()"
-			@keydown.esc="toggle_adding()"
-			v-model="entry_to_add.chain_start"
+				type="checkbox"
+				@keydown.enter="add()"
+				@keydown.esc="toggle_adding()"
+				v-model="entry_to_add.chain_start"
 			/>
 		</div>
 		<div class="shortcut">
 			<input
-			class="shortcut"
-			@keydown.enter="add()"
-			@keydown.esc="toggle_adding()"
-			v-model="entry_to_add.shortcut"
+				class="shortcut"
+				@keydown.enter="add()"
+				@keydown.esc="toggle_adding()"
+				v-model="entry_to_add.shortcut"
 			/>
 		</div>
 		<div class="command">
 			<input
-			class="command"
-			@keydown.enter="add()"
-			@keydown.esc="toggle_adding()"
-			v-model="entry_to_add.command"
+				class="command"
+				@keydown.enter="add()"
+				@keydown.esc="toggle_adding()"
+				v-model="entry_to_add.command"
 			/>
 		</div>
 		<div class="contexts" >
 			<input
-			class="contexts"
-			@keydown.enter="add()"
-			@keydown.esc="toggle_adding()"
-			v-model="entry_to_add.contexts"
+				class="contexts"
+				@keydown.enter="add()"
+				@keydown.esc="toggle_adding()"
+				v-model="entry_to_add.contexts"
 			/>
 		</div>
 		<div class="delete" title="cancel" @click="toggle_adding()">&#10006;</div>
 		</div>
 		<div
-		:class="['entry', entry.editing ? 'editing' : '', 'entry'+index, entry.changed ? 'changed' : '', entry.dragging ? 'dragging' : '']"
-		v-for="(entry, index) of shortcuts_list_active" :key="entry.shortcut+entry.command"
-		:index = index
+			:class="['entry', entry.editing ? 'editing' : '', 'entry'+index, entry.changed ? 'changed' : '', entry.dragging ? 'dragging' : '']"
+			v-for="(entry, index) of shortcuts_list_active" :key="entry.shortcut+entry.command"
+			:index = index
 		>  
 		<!-- COLUMN EDIT -->
 		<div :class="['edit']">
 			<!-- Edit -->
 			<span
-			v-if="!entry.editing"
-			class="button"
-			@click="toggle_editing(true, entry, index)"
+				v-if="!entry.editing"
+				class="button"
+				@click="toggle_editing(true, entry, index)"
 			>&#10000;</span>
 			<!-- Cancel -->
 			<span
-			v-if="entry.editing"
-			class="button dont_blur"
-			@click="cancel_edit(entry)"
+				v-if="entry.editing"
+				class="button dont_blur"
+				@click="cancel_edit(entry)"
 			>&#10006;</span>
 			<!-- Enter -->
 			<span
-			v-if="entry.editing"
-			class="button dont_blur"
-			@click="toggle_editing(false, entry, index)"
+				v-if="entry.editing"
+				class="button dont_blur"
+				@click="toggle_editing(false, entry, index)"
 			>&#10004;</span>
 		</div>
 
@@ -86,18 +86,18 @@
 		<div :class="['draggable-container', 'shortcut']">
 			<!-- NOT EDITING -->
 			<div
-			class="draggable list-entry shortcut-entry"
-			v-if="!entry.editing"
-			@click="toggle_editing(true, entry, index)"
+				class="draggable list-entry shortcut-entry"
+				v-if="!entry.editing"
+				@click="toggle_editing(true, entry, index)"
 			>{{entry._shortcut.map(keyset => normalize(keyset).join("+")).join(" ")}}</div>
 			<!-- EDITING -->
 			<input
-			class="dont_blur"
-			v-if="entry.editing"
-			v-model="editing.shortcut"
-			@keydown.enter="toggle_editing(false, entry, index)"
-			@blur="check_blur(entry, index)"
-			@keydown.esc="cancel_edit(entry)"
+				class="dont_blur"
+				v-if="entry.editing"
+				v-model="editing.shortcut"
+				@keydown.enter="toggle_editing(false, entry, index)"
+				@blur="check_blur(entry, index)"
+				@keydown.esc="cancel_edit(entry)"
 			/>
 		</div>
 
@@ -106,42 +106,44 @@
 			<!-- NOT EDITING -->
 			<!-- is_chain is needed for styling when dragging to bin //todo remove-->
 			<div
-			:class="['draggable', 'list-entry', 'command-entry', entry.chain_start ? 'is_chain' : '']"
-			@click="toggle_editing(true, entry, index, 'command')"
-			v-if="!entry.editing"
+				:class="['draggable', 'list-entry', 'command-entry', entry.chain_start ? 'is_chain' : '']"
+				@click="toggle_editing(true, entry, index, 'command')"
+				v-if="!entry.editing"
 			>{{entry.command}}</div>
 			<!-- EDITING -->
 			<list_input
-			class="dont_blur"
-			v-if="entry.editing"
-			v-model="editing.command"
-			:list="commands"
-			:allow_chain="false"
-			@enter="toggle_editing(false, entry, index)"
-			@blur="check_blur(entry, index)"
-			@esc="cancel_edit(entry)"               
+				class="dont_blur"
+				v-if="entry.editing"
+				v-model="editing.command"
+				:list="commands"
+				:allow_chain="false"
+				@enter="toggle_editing(false, entry, index)"
+				@blur="check_blur(entry, index)"
+				@esc="cancel_edit(entry)"
 			>
 			</list_input>
 		</div>
 
 		<!-- COLUMN CONTEXTS -->
-		<div :class="['draggable-container', 'contexts']">
+		<div class="draggable-container contexts">
 			<!-- NOT EDITING -->
 			<div
-			class="draggable list-entry context-entry"
-			@click="toggle_editing(true, entry, index, 'contexts')"
-			v-if="!entry.editing"
-			>{{entry.contexts.join(", ")}}</div>
+				class="draggable list-entry context-entry"
+				@click="toggle_editing(true, entry, index, 'contexts')"
+				v-if="!entry.editing"
+				v-for="context of entry.contexts"
+				:key="context"
+			>{{capitalize(context)}}</div>
 			<!-- EDITING -->
 			<list_input
-			class="dont_blur"
-			v-if="entry.editing"
-			v-model="editing.contexts"
-			:list="contexts"
-			:allow_chain="true"
-			@enter="toggle_editing(false, entry, index)"
-			@blur="check_blur(entry, index)"
-			@esc="cancel_edit(entry)"               
+				class="dont_blur"
+				v-if="entry.editing"
+				v-model="editing.contexts"
+				:list="contexts"
+				:allow_chain="true"
+				@enter="toggle_editing(false, entry, index)"
+				@blur="check_blur(entry, index)"
+				@esc="cancel_edit(entry)"               
 			>
 			</list_input>
 		</div>
@@ -158,7 +160,7 @@ import list_input from "./list_input"
 
 export default {
 	name: "Shortcuts",
-	props: ["commands", "contexts", "keymap", "options", "shortcuts_list_active", "normalize"],
+	props: ["commands", "contexts", "keymap", "options", "shortcuts_list_active", "normalize", "capitalize"],
 	components: {
 		list_input
 	},
@@ -325,181 +327,187 @@ export default {
 			//if we had clicked to another shortcut, editing would have already been set to false
 			//when toggled_editing (triggered by the shortcut we clicked to)
 			//checked for existing shortcuts with editing true
-			if (entry.editing) {
-				if (this.options.accept_on_blur) {
-					this.toggle_editing(false, entry, index)
-				} else {
-					this.cancel_edit(entry)
-				}
-			}
+			// if (entry.editing) {
+			// 	if (this.options.accept_on_blur) {
+			// 		this.toggle_editing(false, entry, index)
+			// 	} else {
+			// 		this.cancel_edit(entry)
+			// 	}
+			// }
 		}
 	},
 }
 </script>
 <style lang="scss">
-
 .shortcut-visualizer {
 	@import "../settings/theme.scss";
 
 	//when dragged to other places
 	.gu-mirror {
 		&.context-entry {
-			text-transform: capitalize
+			// text-transform: capitalize;
 		}
 	}
 
 	.shortcuts {
-	margin: $padding-size;
-	font-size: $regular-font-size;
-	@media (max-width: $regular-media-query){
-		font-size: $regular-shrink-amount * $regular-font-size;
-	}
-	.container {
-		border: 1px solid rgba(0,0,0,0.5);
-		input {
-		font-size: 1em;
-		// outline: none;
-		padding: 0;
-		background: none;
-		border: none;
+		margin: $padding-size;
+		font-size: $regular-font-size;
+		@media (max-width: $regular-media-query) {
+			font-size: $regular-shrink-amount * $regular-font-size;
 		}
-		.edit {
-		flex: 1 0 2em;
-		order: 1;
-		}
-		.chain {
-		flex: 1 0 1.5em;
-		order: 2;
-		}
-		.shortcut {
-		flex: 1 1 20%;
-		order: 3;
-		}
-		.command {
-		flex: 1 1 60%;
-		order: 4;
-		}
-		.contexts {
-		flex: 1 1 20%;
-		order: 5;
-		}
-		.delete {
-		flex: 1 0 1.5em;
-		order: 6;
-		}
-		.entry, .entry-header, .add, .stop-add, .adding {
-		box-sizing: border-box;
-		border: 1px solid rgba(0,0,0,0.5);
-		width:100%;
-		display: flex;
-		user-select: none;
-		& > div { //.shortcut, .command, etc
-			padding: 0.3em;
-			overflow-x: hidden;
-			white-space: nowrap;
-		}
-				& .list-entry {
-					display: inline-block;
-					flex: 1 1 100%;
+		.container {
+			border: 1px solid rgba(0, 0, 0, 0.5);
+			input {
+				font-size: 1em;
+				// outline: none;
+				padding: 0;
+				background: none;
+				border: none;
+			}
+			.edit {
+				flex: 1 0 2em;
+				order: 1;
+			}
+			.chain {
+				flex: 1 0 1.5em;
+				order: 2;
+			}
+			.shortcut {
+				flex: 1 1 20%;
+				order: 3;
+			}
+			.command {
+				flex: 1 1 60%;
+				order: 4;
+			}
+			.contexts {
+				flex: 1 1 20%;
+				order: 5;
+			}
+			.delete {
+				flex: 1 0 1.5em;
+				order: 6;
+			}
+			.entry, .adding, .entry-header, .add, .stop-add, {
+				box-sizing: border-box;
+				border: 1px solid rgba(0, 0, 0, 0.5);
+				width: 100%;
+				display: flex;
+				user-select: none;
+				& > div {
+					//.shortcut, .command, headers, etc
+					padding: 0.3em;
+					overflow-x: hidden;
+					white-space: nowrap;
 				}
 			}
-		.entry .contexts {
-		text-transform: capitalize;
-		// input {
-		//    text-transform: capitalize;
-		// }
-		}
-		//because whoever wrote the specs is an idiot
-		.editing .command, .editing .contexts {
-		overflow-x: unset;
-		.list-input {
-			width:100%;
-			overflow-y: visible;
-		} 
-		}
-		.entry-header, .add, .stop-add {
-		font-weight: bold;
-		}
-		.add, .stop-add {
-		text-align: center;
-		margin: 0 auto;
-		padding: 0.3em;
-		display: inline-block;
-		cursor: pointer;
-		}
-		.add, .stop-add {
-		color: $accent-color;
-		}
-		.stop-add {
-		color: $dragging-not-allowed-background;
-		}
-		.adding {
-		background: transparentize($accent-color, 0.7);
-		.edit {
-			text-align: center;
-		}
-		& > div {
-			position: relative;
-		}
-		& > div:not(.chain) input {
-			padding: 0.3em;
-			position: absolute;
-			top:0;
-			bottom: 0;
-			right: 0;
-			left:0;
-			width: calc(100% - 0.3em);
-		}
-		.chain {
-			input {
-			height: 1em;
-			width: 1em;
+			.entry {
+				transition: background-color 0.3s ease-out;
+				&.changed {
+					background: fade-out($accent-color, 0.7) !important;
+				}
+				.contexts {
+					// text-transform: capitalize;
+					.list-entry.context-entry {
+						flex: none;
+						display: inline-block;
+						&::after {
+							content: ", ";
+							margin-right: 10px;
+						}
+						&:not(.gu-transit):last-of-type::after {
+							content: "";
+							margin-right: 0;
+						}
+					}
+				}
 			}
-		}
-		}
-		.entry, .adding {
-		& > div { //.shortcut, .command, etc
-			display: flex;
-			justify-content: flex-start;
-			&:not(.chain):hover {
-			cursor: pointer;
+			.entry, .adding {
+				.list-entry {
+					display: inline-block;
+				}
+				& > div {
+					//.shortcut, .command, etc
+					display: flex;
+					justify-content: flex-start;
+					border-right: 0.3em transparent solid; //hide the overflow properly (padding does not)
+					&:not(.chain):hover {
+						cursor: pointer;
+					}
+				}
+				.edit {
+					display: flex;
+					justify-content: space-around;
+					align-items: center;
+				}
+				.gu-transit {
+					display: none;
+				}
 			}
-		}
-		.gu-transit {
-			display: none;
-		}
-		&.dragging .gu-transit  {
-			display: none;
-			&:hover {
-			display: block;
+			.editing {
+				background: transparentize($dragging-will-be-replaced, 0.7);
+				& > div {
+					//.shortcut, .command, contexts
+					position: relative;
+					input {
+						padding: 0.3em;
+						position: absolute;
+						top: 0;
+						bottom: 0;
+						right: 0;
+						left: 0;
+						width: calc(100% - 0.3em);
+					}
+				}
+				//because whoever wrote the overflow specs is an idiot
+				.command, .contexts {
+					overflow-x: unset;
+					.list-input {
+						width: calc(100% - 0.3em); //same as border to hide padding
+						margin: 0.3em;
+						overflow-y: visible;
+					}
+				}
 			}
-		}
-		&.editing{
-			background: transparentize($dragging-will-be-replaced, 0.7);
-			& > div {  //.shortcut, .command, etc
-			position: relative;
-			input {
+			.entry-header, .add, .stop-add {
+				font-weight: bold;
+			}
+			.adding {
+				background: transparentize($accent-color, 0.7);
+				.edit {
+					text-align: center;
+				}
+				& > div {
+					position: relative;
+				}
+				& > div:not(.chain) input {
+					padding: 0.3em;
+					position: absolute;
+					top: 0;
+					bottom: 0;
+					right: 0;
+					left: 0;
+					width: calc(100% - 0.3em);
+				}
+				.chain {
+					input {
+						height: 1em;
+						width: 1em;
+					}
+				}
+			}
+			.add, .stop-add {
+				text-align: center;
+				margin: 0 auto;
 				padding: 0.3em;
-				position: absolute;
-				top:0;
-				bottom: 0;
-				right: 0;
-				left:0;
-				width: calc(100% - 0.3em);
+				display: inline-block;
+				cursor: pointer;
+				color: $accent-color;
 			}
+			.stop-add {
+				color: $dragging-not-allowed-background;
 			}
 		}
-		.edit {
-			display: flex;
-			justify-content: space-around;
-			align-items: center;
-		}
-		transition: background-color 0.3s ease-out;
-		&.changed {
-			background: fade-out($accent-color, 0.7) !important;
-		}
-		}
-	}
 	}
 }
 </style>

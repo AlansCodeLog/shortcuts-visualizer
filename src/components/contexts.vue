@@ -9,7 +9,7 @@
 			<div
 				:class="['draggable', 'contexts-bar-entry', context == active ? 'active' : '']"
 				@click="$emit('change', context)"
-			>{{context}}</div>
+			>{{capitalize(context)}}</div>
 		</div>
 		
 	</div>
@@ -18,8 +18,7 @@
 <script>
 export default {
 	name: "Contexts-Bar",
-	props: ["contexts", "active"],
-	components: {},
+	props: ["contexts", "active", "capitalize"],
 }
 </script>
 <style lang="scss">
@@ -40,11 +39,11 @@ export default {
 	//when dragged to other places
 	.gu-mirror {
 		&.contexts-bar-entry {
-			text-transform: capitalize
+			// text-transform: capitalize
 		}
 	}
 	.contexts-bar {
-		text-transform: capitalize;
+		// text-transform: capitalize;
 		margin: $padding-size;
 		padding: $padding-size/4;
 		font-weight:bold;

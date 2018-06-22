@@ -1,9 +1,22 @@
-import Vue from "vue"
 import _ from "lodash"
 // import {keys_from_text, create_shortcut_entry, find_extra_keys_pressed,  find_extra_modifiers, normalize} from "../helpers/helpers"
 
-export const shortcut_editing_handlers = Vue.mixin({
+export default {
 	methods: {
+		//this should be a little less expensive than _.cloneDeep
+		deep_clone_entry(entry) {
+			let clone =  {
+				...entry,
+				contexts: [...entry.contexts],
+				_shortcut: [
+					[...entry._shortcut[0]],
+				]
+			}
+			if (entry._shortcut.length > 1) {
+				clone._shortcut[1] = [...entry._shortcut[1]]
+			}
+			return clone
+		},
 		//just pushes a new entry without any checks, this is because it's easier to do checks and warn the user about an error without chainging a component's temporary state from within that component //todo? change
 		shortcut_add(entry) {
 			this.shortcuts.push(entry)
@@ -15,11 +28,13 @@ export const shortcut_editing_handlers = Vue.mixin({
 				&& existing_entry._shortcut.join() == entry._shortcut.join()
 				&& existing_entry.contexts.join() == entry.contexts.join()
 			})
+			this.$emit("change", {entries: [this.deep_clone_entry(entry)], type: "deleted"})
 			this.shortcuts.splice(index, 1)
 		},
 		//add an entry to the bin, note these entries still technically have most of their properties and they are used
 		//extra is used internally by the function to call itself again for handling chains
 		add_to_bin(entry) {
+			let entries = []
 			//find the entry in shortcuts
 			let index = this.shortcuts.findIndex(existing_entry => {
 				return existing_entry.shortcut == entry.shortcut
@@ -35,6 +50,7 @@ export const shortcut_editing_handlers = Vue.mixin({
 			}
 			remove_context(entry)
 			this.bin.push(entry)
+			entries.push(entry)
 			//if entry is a chain start, move all it's entries to the bin
 			if (entry.chain_start) {
 				let indexes = this.shortcuts.map((existing_entry, index) => {
@@ -45,17 +61,21 @@ export const shortcut_editing_handlers = Vue.mixin({
 				for (let entry_index of indexes) {
 					remove_context(this.shortcuts[entry_index])
 					this.bin.push(this.shortcuts[entry_index])
+					entries.push(entry)
 				}
 				this.multisplice(this.shortcuts, indexes)
 			}
+			this.shortcut_edit_success(entries, "moved_to_bin")
 		},
 		//move an entry from the bin to "somewhere else" aka a different shortcut
 		move_from_bin(index, new_entry) {
+			let entries = []
 			let entry = this.bin[index]
 			//if the entry was a chain_start, we move all it's chained command with it
 			if (entry.chain_start) {
 				let indexes = this.bin.map((existing_entry, index) => {
 					if (existing_entry.chained && existing_entry._shortcut[0].join("") == entry._shortcut[0].join("")) {
+						entries.push(entry)
 						return index
 					}
 				}).filter(entry => typeof entry !== "undefined")
@@ -77,9 +97,15 @@ export const shortcut_editing_handlers = Vue.mixin({
 			entry.contexts.push(this.active_context)
 			entry.contexts.sort()
 			this.shortcuts.push(entry)
+			entries.push(entry)
+			this.shortcut_edit_success(entries, "moved_to_shortcuts")
 		},
 		//makes the shortcuts flash to indicate what else changed (like in the case where chain starts are swapped)
-		shortcut_edit_success(entries) {
+		shortcut_edit_success(entries, type) {
+			let cloned_entries = entries.map(entry => {
+				return this.deep_clone_entry(entry)
+			})
+			this.$emit("change", {changed: cloned_entries, type})
 			entries.map(entry => {
 				entry.changed = true 
 				setTimeout(() => {
@@ -91,7 +117,7 @@ export const shortcut_editing_handlers = Vue.mixin({
 		shortcut_edit({old_entry, new_entry}, checks = true) {
 			
 			//get our shortcut array if we didn't already
-			new_entry._shortcut = typeof new_entry._shortcut !== "undefined"
+			new_entry._shortcut = new_entry._shortcut
 				? new_entry._shortcut
 				: this.keys_from_text(new_entry.shortcut)._shortcut
 			
@@ -108,7 +134,7 @@ export const shortcut_editing_handlers = Vue.mixin({
 			}
 
 			//if contexts are undefined, just use the old contexts
-			if (typeof new_entry.contexts == "undefined") {
+			if (!new_entry.contexts) {
 				new_entry.contexts = old_entry.contexts
 			}
 			new_entry.contexts.sort()
@@ -149,6 +175,8 @@ export const shortcut_editing_handlers = Vue.mixin({
 				old_entry[prop] = new_entry[prop]
 			})
 
+			let entries = []
+
 			//if no chain starts to deal with, swap everything but the shortcut
 			if (swap_exists && !old_entry_copy.chain_start && !new_entry.chain_start) {
 				
@@ -157,28 +185,29 @@ export const shortcut_editing_handlers = Vue.mixin({
 						entry_swap[prop] = old_entry_copy[prop]
 					}
 				})
-				this.shortcut_edit_success([entry_swap])
+				entries.push(entry_swap)
 				
 			}
-			this.shortcut_edit_success([old_entry])
+			entries.push(old_entry)
 
 			//checks means whether to check if we need to clean up anything, when called from within here it's set to false
 
 			if (checks && !old_entry_copy.chain_start && !new_entry.chain_start) {
 				
 				// if we need to add a chain start
-				if (extra && typeof entry_swap == "undefined") {
+				if (extra && !entry_swap) {
 					this.shortcuts.splice(index, 0, extra)
-					this.shortcut_edit_success([this.shortcuts[index]])
+					entries.push(this.shortcuts[index])
 				}
 
 				//if either the old or entry swapped with is a chain, then we need to change all the dependent chains
-				let chain_entry = typeof entry_swap_copy !== "undefined" && entry_swap_copy.chain_start
+				let chain_entry = entry_swap_copy && entry_swap_copy.chain_start
 					? "entry_swap_copy"
 					: old_entry_copy.chain_start
 						? "old_entry_copy"
 						: false
 				
+						
 				if (chain_entry && old_entry_copy.shortcut !== entry_swap_copy.shortcut) {
 					
 					let old_start = chain_entry == "entry_swap_copy" ? entry_swap_copy : old_entry_copy
@@ -217,7 +246,7 @@ export const shortcut_editing_handlers = Vue.mixin({
 				}
 			} else if (checks) { //swapping chain starts is similar but more of a mess
 				//if we need to swap chain starts and all their chains, first we have to do the chains
-				let chain_entry = typeof entry_swap_copy !== "undefined" && entry_swap_copy.chain_start
+				let chain_entry = entry_swap_copy && entry_swap_copy.chain_start
 					? "entry_swap_copy"
 					: old_entry_copy.chain_start
 						? "old_entry_copy"
@@ -285,9 +314,10 @@ export const shortcut_editing_handlers = Vue.mixin({
 						entry_swap[prop] = old_entry_copy[prop]
 					}
 				})
-				this.shortcut_edit_success([entry_swap])
-				this.shortcut_edit_success([old_entry])
+				entries.push(entry_swap)
+				entries.push(old_entry)
 			}
+			this.shortcut_edit_success(entries, "edited")
 		},
 	}
-})
+}

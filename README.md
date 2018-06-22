@@ -33,23 +33,24 @@ Okay the contexts was a terrible example to show editing suggestions, but you ge
 - [x] Drag/Drop
 - [x] Drag/Drop Commands
 - [x] Del Bin
-- [~] Polishing/Clean/Beta
 - [x] Unify Dragging Handlers
-- [ ] Split list contexts so individual contexts can be dragged?
 - [x] Split props up.
-- [~] Allow handling of changed options.
-- [ ] Emit changes up to parent.
-- [ ] Local Storage in Demo
-- [ ] Check all modes work.
+- [x] Allow handling of changed options.
+- [x] Emit changes up to parent.
 - [x] Properly block singles when editing list.
 - [x] Separate warnings properly into component.
 - [x] Rework helpers to mixin.
+- [x] Split list contexts so individual contexts can be dragged.
+- [ ] Check all modes work.
+- [~] Polishing/Clean/Beta
+- [ ] Have shortcuts contain all shortcuts, marking binned as binned, and assigning each an index property, so no more different indexes per type. 
 - [~] Demo
 - [~] Documentation
 - [ ] Tests...
 
 Possible future changes/features/ideas:
-- [ ] Have shortcuts contain all shortcuts, marking binned as binned, and assigning each an index property to each, so no more different indexes per type. 
+- [ ] Confirmation for Batch Deletes
+- [ ] Local Storage in Demo
 - [ ] Proper Keyboard Accesibility?
 - [ ] Command Search
 - [ ] Full Command Bin (without going through list first to create entry)
@@ -73,6 +74,40 @@ Possible future changes/features/ideas:
 - Although it might technically be possible to allow a key to be dragged, then change the keys being pressed, this seems to break dragula. To avoid the bugs and not make the code more complex, input is frozen on all dragging.
 - Character property cannot be a space, if you want to hide a character (like space) it must be done through css.
 - Some shortcuts are not overridable (e.g. in chrome Ctrl+W will close the tab, you cannot preventDefault it).
+
+## Managing State
+
+Because:
+	- Some options need to be modified internally by the component to work.
+	- Deep watching for prop changes from the component would be expensive.
+	- Letting the component modify them would probably make it not work with vuex and is bad practice generally.
+	- You might also want to keep these options in sync without triggering a change.
+
+...`keys_list` and `shortcuts_list` will not trigger any changes by default.
+
+UNLESS you call the component's `refresh_options` function. You can do this by setting a ref property for the component then calling `this.$refs.insert_your_ref_name.refresh_options([array of options keys to change])`. This will make the component recalculate the variables it uses internally that would usually only get created once on init. `keys_list` will also make `shortcuts_list` re-calculate but not the other way around.
+
+Now after inits or refreshes, the component will fire a "ready" event with a deep clone of the internal shortcuts list it creates (it adds any missing chain starts, etc). This is so you can keep your state in sync from then on (with the "change" events the component emits). OR if you don't care about immediate changes (e.g. the user clicks a `save/confirm` changes button) see Fetching Directly below.
+
+The keys_list also gets modified, hence why you need to call `refresh_options` if you change it, but you don't need to keep it in sync since it's just filling in missing properties just the once for internal use.
+
+I have not completely tested this (e.g. with Vuex) but it should not cause any problems since the parent should not be able to modify the component's data and vice-versa. They both have their own copies of the `shortcuts_list` and the `keys_list`. And change events always send deep clones of the entries.
+
+### Fetching Directly
+
+If you don't care about immediate changes (e.g. the user clicks a `save/confirm` changes button) you can deep clone the data yourself only when you want.
+
+To do this you can use one of the component's internal methods as it should be faster than something like _.cloneDeep because the structure of entries is known and there's no typeof checks to deep clone everything. For example:
+
+```js
+	let deep_clone_entry = this.$refs.shortcut_visualizer.deep_clone_entry
+	let shortcuts = this.$refs.shortcut_visualizer.shortcuts
+	this.data = shortcuts.map(entry => deep_clone_entry(entry))
+```
+
+### Regarding Options
+
+To allow you to do things like toggle the theme by toggling the options, you must handle option changes, for this an "options" event if emitted with a [key, value] array. If you want you can hide the options component completely from the user (with `options_dev.hide_options`) and only expose the options you like.
 
 # Documentation Snippets
 

@@ -28,15 +28,16 @@ export default {
 		possible_entries () {
 			let value_low = this.value.toLowerCase().trim()
 			let first_value_low = value_low
+			let first_comma
 			if (this.allow_chain) {
-				let first_comma = value_low.indexOf(",")
+				first_comma = value_low.indexOf(",")
 				first_comma = first_comma !== -1 ? first_comma + 1 : 0
 				value_low = value_low.slice(first_comma, value_low.length).trim()
 			}
 			return this.list.filter(entry => {
 				let entry_low = entry.toLowerCase()
 				return entry_low.indexOf(value_low) !== -1
-				&& first_value_low.slice(0, typeof first_comma !== "undefined" ? first_comma : first_value_low.length).indexOf(entry_low) == -1
+				&& first_value_low.slice(0, first_comma ? first_comma : first_value_low.length).indexOf(entry_low) == -1
 			})
 		}
 	},
@@ -66,10 +67,9 @@ export default {
 }
 </script>
 <style lang="scss" scoped>
-
 .shortcut-visualizer {
 	@import "../settings/theme.scss";
-	
+
 	&.background-light {
 		background: $theme-light-background;
 		color: invert($theme-light-background);
@@ -85,14 +85,11 @@ export default {
 		}
 	}
 
-	// .list-input {
-	// 	outline: none;
-	// }
 	.list {
 		position: absolute;
-		top:100%;
-		left: -0.3em;
-		right: -0.3em;
+		top: 100%;
+		left: 0;
+		right: 0;
 		div {
 			padding: 0.5em;
 			position: relative;
@@ -100,9 +97,9 @@ export default {
 				content: "";
 				position: absolute;
 				top: 0;
-				bottom:0;
-				right:0;
-				left:0;
+				bottom: 0;
+				right: 0;
+				left: 0;
 				background: rgba(255, 166, 0, 0.1);
 			}
 			&:hover::before {
