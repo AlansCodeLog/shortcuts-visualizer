@@ -1,58 +1,68 @@
 <template>
 	<div class="shortcuts">
 	<div class="container">
-		<div v-if="!adding" class="add" @click="toggle_adding()">Add a Shortcut +</div>
-		<div v-else class="stop-add" @click="toggle_adding()">Cancel</div>
-		<div class="entry-header">
-		<div class="edit"></div>
-		<div class="chain" title="Chain Start"></div>
-		<div class="shortcut">Shortcut</div>
-		<div class="command">Command</div>
-		<div class="contexts">Contexts</div>
-		<div class="delete" title="delete"></div>
-		</div>
+		<div v-if="!adding" class="add draggable-container" @click="toggle_adding(true)"><div><!--gets filled by css below--></div></div>
+		<div v-else class="stop-add" @click="toggle_adding(false)"><div>Cancel</div></div>
 		<div v-if="adding" class="adding">
-		<div class="edit" @click="add()">
-			<span>&#10004;</span>
+			<div class="edit" @click="add()">
+				<span>&#10004;</span>
+			</div>
+			<div class="chain" title="Chain Start">
+				<input
+					type="checkbox"
+					@keydown.enter="add()"
+					@keydown.esc="toggle_adding(false)"
+					v-model="entry_to_add.chain_start"
+				/>
+			</div>
+			<div class="shortcut">
+				<list_input
+					class="shortcut"
+					v-model="entry_to_add.shortcut"
+					:allow_chain="false"
+					@enter="add()"
+					@esc="toggle_adding(false)"               
+				>
+				</list_input>
+			</div>
+			<div class="command">
+				<list_input
+					class="command"
+					v-model="entry_to_add.command"
+					:list="commands"
+					:allow_chain="false"
+					@enter="add()"
+					@esc="toggle_adding(false)"               
+				>
+				</list_input>
+			</div>
+			<div class="contexts" >
+				<list_input
+					class="contexts"
+					v-model="entry_to_add.contexts"
+					:list="contexts"
+					:allow_chain="true"
+					@enter="add()"
+					@esc="toggle_adding(false)"               
+				>
+				</list_input>
+			</div>
+			<div class="delete" title="cancel" @click="toggle_adding(false)">&#10006;</div>
 		</div>
-		<div class="chain" title="Chain Start">
-			<input
-				type="checkbox"
-				@keydown.enter="add()"
-				@keydown.esc="toggle_adding()"
-				v-model="entry_to_add.chain_start"
-			/>
+
+		<div class="entry-header">
+			<div class="edit"></div>
+			<div class="chain" title="Chain Start"></div>
+			<div class="shortcut">Shortcut</div>
+			<div class="command">Command</div>
+			<div class="contexts">Contexts</div>
+			<div class="delete" title="delete"></div>
 		</div>
-		<div class="shortcut">
-			<input
-				class="shortcut"
-				@keydown.enter="add()"
-				@keydown.esc="toggle_adding()"
-				v-model="entry_to_add.shortcut"
-			/>
-		</div>
-		<div class="command">
-			<input
-				class="command"
-				@keydown.enter="add()"
-				@keydown.esc="toggle_adding()"
-				v-model="entry_to_add.command"
-			/>
-		</div>
-		<div class="contexts" >
-			<input
-				class="contexts"
-				@keydown.enter="add()"
-				@keydown.esc="toggle_adding()"
-				v-model="entry_to_add.contexts"
-			/>
-		</div>
-		<div class="delete" title="cancel" @click="toggle_adding()">&#10006;</div>
-		</div>
+		
 		<div
 			:class="['entry', entry.editing ? 'editing' : '', 'entry'+index, entry.changed ? 'changed' : '', entry.dragging ? 'dragging' : '']"
 			v-for="(entry, index) of shortcuts_list_active" :key="entry.shortcut+entry.command"
-			:index = index
+			:shortcuts_index="shortcuts_list_active[index].index"
 		>  
 		<!-- COLUMN EDIT -->
 		<div :class="['edit']">
@@ -77,8 +87,17 @@
 		</div>
 
 		<!-- COLUMN CHAIN -->
-		<div v-if="entry.chain_start" class="chain is_chain" title="Chain Start">&#128279;</div>
-		<div v-else class="chain not_chain"></div>
+		<!-- NOT EDITING -->
+		<div v-if="!entry.editing && entry.chain_start" class="chain is_chain" title="Chain Start">&#128279;</div>
+		<div v-if="!entry.editing && !entry.chain_start" class="chain not_chain"></div>
+		<div v-if="entry.editing" class="chain" title="Chain Start">
+			<input
+				type="checkbox"
+				@keydown.enter="add()"
+				@keydown.esc="toggle_adding(false)"
+				v-model="editing.chain_start"
+			/>
+		</div>
 		
 		<!-- note: don't leave spaces between {{variables}} in shortcut, command, and contexts columns -->
 
@@ -160,7 +179,7 @@ import list_input from "./list_input"
 
 export default {
 	name: "Shortcuts",
-	props: ["commands", "contexts", "keymap", "options", "shortcuts_list_active", "normalize", "capitalize"],
+	props: ["freeze", "commands", "contexts", "keymap", "options", "shortcuts_list_active", "normalize", "capitalize", "active_context", "validate_entry"],
 	components: {
 		list_input
 	},
@@ -171,6 +190,7 @@ export default {
 				shortcut: "",
 				command: "",
 				contexts: "",
+				chain_start: false,
 			},
 			adding: false,
 			entry_to_add: {
@@ -185,9 +205,8 @@ export default {
 		remove (index) {
 			this.$emit("delete", this.shortcuts_list_active[index])
 		},
-		toggle_adding() {
-			this.adding = !this.adding
-			if (this.adding) {
+		toggle_adding(adding) {
+			if (adding) {
 				this.$emit("freeze", true)
 				this.entry_to_add.shortcut = ""
 				this.entry_to_add.command = ""
@@ -196,46 +215,16 @@ export default {
 			} else {
 				this.$emit("freeze", false)
 			}
+			this.adding = adding
 		},
-		add() { //everything is in this component so we can give the user a chance to edit the entry
-			let entry = {...this.entry_to_add}
-			if (entry.contexts == "") {
-				entry.contexts = this.active_context
+		add() {
+			let result = this.validate_entry({...this.entry_to_add})
+			if (!result) {return}
+			
+			this.$emit("add", result.entry)
+			if (result.extra) {
+				this.$emit("add", result.extra)
 			}
-			entry.contexts = entry.contexts.split(/\s*,\s*/g)
-		
-			//handle any errors
-			if (entry.command == "") {
-				this.$emit("error", {message: "Entry command cannot be empty."})
-				return
-			}
-			try {
-				var result = this.create_shortcut_entry(entry, true)
-			} catch (error) {
-				this.$emit("error", {message: error})
-				return
-			}
-			entry = result.entry
-			let {extra, remove, error, invalid} = result
-		
-			if (remove) {
-				this.$emit("error", {message: "Shortcut " +entry.shortcut+" is a chain start. It cannot be overwritten."})
-				return
-			}
-			if (error) {
-				if (error.code == "Chain Error") {
-					this.$emit("error", {message: "Shortcut " +entry.shortcut+" is a chain start. It cannot be overwritten."})
-				} else {
-					this.$emit("error", error)
-				}
-				return
-			}
-			if (invalid) {
-				this.$emit("error", invalid)
-				return
-			}
-			//if no errors, emit add
-			this.$emit("add", entry)
 			//reset
 			this.entry_to_add.shortcut = ""
 			this.entry_to_add.command = ""
@@ -244,15 +233,12 @@ export default {
 			this.toggle_adding()
 		},
 		toggle_editing (editing, entry, index, focusto = "shortcut", check_existing = true) {
-			
-			if (!editing && !Array.isArray(this.editing.contexts)) {
-				this.editing.contexts = this.editing.contexts.toLowerCase().split(/\s*,\s*/g)
-			}
 
 			//we need to keep a reference to the original values in case we accept_on_blur
 			let shortcut = this.editing.shortcut
 			let command = this.editing.command
 			let contexts = this.editing.contexts
+			let chain_start = this.editing.chain_start
 			
 			//the first time, we want to check if we were editing something (that is we were editing a shortcut then clicked to another) and cancel/accept depending on whether to accept on blur
 			//but we don't want to check again when this function calls itself here
@@ -278,6 +264,7 @@ export default {
 				this.editing.shortcut = entry.shortcut
 				this.editing.command = entry.command
 				this.editing.contexts = entry.contexts.join(", ").toLowerCase()
+				this.editing.chain_start = entry.chain_start
 				//focus when possible
 				this.$nextTick(() => {
 					let element_to_focus = this.$el.querySelector(".entry" + index + " ." + focusto + " input")
@@ -296,6 +283,9 @@ export default {
 			} else {
 				this.$emit("freeze", false)
 				this.editing_index = undefined
+				
+				contexts = contexts.toLowerCase().split(/\s*,\s*/g).sort()
+
 				//else send our change
 				let change = {
 					old_entry: entry,
@@ -303,19 +293,24 @@ export default {
 						shortcut: shortcut,
 						command: command,
 						contexts: contexts,
+						chain_start: chain_start,
+						index: entry.index,
+						holder: entry.holder
 					},
 				}
 			
 				//only if something changed though
 				if (change.new_entry.shortcut !== change.old_entry.shortcut
 						|| change.new_entry.command !== change.old_entry.command
-						|| change.new_entry.contexts.join() !== change.old_entry.contexts.join()) {
+						|| change.new_entry.contexts.join() !== change.old_entry.contexts.join()
+						|| change.new_entry.chain_start !== change.old_entry.chain_start) {
 					this.$emit("edit", change)
 				}
 				//reset our variables
 				this.editing.shortcut = ""
 				this.editing.command = ""
 				this.editing.contexts = "global"
+				this.editing.chain_start = false
 			}
 		},
 		cancel_edit(entry) {
@@ -327,13 +322,14 @@ export default {
 			//if we had clicked to another shortcut, editing would have already been set to false
 			//when toggled_editing (triggered by the shortcut we clicked to)
 			//checked for existing shortcuts with editing true
-			// if (entry.editing) {
-			// 	if (this.options.accept_on_blur) {
-			// 		this.toggle_editing(false, entry, index)
-			// 	} else {
-			// 		this.cancel_edit(entry)
-			// 	}
-			// }
+			if (this.options.never_blur) {return}
+			if (entry.editing) {
+				if (this.options.accept_on_blur) {
+					this.toggle_editing(false, entry, index)
+				} else {
+					this.cancel_edit(entry)
+				}
+			}
 		}
 	},
 }
@@ -356,49 +352,50 @@ export default {
 			font-size: $regular-shrink-amount * $regular-font-size;
 		}
 		.container {
-			border: 1px solid rgba(0, 0, 0, 0.5);
-			input {
-				font-size: 1em;
-				// outline: none;
-				padding: 0;
-				background: none;
-				border: none;
-			}
-			.edit {
-				flex: 1 0 2em;
-				order: 1;
-			}
-			.chain {
-				flex: 1 0 1.5em;
-				order: 2;
-			}
-			.shortcut {
-				flex: 1 1 20%;
-				order: 3;
-			}
-			.command {
-				flex: 1 1 60%;
-				order: 4;
-			}
-			.contexts {
-				flex: 1 1 20%;
-				order: 5;
-			}
-			.delete {
-				flex: 1 0 1.5em;
-				order: 6;
-			}
+			border: $borders/5 solid rgba(0, 0, 0, 0.5);
 			.entry, .adding, .entry-header, .add, .stop-add, {
 				box-sizing: border-box;
-				border: 1px solid rgba(0, 0, 0, 0.5);
+				border: $borders/5 solid rgba(0, 0, 0, 0.5);
 				width: 100%;
 				display: flex;
+				align-items: center;
 				user-select: none;
 				& > div {
 					//.shortcut, .command, headers, etc
-					padding: 0.3em;
+					padding: $small-pad-size;
 					overflow-x: hidden;
 					white-space: nowrap;
+				}
+				input {
+					font-size: 1em;
+					// outline: none;
+					padding: 0;
+					background: none;
+					border: none;
+				}
+				.edit {
+					flex: 1 0 $small-pad-size * 6;
+					order: 1;
+				}
+				.chain {
+					flex: 1 0 $small-pad-size * 4;
+					order: 2;
+				}
+				.shortcut {
+					flex: 1 1 20%;
+					order: 3;
+				}
+				.command {
+					flex: 1 1 60%;
+					order: 4;
+				}
+				.contexts {
+					flex: 1 1 20%;
+					order: 5;
+				}
+				.delete {
+					flex: 1 0 $small-pad-size * 2;
+					order: 6;
 				}
 			}
 			.entry {
@@ -413,7 +410,7 @@ export default {
 						display: inline-block;
 						&::after {
 							content: ", ";
-							margin-right: 10px;
+							margin-right: $small-pad-size * 2;
 						}
 						&:not(.gu-transit):last-of-type::after {
 							content: "";
@@ -422,87 +419,109 @@ export default {
 					}
 				}
 			}
-			.entry, .adding {
-				.list-entry {
-					display: inline-block;
-				}
+			.entry, .adding, .entry-header {
 				& > div {
 					//.shortcut, .command, etc
 					display: flex;
-					justify-content: flex-start;
-					border-right: 0.3em transparent solid; //hide the overflow properly (padding does not)
+					.shortcut, .command, .contexts {
+						justify-content: flex-start;
+					}
 					&:not(.chain):hover {
 						cursor: pointer;
+					}
+					.list-entry {
+						overflow: hidden;
 					}
 				}
 				.edit {
 					display: flex;
-					justify-content: space-around;
+					justify-content: center;
 					align-items: center;
 				}
 				.gu-transit {
 					display: none;
 				}
 			}
-			.editing {
-				background: transparentize($dragging-will-be-replaced, 0.7);
+			.adding, .editing {
 				& > div {
 					//.shortcut, .command, contexts
 					position: relative;
-					input {
-						padding: 0.3em;
-						position: absolute;
-						top: 0;
-						bottom: 0;
-						right: 0;
-						left: 0;
-						width: calc(100% - 0.3em);
-					}
-				}
-				//because whoever wrote the overflow specs is an idiot
-				.command, .contexts {
-					overflow-x: unset;
-					.list-input {
-						width: calc(100% - 0.3em); //same as border to hide padding
-						margin: 0.3em;
-						overflow-y: visible;
-					}
-				}
-			}
-			.entry-header, .add, .stop-add {
-				font-weight: bold;
-			}
-			.adding {
-				background: transparentize($accent-color, 0.7);
-				.edit {
-					text-align: center;
-				}
-				& > div {
-					position: relative;
 				}
 				& > div:not(.chain) input {
-					padding: 0.3em;
 					position: absolute;
 					top: 0;
 					bottom: 0;
 					right: 0;
 					left: 0;
-					width: calc(100% - 0.3em);
+					padding: $small-pad-size;
+					width: calc(100% - #{$small-pad-size * 2});
 				}
-				.chain {
-					input {
-						height: 1em;
-						width: 1em;
+				//because whoever wrote the overflow specs is an idiot
+				.command, .contexts, .shortcut {
+					align-self: stretch;
+					overflow-x: unset;
+					.list-input {
+						width: calc(100% - 0.3em); //same as border to hide padding
+						overflow-y: visible;
+						position: absolute;
+						left: 0;
+						right: 0;
+						top: 0;
+						bottom: 0;
 					}
+				}
+			}
+			.editing {
+				background: transparentize($dragging-will-be-replaced, 0.7);
+				.edit {
+					justify-content: space-around;
+				}
+			}
+			.entry-header, .add, .stop-add {
+				font-weight: bold;
+			}
+			.entry-header {
+				font-size: 1.1em;
+				padding-top: $small-pad-size;
+				padding-bottom: $small-pad-size;
+				background: rgba(0,0,0,0.2)
+			}
+			.adding {
+				background: transparentize($accent-color, 0.7);
+				.edit {
+					justify-content: center;
 				}
 			}
 			.add, .stop-add {
 				text-align: center;
 				margin: 0 auto;
-				padding: 0.3em;
+				padding: $small-pad-size * 2;
 				display: inline-block;
 				cursor: pointer;
-				color: $accent-color;
+				font-size: 1.2em;
+				& > div {
+					border: $borders/2 solid transparent;
+				}
+			}
+			.add {
+				& > div::before {
+					content: "Add a Shortcut +";
+				}
+				&.will_be_added {
+					border: $borders/2 solid transparentize($accent-color, 0.2) !important; 
+					& > div {
+						border: $borders/5 solid transparent;
+						&::before {
+							content: "Move to List";
+						}
+					}
+				}
+				.gu-transit {
+					display: none;
+				}
+				&:not(.will_be_added) {
+					color: $accent-color;
+				}
 			}
 			.stop-add {
 				color: $dragging-not-allowed-background;

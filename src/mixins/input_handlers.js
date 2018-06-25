@@ -75,6 +75,7 @@ export default {
 				e.preventDefault()
 				e.stopPropagation()
 				if (this.freeze) {
+					this.set_error({message: "Input on keyboard is frozen while dragging or editing."})
 					return
 				}
 				if (this.user_options.mode == "Toggle All") {
@@ -169,8 +170,8 @@ export default {
 		},
 		get_shortcuts_active (show_unpressed_modifiers = false) {
 			//params for functions used, to clean things up a bit
-			return this.shortcuts.filter(entry => {
-				if (!entry.contexts.includes(this.active_context)) {return false}
+			let result = this.shortcuts.filter(entry => {
+				if (entry.binned || !entry.contexts.includes(this.active_context)) {return false}
 				if (!this.chain.in_chain && !entry.chained) {
 					let extra_modifiers_in_shortcut = this.find_extra_modifiers(entry._shortcut[0])
 					let extra_keys_pressed = this.find_extra_keys_pressed(entry._shortcut[0])
@@ -208,6 +209,14 @@ export default {
 					return false
 				}
 			})
+
+			if (show_unpressed_modifiers) {
+				return result.sort((a,b) => {
+					return a.shortcut > b.shortcut
+				})
+			}
+
+			return result
 		},
 		//helpers for above
 		find_extra_modifiers(shortcut_entry) {

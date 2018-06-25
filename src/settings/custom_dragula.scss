@@ -1,35 +1,44 @@
 @import "../settings/theme.scss";
-
-.gu-mirror {
-	position: fixed !important;
-	margin: 0 !important;
-	z-index: 9999 !important;
-	font-weight: bold;
-	background: $dragging-background;
-	padding: 5px;
-	opacity: 0.7;
-	width: auto !important;
-	height: auto !important;
-}
-.gu-hide {
-	display: none !important;
-}
-.gu-unselectable {
-	user-select: none !important;
-}
-.will_be_replaced {
-	color: $dragging-will-be-replaced !important;
-	border-color: transparentize($dragging-will-be-replaced, 0.7) !important;
-}
-.will_be_added_context {
-	background: transparentize($accent-color, 0.5) !important;
-	border-color: transparentize($accent-color, 0.2) !important;
-}
-.unselectable {
-	color: $dragging-not-allowed-background !important;
-	background: transparentize($dragging-not-allowed-background, 0.7) !important;
-	border-color: mix($dragging-not-allowed, $dragging-not-allowed-background) !important;
-}
-.will_replace {
-	display:none;
-}
+// .shortcut-visualizer {
+	.gu-mirror {
+		position: fixed !important;
+		margin: 0 !important;
+		z-index: 9999 !important;
+		font-weight: bold;
+		background: $dragging-background;
+		padding: $small-pad-size;
+		opacity: 0.7;
+		width: auto !important;
+		height: auto !important;
+	}
+	.gu-hide {
+		display: none !important;
+	}
+	.gu-unselectable {
+		user-select: none !important;
+	}
+	.will_be_replaced {
+		color: $dragging-will-be-replaced !important;
+		border-color: transparentize($dragging-will-be-replaced, 0.7) !important;
+	}
+	.will_be_added {
+		background: transparentize($accent-color, 0.5) !important;
+		border-color: transparentize($accent-color, 0.2) !important;
+	}
+	&.background-dark .will_be_added {
+		color: white;
+		text-shadow: mix(white, hsla(hue($accent-color), 100%, 50%, 1), 50%) 0px 0px $borders;
+	}
+	&.background-light .will_be_added {
+		color: black;
+		text-shadow: mix(black, hsla(hue($accent-color), 100%, 50%, 1), 50%) 0px 0px $borders;
+	}
+	.unselectable {
+		color: $dragging-not-allowed-background !important;
+		background: transparentize($dragging-not-allowed-background, 0.7) !important;
+		border-color: mix($dragging-not-allowed, $dragging-not-allowed-background) !important;
+	}
+	.will_replace {
+		display:none;
+	}
+// }

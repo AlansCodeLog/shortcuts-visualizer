@@ -1,7 +1,7 @@
 import _ from "lodash"
 import dragula from "dragula"
 
-const container_types = ["shortcut", "command", "contexts", "key-container", "bin", "delete-bin", "contexts-bar-container"]
+const container_types = ["shortcut", "command", "contexts", "key-container", "bin", "delete-bin", "contexts-bar-container", "add"]
 const draggable_types = ["shortcut-entry", "command-entry", "context-entry", "contexts-bar-entry", "key-entry", "bin-entry"]
 
 // LOGIC
@@ -84,7 +84,12 @@ export default {
 					return this.drag_is_container(el)
 				},
 				moves: (el, source, handle, sibling) => {
-					return this.drag_moves(el, source, handle, sibling)
+					let can_move = this.drag_moves(el, source, handle, sibling)
+					if (can_move && this.freeze) {
+						this.set_error({message: "Dragging while editing a shortcut is not allowed."})
+						return false
+					}
+					return can_move
 				},
 				accepts: (el, target, source, sibling) => {
 					if (this.drag_accepts(el, target, source, sibling)) {
@@ -121,14 +126,14 @@ export default {
 
 				let existing = el.querySelector(".key-entry")
 				if (existing) {
-					let index = existing.getAttribute("active_shortcuts_index")
-					entry = this.shortcuts_active[index]
+					let index = existing.getAttribute("shortcuts_index")
+					entry = this.shortcuts[index]
 				}
 			}
 			if (is_list) {
 				// let index = type == "context-entry" ? el.parentNode.parentNode.getAttribute("index") : el.parentNode.getAttribute("index")
-				let index = el.parentNode.getAttribute("index")
-				entry = this.shortcuts_list_active[index]
+				let index = el.parentNode.getAttribute("shortcuts_index")
+				entry = this.shortcuts[index]
 				shortcut = entry._shortcut
 			}
 			return {shortcut, entry}
@@ -181,22 +186,22 @@ export default {
 				This error should never happen, please report an issue for the Shortcut-Visualizer component if it does.`
 			} else {
 				if (info.type == "key-entry") {
-					let element_index = el.getAttribute("active_shortcuts_index")
-					info.entry = this.shortcuts_active[element_index]
+					let element_index = el.getAttribute("shortcuts_index")
+					info.entry = this.shortcuts[element_index]
 					info.shortcut = info.entry._shortcut
 					info.is_chain = info.entry.chain_start ? true : false
 				}
 				if (info.is_list_entry) {
 					// let element_index = info.type == "context-entry" ? source.parentNode.parentNode.getAttribute("index") : source.parentNode.getAttribute("index")
-					let element_index = source.parentNode.getAttribute("index")
-					info.entry = this.shortcuts_list_active[element_index]
+					let element_index = source.parentNode.getAttribute("shortcuts_index")
+					info.entry = this.shortcuts[element_index]
 					info.shortcut = info.entry._shortcut
 					info.is_chain = info.entry.chain_start ? true : false
 				}
 				if (info.type == "bin-entry") {
-					let element_index = source.querySelector(".command").getAttribute("index")
+					let element_index = source.querySelector(".command").getAttribute("shortcuts_index")
 					// info.entry, etc not needed
-					info.bin_index = element_index
+					info.entry = this.shortcuts[element_index]
 				}
 
 				return info
@@ -224,6 +229,12 @@ export default {
 				//LIST
 				case "shortcut": {
 					if (["command-entry", "key-entry", "bin-entry"].includes(element.type)) { return false }
+					if (element.type == "shortcut-entry") {
+						if ((element.is_chain && target_container.entry.chained)
+							|| (target_container.is_chain && element.entry.chained)) {
+							return false
+						}
+					}
 					return true
 				}
 				case "command": {
@@ -264,6 +275,11 @@ export default {
 				case "delete-bin": {
 					return true
 				}
+				//ADD
+				case "add": {
+					if (element.type == "bin-entry") {return true}
+					return false
+				}
 			}
 		},
 		drag_not_accepted(el, target, source, sibling) {
@@ -289,46 +305,48 @@ export default {
 
 				//clean classes that sometimes neither drag_on_out or drag_not_accepted catch these
 				this.$el.querySelectorAll(".unselectable").forEach(el => el.classList.remove("unselectable"))
+				this.$el.querySelectorAll(".hovering").forEach(el => el.classList.remove("hovering"))
 
 				//added needed classes
-				if (target_container.type == "key-container") {
-					let existing = target.querySelector(".key-entry:not(.gu-transit)")
-					if (existing) {
-						if (["key-entry", "command-entry", "bin-entry"].includes(element.type)) {
-							el.classList.add("will_replace")
-							existing.classList.add("will_be_replaced")
+				switch(target_container.type) {
+					case "key-container": {
+						let existing = target.querySelector(".key-entry:not(.gu-transit)")
+						if (existing) {
+							if (["key-entry", "command-entry", "bin-entry"].includes(element.type)) {
+								el.classList.add("will_replace")
+								existing.classList.add("will_be_replaced")
+							}
+							if (["contexts-bar-entry", "context-entry"].includes(element.type)) {
+								el.classList.add("will_replace")
+								existing.classList.add("will_be_added")
+							}
 						}
-						if (["contexts-bar-entry", "context-entry"].includes(element.type)) {
-							el.classList.add("will_replace")
-							existing.classList.add("will_be_added_context")
-						}
-					}
+					} break
+					case "contexts-bar-container": {
+						target.children[0].classList.add("will_be_added")
+					} break
+					case "delete-bin": {
+						target.classList.add("hovering")
+					} break
+					case "add" : {
+						target.classList.add("will_be_added")
+					} break
 				}
 
 				if (target_container.is_list) {
-					if (["key-entry", "command-entry", "bin-entry"].includes(element.type)) {
+					if (["key-entry", "command-entry", "shortcut-entry", "bin-entry"].includes(element.type)) {
 						let existing = target.querySelector(".list-entry:not(.gu-transit)")
 						if (existing) {
 							el.classList.add("will_replace")
 							existing.classList.add("will_be_replaced")
 						}
-						
 					}
 					if (["contexts-bar-entry", "context-entry"].includes(element.type) && target !== source) {
 						el.classList.add("will_replace")
-						target.classList.add("will_be_added_context")
+						target.classList.add("will_be_added")
 					}
 				}
 
-				if (target_container.type == "delete-bin") {
-					target.classList.add("hovering")
-				} else {
-					//css doesn't handle hover when dragging
-					this.$el.querySelectorAll(".hovering").forEach(el => el.classList.remove("hovering"))
-				}
-				if (target_container.type == "contexts-bar-container") {
-					target.children[0].classList.add("will_be_added_context")
-				}
 			}
 		},
 		drag_on_drop(el, target, source, sibling) {
@@ -336,6 +354,26 @@ export default {
 			let target_container = this.d.target_container
 			let element = this.d.element
 			
+			switch(target_container.type) {
+				case "bin": {
+					this.add_to_bin(element.entry)
+				} break
+				case "delete-bin": {
+					if (["key-entry", "shortcut-entry", "command-entry"].includes(element.type)) {
+						this.delete_entry(element.entry)
+					}
+				} break
+				case "contexts-bar-container": {
+					let change = {
+						old_entry: element.entry,
+						new_entry: {...element.entry, contexts: _.uniq([...element.entry.contexts, target.children[0].innerText.toLowerCase()])}
+					}
+					this.shortcut_edit(change)
+				} break
+				case "add": {
+					this.move_from_bin(element.entry, element.entry)
+				} break
+			}
 			if (target_container.type == "key-container" || target_container.is_list) {
 				let new_entry = {
 					shortcut: target_container.shortcut.map(keyset => this.normalize(keyset).join("+")).join(" "),
@@ -343,10 +381,10 @@ export default {
 				}
 				if (element.type == "bin-entry"){
 					if (target_container.is_filled) {
-						//add existing shortcut to bin
-						this.add_to_bin(target_container.entry)
+						this.move_from_bin(element.entry, target_container.entry)
+					} else {
+						this.move_from_bin(element.entry, new_entry)
 					}
-					this.move_from_bin(element.bin_index, new_entry)
 				} else if (["context-entry", "contexts-bar-entry"].includes(element.type)) {
 					let change = {
 						old_entry: target_container.entry,
@@ -362,21 +400,6 @@ export default {
 					this.shortcut_edit(change)
 				}
 			}
-			if (target_container.type == "bin") {
-				this.add_to_bin(element.entry)
-			}
-			if (target_container.type == "delete-bin") {
-				if (["key-entry", "shortcut-entry", "command-entry"].includes(element.type)) {
-					this.$emit("delete", element.entry)
-				}
-			}
-			if (target_container.type == "contexts-bar-container") {
-				let change = {
-					old_entry: element.entry,
-					new_entry: {...element.entry, contexts: _.uniq([...element.entry.contexts, target.children[0].innerText.toLowerCase()])}
-				}
-				this.shortcut_edit(change)
-			}
 			//we don't actually want to drop the element and change the dom, vue will handle rerendering it in the proper place
 			this.drake.cancel()
 			this.d = {}
@@ -385,7 +408,6 @@ export default {
 			this.freeze = false
 			//in case we missed any, set dragging to false on all
 			this.shortcuts.map(entry => entry.dragging = false)
-			this.bin.map(entry => entry.dragging = false)
 			//sometimes drag_on_out doesn't reset them properly
 			this.drag_reset_all_classes()
 		},
@@ -399,7 +421,7 @@ export default {
 		},
 		drag_reset_all_classes() {
 			this.$el.querySelectorAll(".will_be_replaced").forEach(el => el.classList.remove("will_be_replaced"))
-			this.$el.querySelectorAll(".will_be_added_context").forEach(el => el.classList.remove("will_be_added_context"))
+			this.$el.querySelectorAll(".will_be_added").forEach(el => el.classList.remove("will_be_added"))
 			this.$el.querySelectorAll(".unselectable").forEach(el => el.classList.remove("unselectable"))
 			this.$el.querySelectorAll(".hovering").forEach(el => el.classList.remove("hovering"))
 		}

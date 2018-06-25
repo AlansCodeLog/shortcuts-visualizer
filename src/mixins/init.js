@@ -23,9 +23,7 @@ export default {
 			}
 			
 			if (process.shortcuts) {
-				this.contexts = lists.context_list
-					.map(entry => (entry = entry.toLowerCase()))
-					.sort()
+				this.contexts_info = lists.contexts_info
 			}
 			if (process.contexts) {
 				this.active_context = this.dev_options.default_context
@@ -117,7 +115,7 @@ export default {
 		create_shortcuts_list (settings_shortcuts) {
 			// create empty array because we might push to it more than once per entry
 			let shortcuts = []
-			let contexts = []
+			let contexts_info = {}
 			//normalizes all the names, creates _shortcut entry, and adds chained and chained_start
 			//this way create_shortcut_entry can check existing shortcuts much more cleanly
 			this.ready_all(settings_shortcuts)
@@ -134,11 +132,41 @@ export default {
 					shortcuts.push(new_entries.extra)
 				}
 				for (let context of entry.contexts) {
-					if (!contexts.includes(context)) {contexts.push(context.toLowerCase())}
+					if (contexts_info[context] == undefined) {
+						contexts_info[context.toLowerCase()] = {count: 1}
+					} else{
+						contexts_info[context].count += 1
+					}
 				}
 			})
+			let ordered_binned = []
+
+			shortcuts.map((entry, index) => {
+				//adds index property to all shortcuts
+				entry.index = index
+				//if entry was binned, check it has holder and push it's group to ordered bin
+				if (entry.binned) {
+					ordered_binned.push(shortcuts.filter(entry => {
+						if (entry.binned) {
+							if (entry.holder !== undefined) {
+								return true
+							} else {
+								throw "Shortcut list contains binned entries that have no holder index."
+							}
+						} else if (entry.holder !== undefined) {
+							return true
+						}
+					}))
+				}
+			})
+			// the holders of these sets might be all over the place (e.g. 2, 5, 100)
+			// so here we reset them just so it doesn't get out of hand (e.g. 2, 5, 100 => 0, 1, 2)
+			for (let set of ordered_binned) {
+				set.map(entry => entry.holder = this.bin_holder_index)
+				this.bin_holder_index += 1
+			}
 			
-			return {shortcuts_list: shortcuts, context_list: contexts.sort()}
+			return {shortcuts_list: shortcuts, contexts_info: contexts_info}
 		},
 		ready_all(shortcuts) {
 			shortcuts.map(entry =>{
@@ -173,6 +201,9 @@ export default {
 			if (!editing) {throw error} else {return error}
 		},
 		create_shortcut_entry (entry, editing = false, existing_shortcuts = this.shortcuts) {
+
+			entry.binned = entry.binned || false
+
 			let invalid_shortcut = false
 		
 			if (typeof entry._shortcut == "undefined") {
@@ -182,7 +213,7 @@ export default {
 					invalid_shortcut = {}
 					invalid_shortcut.message = error
 					invalid_shortcut.code = "Invalid Key"
-					return
+					return {invalid: invalid_shortcut}
 				}
 				entry._shortcut = entry.shortcut._shortcut
 				entry.shortcut = entry.shortcut.shortcut

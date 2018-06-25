@@ -41,9 +41,11 @@ Okay the contexts was a terrible example to show editing suggestions, but you ge
 - [x] Separate warnings properly into component.
 - [x] Rework helpers to mixin.
 - [x] Split list contexts so individual contexts can be dragged.
+- [x] Hide options when editing on input focus change.
+- [x] Don't allow dragging while editing.
 - [ ] Check all modes work.
 - [~] Polishing/Clean/Beta
-- [ ] Have shortcuts contain all shortcuts, marking binned as binned, and assigning each an index property, so no more different indexes per type. 
+- [x] Have shortcuts contain all shortcuts, marking binned as binned, and assigning each an index property, so no more different indexes per type. 
 - [~] Demo
 - [~] Documentation
 - [ ] Tests...
@@ -105,7 +107,17 @@ To do this you can use one of the component's internal methods as it should be f
 	this.data = shortcuts.map(entry => deep_clone_entry(entry))
 ```
 
-### Regarding Options
+### Change Events
+
+The component will emit a change with {entries, type}, the entries (array) are deep cloned before they're sent and they should all contain an index property telling you were it is in the array. In the case of deletes, where it was. In the case of new entries, they should have an index to where they were placed. Event types are:
+
+`deleted` - was dragged to delete bin or deleted from the shortcut list or the bin - is spliced from array internally
+The following two might contain multiple entries when a chain start was dragged
+`moved_to_bin` - was moved to the bin - gets marked as binned and added holder property, everything else stays the same
+`moved_to_shortcuts` - was moved from bin to shortcuts - binned property made false, holder property might still exist*, everything else stays the same
+`edited` - entry was edited (manually or through dragging/swapping), might fire a couple of times one after the other (e.g. you drag to/from a chain start). Would recommend replacing the entries in your array by splicing at their index properties (e.g. `for (let entry of entries) {you_shortcuts_array.splice(entry.index, 1, entry)}`)).
+
+## Regarding Options
 
 To allow you to do things like toggle the theme by toggling the options, you must handle option changes, for this an "options" event if emitted with a [key, value] array. If you want you can hide the options component completely from the user (with `options_dev.hide_options`) and only expose the options you like.
 
@@ -143,7 +155,7 @@ The keymap function then creates a keymap from the keys for use internally. It e
 
 # Code Notes
 
-- Since contexts and keys arrays are always sorted, quickest way to compare them is to join them to a string.
+- Since contexts and keys arrays are always sorted, quickest way to compare them if needed is to join them to a string.
 
 ## Build Setup
 
@@ -171,3 +183,25 @@ npm run e2e
 # run all tests
 npm test
 ```
+
+# Tests
+
+I'm not sure really how to even approach the testing. Everything feels like an edge case and a lot of data needs to be injected for the component to work. To make this a bit more manageable I've started to keep a list of tests that should be made, at the very least to be able to test them manually and also just figure out how some edge cases should work. Then slowly I will convert them to real tests, because they are needed. It's far too easy to cause something to regress, especially when editing. 
+
+1. When adding a shortcut: 
+	1. Users should not be allowed to replace an existing shortcut.
+	2. They can write a chained shortcut so long as it doesn't already exist. If it's chain start didn't exist it should get created.
+	3. They can write a chain start and it won't get auto-delete upon creation.
+2. When editing an existing shortcut:
+	It's often important what the entry was just as much as what it was edited to. This is because editing is like dragging from the old entry to the new entry you wrote. This allows us to swap them when possible.
+	1. You can change non-chained to an existing non-chained, they will get swapped.
+	2. 2. above
+	3. You can make a non-chained a chain start, if it conflicts they get swapped.
+	4. You can't edit a chained shortcut into a chain start.
+	5. You can make a chain start without dependents a non-chain.
+3. While adding and editing:
+	1. No dragging should be possible.
+	2. No keyboard input should be possible.
+4. The options. These are not that hard to check. Usually if they regress it's an issue of reactivity (the option wasn't specified in the demo's data so it's not reactive).
+	1. Test for blurring input. This is most likely to actually regress. Note we can't have "some blur option" off then: edit => click away => "some blur option" on => click away, it won't work. 
+

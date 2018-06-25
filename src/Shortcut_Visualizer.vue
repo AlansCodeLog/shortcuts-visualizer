@@ -30,6 +30,7 @@
 			<Bin
 				tabindex="0"
 				v-bind="{bin}"
+				@delete="delete_entry($event)"
 			></Bin>
 			<div tabindex="0" class="draggable-container delete-bin"></div>
 		</div>
@@ -38,9 +39,9 @@
 			@add="shortcut_add($event)"
 			@error="set_error($event)"
 			@delete="delete_entry($event)"
-			@edit="shortcut_edit($event)"
+			@edit="shortcut_edit($event, undefined, true)"
 			@freeze="change('freeze', $event)"
-			v-bind="{commands, contexts, keymap, shortcuts_list_active, normalize, capitalize}"
+			v-bind="{freeze, commands, contexts, keymap, shortcuts_list_active, normalize, capitalize, active_context, validate_entry}"
 			:options="user_options"
 		></ShortcutsList>
 	</div>
@@ -99,7 +100,7 @@ export default {
 			keymap: {}, //keymap,
 			modifiers_names: [], //modifiers_names,
 			shortcuts: [], //shortcuts_list,
-			contexts: [], //context_list,
+			contexts_info: {}, //contains count for contexts, used in computed contexts property
 			active_context: "", //for context-bar, set by options
 			//also will be set by props if overriden, else these are the defaults
 			//private to component
@@ -111,10 +112,14 @@ export default {
 				last: [],
 				warning: false,
 			},
+			//bin shortcuts get added a holder property to link chains and not have conflicting shortcut groups
+			//e.g. you have a set of chained shortcuts on Ctrl+B in the bin and add another set chained to the same
+			//it would cause chaos, but we still want to keep the shortcuts used
+			//also allows us to sort them by last added
+			bin_holder_index: 0,
 			mods_unknown: true,
 			freeze: false,
-			bin: [],
-			error_message: false
+			error_message: ""
 		}
 	},
 	watch: {
@@ -139,20 +144,33 @@ export default {
 		shortcuts_list_active () {
 			return this.get_shortcuts_active(true)
 		},
+		bin () {
+			return this.shortcuts.filter(entry => entry.binned).sort((a,b) => {
+				return a.holder > b.holder
+			})
+		},
+		contexts () {
+			return Object.keys(this.contexts_info).sort()
+				.map(entry => (entry = entry.toLowerCase()))
+				.sort()
+		},
 		//mix in options with defaults
 		user_options () {
 			return {
 				mode: "Toggle All",
 				theme_dark: true,
 				accept_on_blur: true,
+				never_blur: false,
 				allow_tab_out: false,
+				delete_empty_contexts: false,
 				...this.options_user
 			}
 		},
 		dev_options () {
 			return {
 				timeout: 3000,
-				timeout_chain_warning: 1000,
+				timeout_error: 3000,
+				timeout_chain_warning: 3000,
 				timeout_no_key_down: 3000/10,
 				timeout_edit_success: 3000/10,
 				default_context: "global",
@@ -172,8 +190,8 @@ export default {
 		},
 		//display error messages to user
 		set_error(error) {
-			this.$emit("warning", error)
 			this.error_message = error.message
+			this.$emit("warning", error)
 			setTimeout(() => {
 				this.error_message = false
 			}, this.dev_options.timeout_error)

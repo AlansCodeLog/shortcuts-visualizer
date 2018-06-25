@@ -71,11 +71,14 @@ export default {
 					// mode: "Toggle All",
 					theme_dark: true,
 					// accept_on_blur: true,
+					never_blur: true,
 					// allow_tab_out: false,
+					delete_empty_contexts: false,
 				},
 				options_dev: {
 					// timeout: 3000,
-					// timeout_chain_warning: 1000,
+					// timeout_error: 3000,
+					// timeout_chain_warning: 3000,
 					// timeout_no_key_down: 3000/10,
 					// timeout_edit_success: 3000/10,
 					// default_context: "global",
@@ -102,6 +105,7 @@ export default {
 			this.visualizer_options.options_user[key] = value
 		},	
 		handle_change (event) {
+			console.log(event)
 			this.change = event
 			setTimeout(() => {
 				this.change = ""
@@ -117,6 +121,7 @@ export default {
 			// top keep demo value in sync you would have to:
 			// this.visualizer_options.shortcuts_list = event.shortcuts_list
 			// and also handle the changes in handle_change
+			// will add this to the demo eventually
 			this.ready = event
 			setTimeout(() => {
 				this.ready = ""

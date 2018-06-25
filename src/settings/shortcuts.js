@@ -49,4 +49,22 @@ const shortcuts = [
 	// },
 ]
 
-export {shortcuts}
+function generator () {
+	// let alphabet = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"]
+	// let mods = ["", "ctrl+", "ctrl+shift+", "alt+", "alt+shift+", "ctrl+alt+", "ctrl+alt+shift+"]
+	let alphabet = ["q", "w", "e", "r", "z", "x", "c" , "v"]
+	let mods = ["ctrl+"]
+	let shortcuts = []
+
+	for (let mod of mods) {
+		for (let letter of alphabet.slice(4)) {
+			shortcuts.push({shortcut:mod+letter, command: "Cmd. for " + mod+letter})
+		}
+		for (let letter of alphabet.slice(0, 4)) {
+			shortcuts.push({shortcut:mod+letter + " " + letter, command: "Cmd. for " + mod+letter + " " + letter, chain_start: true})
+		}
+	}
+	return shortcuts
+}
+
+export {shortcuts, generator}

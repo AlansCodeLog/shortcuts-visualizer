@@ -49,9 +49,9 @@
 						v-if="
 							!key.is_modifier
 							&& !keys[key].ignore
-							&& typeof active_keys[keys[key].identifier] !== 'undefined'
+							&& active_keys[keys[key].identifier] !== undefined
 						"
-						:active_shortcuts_index="active_keys[keys[key].identifier].__active_shortcuts_index"
+						:shortcuts_index="active_keys[keys[key].identifier].entry.index"
 					>
 						<div class="command">{{active_keys[keys[key].identifier].entry.command}}</div>
 					</div>
@@ -73,11 +73,11 @@ export default {
 			let active_keys = {}
 			//assign each active shortcut to an object by key (excluding modifiers)
 			//also add index property for use within this component to quickly get entry
-			this.shortcuts_active.map((entry, index) => {
+			this.shortcuts_active.map(entry => {
 				//if we're in a chain check against the end else check agains the beginning
 				let shorcut_index = this.chain.in_chain && entry.chained ? 1 : 0
 				let intersect = entry._shortcut[shorcut_index].filter(identifier => !this.keymap[identifier].is_modifier)
-				active_keys[(intersect.join(""))] = {entry, __active_shortcuts_index: index}
+				active_keys[(intersect.join(""))] = {entry}
 			})
 			return active_keys
 		}
@@ -132,19 +132,28 @@ export default {
 			display:flex;
 			align-items: center;
 			background: hsla(hue($accent-color), 100%, 50%, 0.2);
-			border: rgba(0,0,0,0) 0.2em solid;
+			border: rgba(0,0,0,0)  $padding-size/7.5 solid;
 			.command {
 				text-align: center;
 				user-select: none;
 				word-break: break-word;
 				max-height: 100%;
 				overflow: hidden;
-				padding: 0.1em;
+				padding: $padding-size/7.5;
 				margin: 0 auto;
 			}
 		}
 		.gu-transit {
 			border-color: $accent-color;
+		}
+		.gu-transit {
+			display: none;
+			&.key-entry, &.command-entry, &.bin-entry {
+				display: block;
+				.tooltip, .delete {
+					display: none;
+				}
+			}
 		}
 		.key:not(.blank) { //we need to match specificity or we can't change the border color
 			&.pressed > .key-container { 

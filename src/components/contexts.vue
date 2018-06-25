@@ -1,5 +1,5 @@
 <template>
-	<div class="contexts-bar" title="Contexts"  v-if="contexts.length > 1">
+	<div class="contexts-bar" title="contexts">
 		<div
 			class="draggable-container contexts-bar-container"
 			tabindex="0"
@@ -51,10 +51,10 @@ export default {
 		display: flex;
 		justify-content: center;
 		box-sizing: border-box;
-		border: 2px solid rgba(0,0,0,0);
+		border: $borders/2 solid rgba(0,0,0,0);
 		.contexts-bar-entry {	
 			padding: $padding-size /4 $padding-size;
-			border-radius: 5px;
+			border-radius: $borders;
 		}
 		.contexts-bar-container {
 			flex: 0 0 auto;
@@ -72,14 +72,13 @@ export default {
 		.active {
 			color: mix(white, hsla(hue($accent-color), 100%, 50%, 1), 20%);
 		}
-		.will_be_added_context.contexts-bar-entry {
-			color: mix(white, hsla(hue($accent-color), 100%, 50%, 1), 20%);
-			background: transparentize($accent-color, 0.5)
-		}
 		.unselectable.contexts-bar-entry {
 			color: $dragging-not-allowed-background !important;
 			background: transparentize($dragging-not-allowed-background, 0.7) !important;
 			border-color: mix($dragging-not-allowed, $dragging-not-allowed-background) !important;
+		}
+		.gu-transit {
+			display: none;
 		}
 	}
 }
