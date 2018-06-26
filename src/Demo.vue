@@ -2,32 +2,34 @@
 	<div
 		id="Demo"
 		:class="[visualizer_options.options_user.theme_dark ? 'dark' : 'light']"
-	>
-		<Shortcut_Visualizer
-			:class="{manual_font_size: manual_visualizer_font_size}"
-			:style="{fontSize: manual_visualizer_font_size ? visualizer_font_size : undefined}"
-			ref="shortcut_visualizer"
-			v-bind="visualizer_options"
-			@change="handle_change($event)"
-			@warning="handle_warning($event)"
-			@ready="handle_ready($event)"
-			@options="handle_options($event)"
-		></Shortcut_Visualizer>
-		<div class="buttons">
-			<button @click="toggle_theme()">Toggle Theme from Parent</button>
-			<button @click="toggle_options()">Toggle Options from Parent</button>
-			<button @click="toggle_manual_visualizer_font_size()">Toggle Manual Font Size</button>
-			<button @click="fetch()">Test Direct Fetch</button>
-			<button @click="clear_all()">Clear All Messages</button>
-		</div>
-		<div class="demo_options">
-			<div v-if="manual_visualizer_font_size">
-				<label>Keyboard Font Size</label>
-				<input v-model="visualizer_font_size"/>
+	>	
+		<div class="view-wrapper">
+			<Shortcut_Visualizer
+				:class="{manual_font_size: manual_visualizer_font_size}"
+				:style="{fontSize: manual_visualizer_font_size ? visualizer_font_size : undefined}"
+				ref="shortcut_visualizer"
+				v-bind="visualizer_options"
+				@change="handle_change($event)"
+				@warning="handle_warning($event)"
+				@ready="handle_ready($event)"
+				@options="handle_options($event)"
+			></Shortcut_Visualizer>
+			<div class="buttons">
+				<button @click="toggle_theme()">Toggle Theme from Parent</button>
+				<button @click="toggle_options()">Toggle Options from Parent</button>
+				<button @click="toggle_manual_visualizer_font_size()">Toggle Manual Font Size</button>
+				<button @click="fetch()">Test Direct Fetch</button>
+				<button @click="clear_all()">Clear All Messages</button>
 			</div>
-			<div>
-				<label>Output Font Size</label>
-				<input v-model="font_size"/>
+			<div class="demo_options">
+				<div v-if="manual_visualizer_font_size">
+					<label>Keyboard Font Size</label>
+					<input v-model="visualizer_font_size"/>
+				</div>
+				<div>
+					<label>Output Font Size</label>
+					<input v-model="font_size"/>
+				</div>
 			</div>
 		</div>
 		<div v-if="change || warning || ready || data" class="messages" :style="`font-size:${font_size}`">
@@ -162,37 +164,106 @@ body {
 	font-family: Arial, sans-serif;
 }
 #Demo {
-	&.dark {
+	&.dark{
 		background: #2b2b2b;
 		color: #f0f0f0;
-		& > .buttons, & > .demo_options {
-			& > div, & > button {
-				background: rgba(0, 0, 0, 0.2);
-			}
-			& > button {
-				border: 2px solid rgba(0, 0, 0, 0.2);
+		.view-wrapper {
+			& > .buttons, & > .demo_options {
+				& > div, & > button {
+					background: rgba(0, 0, 0, 0.2);
+				}
+				& > button {
+					border: 2px solid rgba(0, 0, 0, 0.2);
+				}
 			}
 		}
 	}
 	&.light {
 		color: #2b2b2b;
 		background: #f0f0f0;
-		& > .buttons, & > .demo_options {
-			& > div, & > button {
-				background: rgba(0, 0, 0, 0.1);
-			}
-			& > button {
-				border: 2px solid rgba(0, 0, 0, 0.1);
+		.view-wrapper {
+			& > .buttons, & > .demo_options {
+				& > div, & > button {
+					background: rgba(0, 0, 0, 0.1);
+				}
+				& > button {
+					border: 2px solid rgba(0, 0, 0, 0.1);
+				}
 			}
 		}
 	}
-	min-height: 100vh;
-	.shortcut-visualizer.manual_font_size .keyboard {
-		font-size: 1em; //will make keyboard use the parent div's em size
+	.view-wrapper {
+		min-height: 100vh;
+		height: 100vh;
+		display: flex;
+		flex-direction: column;
+		& > div:not(.shortcut-visualizer) {
+			flex: 0 0 auto;
+		}
+		.shortcut-visualizer { //is set internally to fill this and have the list auto scroll
+			padding-bottom:0;
+			flex: 1 1 auto;
+			&.manual_font_size .keyboard {
+				font-size: 1em; //will make keyboard use the parent div's em size
+			}
+		}
+		
+		& > .buttons, & > .demo_options {
+			display: flex;
+			justify-content: center;
+			flex-wrap: wrap;
+			& > div, & > button {
+				box-sizing:border-box;
+				font-size: 1em;
+				text-align: center;
+				display: block;
+				margin: 5px;
+			}
+			& > button {
+				color:inherit;
+				padding: 5px;
+				&:hover {
+					cursor: pointer;
+					background: rgba(45, 94, 255, 0.2);
+					border-color: rgb(45, 94, 255);
+				}
+			}
+			& > div {
+				// width: 200px;
+				display: flex;
+				flex-direction: row;
+				align-items: center;
+				text-align: center;
+				label {
+					color:inherit;
+					white-space: nowrap;
+					padding: 5px;
+					border: 2px solid transparent;
+					display:block;
+					// vertical-align: -0.1em;
+				}
+				input {
+					flex: 0 1 50px;
+					width: 50px;
+					min-width: 0;
+					text-align: center;
+					align-self: stretch;
+					padding: 5px;
+					border: 2px solid transparent;
+					font-size: 1em;
+					margin: 0;
+					border: 0;
+					// position
+				}
+			}
+		}
+		.demo_options {
+			padding-bottom: 15px;
+		}
 	}
 	& > .messages {
 		white-space: pre;
-		margin: 30px;
+		padding:30px;
 		.ready::before {
 			display: block;
 			content: "Ready:";
@@ -216,55 +287,6 @@ body {
 			content: "Change:";
 			font-weight: bold;
 			margin-bottom:10px;
-		}
-	}
-	& > .buttons, & > .demo_options {
-		display: flex;
-		justify-content: center;
-		flex-wrap: wrap;
-		& > div, & > button {
-			box-sizing:border-box;
-			font-size: 1em;
-			text-align: center;
-			display: block;
-			margin: 10px;
-		}
-		& > button {
-			color:inherit;
-			padding: 5px;
-			&:hover {
-				cursor: pointer;
-				background: rgba(45, 94, 255, 0.2);
-				border-color: rgb(45, 94, 255);
-			}
-		}
-		& > div {
-			// width: 200px;
-			display: flex;
-			flex-direction: row;
-			align-items: center;
-			text-align: center;
-			label {
-				color:inherit;
-				white-space: nowrap;
-				padding: 5px;
-				border: 2px solid transparent;
-				display:block;
-				// vertical-align: -0.1em;
-			}
-			input {
-				flex: 0 1 50px;
-				width: 50px;
-				min-width: 0;
-				text-align: center;
-				align-self: stretch;
-				padding: 5px;
-				border: 2px solid transparent;
-				font-size: 1em;
-				margin: 0;
-				border: 0;
-				// position
-			}
 		}
 	}
 }

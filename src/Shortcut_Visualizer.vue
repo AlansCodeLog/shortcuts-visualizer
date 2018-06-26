@@ -24,6 +24,7 @@
 		></Keys>
 		<!-- tells us what's being pressed, whether we're waiting for a chain, etc -->
 		<Status
+			v-if="chain.warning || error_message"
 			v-bind="{keymap_active, chain, blocked_singles, error_message, normalize}"
 		></Status>
 		<div class="bins">
@@ -43,6 +44,7 @@
 			@freeze="change('freeze', $event)"
 			v-bind="{freeze, commands, contexts, keymap, shortcuts_list_active, normalize, capitalize, active_context, validate_entry}"
 			:options="user_options"
+			:nice_scrollbars="dev_options.nice_scrollbars"
 		></ShortcutsList>
 	</div>
 </template>
@@ -168,6 +170,7 @@ export default {
 		},
 		dev_options () {
 			return {
+				nice_scrollbars: true,
 				timeout: 3000,
 				timeout_error: 3000,
 				timeout_chain_warning: 3000,
@@ -210,11 +213,13 @@ export default {
 .shortcut-visualizer {
 	@import "./settings/theme.scss";
 	@import "./settings/custom_dragula.scss";
+	&, & > div:not(.keyboard), input, .bins > div {
+		outline: none;
+	}
 	input, button {
 		color:inherit;
 		background: inherit;
 	}
-	padding: $padding-size;
 	&.background-light {
 		background: $theme-light-background;
 		color: invert($theme-light-background);
@@ -230,6 +235,13 @@ export default {
 		}
 	}
 
+	padding: $padding-size;
+	display: flex;
+	flex-direction: column;
+	& > div {
+		flex: 0 0 auto;
+	}
+	
 	.bins {
 		display: flex;
 		margin: $padding-size;
@@ -241,14 +253,14 @@ export default {
 			flex: 0 1 30%;
 			margin-left: $padding-size;
 			align-self: stretch;
-			background: transparentize(red, 0.7);
-			border: transparentize(red, 0.7) 0.2em solid;
+			background: transparentize($delete-color, 0.7);
+			border: transparentize($delete-color, 0.7) $borders/2.5 solid;
 			display: flex;
 			justify-content: center;
 			align-items: center;
 			&.hovering::after {
 				content: "DELETE";
-				color: red;
+				color: $delete-color;
 				font-size: 2em;
 			}
 			.gu-transit {

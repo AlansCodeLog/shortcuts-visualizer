@@ -1,5 +1,5 @@
 <template>
-	<div class="shortcuts">
+	<div :class="['shortcuts', nice_scrollbars ? 'nice-scrollbars': '']">
 	<div class="container">
 		<div v-if="!adding" class="add draggable-container" @click="toggle_adding(true)"><div><!--gets filled by css below--></div></div>
 		<div v-else class="stop-add" @click="toggle_adding(false)"><div>Cancel</div></div>
@@ -179,7 +179,7 @@ import list_input from "./list_input"
 
 export default {
 	name: "Shortcuts",
-	props: ["freeze", "commands", "contexts", "keymap", "options", "shortcuts_list_active", "normalize", "capitalize", "active_context", "validate_entry"],
+	props: ["freeze", "commands", "contexts", "keymap", "options", "nice_scrollbars", "shortcuts_list_active", "normalize", "capitalize", "active_context", "validate_entry"],
 	components: {
 		list_input
 	},
@@ -344,18 +344,58 @@ export default {
 			// text-transform: capitalize;
 		}
 	}
-
+	&.background-light {
+		.shortcut.nice-scrollbars {
+			&::-webkit-scrollbar-thumb {
+				box-shadow: inset 0 0 10px 10px mix($theme-light-background, black, 50%);
+			}
+		}
+	}
+	&.background-dark {
+		.shortcuts.nice-scrollbars {
+			&::-webkit-scrollbar-thumb {
+				box-shadow: inset 0 0 10px 10px mix($theme-dark-background, white, 50%);
+			}
+		}
+	}
 	.shortcuts {
+		border: $borders/2.5 solid rgba(0, 0, 0, 0.5); //can't be in container because scrolling
 		margin: $padding-size;
 		font-size: $regular-font-size;
+		flex: 0 1;
+		overflow-y:auto;
+		overflow-x: hidden;
+		&.nice-scrollbars {
+			$scroll-bar-spacing: 2px;
+			&::-webkit-scrollbar {
+				width: $borders * 3 + $scroll-bar-spacing * 2;
+			}
+			// &::-webkit-scrollbar-track {
+			// }
+			&::-webkit-scrollbar-thumb {
+				border-right: $scroll-bar-spacing solid transparent;
+				border-left: $scroll-bar-spacing solid transparent;
+				border-bottom: $scroll-bar-spacing solid transparent;
+				border-top: $scroll-bar-spacing solid transparent;
+				//actually background
+				box-shadow: inset 0 0 10px 10px black; //set above by theme
+			}
+		}
 		@media (max-width: $regular-media-query) {
 			font-size: $regular-shrink-amount * $regular-font-size;
 		}
 		.container {
-			border: $borders/5 solid rgba(0, 0, 0, 0.5);
+			border-right: $borders/2.5 solid rgba(0, 0, 0, 0.5);
+			& > div:first-of-type {
+				border-top: none;
+			}
+			& > div:last-of-type {
+				border-bottom: none;
+			}
 			.entry, .adding, .entry-header, .add, .stop-add, {
 				box-sizing: border-box;
-				border: $borders/5 solid rgba(0, 0, 0, 0.5);
+				border-top: $borders/5 solid rgba(0, 0, 0, 0.5);
+				border-bottom: $borders/5 solid rgba(0, 0, 0, 0.5);
 				width: 100%;
 				display: flex;
 				align-items: center;
@@ -500,7 +540,7 @@ export default {
 				cursor: pointer;
 				font-size: 1.2em;
 				& > div {
-					border: $borders/2 solid transparent;
+					border: $borders/2.5 solid transparent;
 				}
 			}
 			.add {
@@ -508,7 +548,7 @@ export default {
 					content: "Add a Shortcut +";
 				}
 				&.will_be_added {
-					border: $borders/2 solid transparentize($accent-color, 0.2) !important; 
+					border: $borders/2.5 solid transparentize($accent-color, 0.2) !important; 
 					& > div {
 						border: $borders/5 solid transparent;
 						&::before {

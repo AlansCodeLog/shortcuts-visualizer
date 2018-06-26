@@ -47,11 +47,10 @@ export default {
 		margin: $padding-size;
 		padding: $padding-size/4;
 		font-weight:bold;
-		flex: 1 1 auto;
 		display: flex;
 		justify-content: center;
 		box-sizing: border-box;
-		border: $borders/2 solid rgba(0,0,0,0);
+		border: $borders/2.5 solid rgba(0,0,0,0);
 		.contexts-bar-entry {	
 			padding: $padding-size /4 $padding-size;
 			border-radius: $borders;

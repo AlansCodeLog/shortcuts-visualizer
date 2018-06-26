@@ -43,9 +43,11 @@ Okay the contexts was a terrible example to show editing suggestions, but you ge
 - [x] Split list contexts so individual contexts can be dragged.
 - [x] Hide options when editing on input focus change.
 - [x] Don't allow dragging while editing.
+- [ ] Check css for things that should be variables, also fix borders variable.
 - [ ] Check all modes work.
 - [~] Polishing/Clean/Beta
-- [x] Have shortcuts contain all shortcuts, marking binned as binned, and assigning each an index property, so no more different indexes per type. 
+- [ ] Have shortcuts contain all shortcuts, marking binned as binned, and assigning each an index property, so no more different indexes per type.
+- [ ] Delete bin stopped working?
 - [~] Demo
 - [~] Documentation
 - [ ] Tests...

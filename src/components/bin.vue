@@ -51,7 +51,7 @@ export default {
 	}
 	.bin-container {
 		min-height: $padding-size*5;
-		border: $borders/2 solid rgba(0,0,0,0);
+		border: $borders/2.5 solid rgba(0,0,0,0);
 		display: flex;
 	}
 	.bin {
@@ -69,7 +69,7 @@ export default {
 			margin: $small-pad-size/2;
 			position: relative;
 			background: rgba(0,0,0,0.3);
-			border: rgba(0,0,0,0) $borders/2 solid;
+			border: rgba(0,0,0,0) $borders/2.5 solid;
 			.delete {
 				display: none;
 				position: absolute;
@@ -77,7 +77,7 @@ export default {
 				right: calc(#{-$small-pad-size} - 0.6em);
 				width: 1.2em;
 				height: 1.2em;
-				border: $borders/2 solid mix(red, black, 80%);
+				border: $borders/2.5 solid mix(red, black, 80%);
 				background: transparentize(red, 0.7);
 				color: red;
 				line-height: 1.2em;
@@ -95,7 +95,7 @@ export default {
 				transform: translate(-50%, -20%);
 				width: auto;
 				white-space: nowrap;
-				border: $borders/2 solid $accent-color;
+				border: $borders/2.5 solid $accent-color;
 				div {
 					padding: $small-pad-size;
 				}
@@ -119,13 +119,13 @@ export default {
 			}
 		}
 		.is_chain  {
-			border: $borders/2 solid rgba(0,0,0,1);
+			border: $borders/2.5 solid rgba(0,0,0,1);
 		}
 		.gu-transit {
-			border: $borders/2 solid $accent-color;
+			border: $borders/2.5 solid $accent-color;
 		}
 		.gu-transit.is_chain {
-			border: $borders/2 solid red;
+			border: $borders/2.5 solid red;
 			display: flex;
 			align-items: center;
 			flex-wrap: nowrap;
