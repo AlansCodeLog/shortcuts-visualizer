@@ -1,4 +1,3 @@
-import _ from "lodash"
 import dragula from "dragula"
 
 const container_types = ["shortcut", "command", "contexts", "key-container", "bin", "delete-bin", "contexts-bar-container", "add"]
@@ -120,7 +119,7 @@ export default {
 				//keysss because modifiers might be right/left and keys_from_text will add both for us
 				let keys = this.keys_from_text(key)._shortcut[0]
 				//all this means is get the chain start, mix the active keys with the keys, remove any duplicates, sort them
-				shortcut = [this.chain.start, _.uniq([...this.keymap_active, ...keys]).sort()]
+				shortcut = [this.chain.start, this.sorted_merge_dedupe(this.keymap_active, keys, true)]
 					//then filter the entire thing for empty arrays (to clean an empty chain start)
 					.filter(keyset => keyset.length !== 0)
 
@@ -366,7 +365,10 @@ export default {
 				case "contexts-bar-container": {
 					let change = {
 						old_entry: element.entry,
-						new_entry: {...element.entry, contexts: _.uniq([...element.entry.contexts, target.children[0].innerText.toLowerCase()])}
+						new_entry: {
+							...element.entry,
+							contexts: this.sorted_merge_dedupe(element.entry.contexts, [target.children[0].innerText.toLowerCase()], true)
+						}
 					}
 					this.shortcut_edit(change)
 				} break
@@ -388,7 +390,10 @@ export default {
 				} else if (["context-entry", "contexts-bar-entry"].includes(element.type)) {
 					let change = {
 						old_entry: target_container.entry,
-						new_entry: {...target_container.entry, contexts:_.uniq([...target_container.entry.contexts, el.innerText])}
+						new_entry: {
+							...target_container.entry,
+							contexts:this.sorted_merge_dedupe(target_container.entry.contexts, [el.innerText], true)
+						} 
 					}
 					this.shortcut_edit(change)
 				} else {

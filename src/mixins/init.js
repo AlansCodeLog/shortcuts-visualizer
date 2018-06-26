@@ -6,20 +6,20 @@ export default {
 			//also we don't want to modify the parent props, all modifications should be emitted up.
 
 			if (process.keys) {
-				this.keys = _.cloneDeep(this.keys_list)
-				
-				this.keymap = this.create_keymap()
-				this.modifiers_names = _.uniq(
+				let result = this.create_keymap(this.keys_list)
+				this.keys = result.keys
+				this.keymap = result.keymap
+				this.modifiers_names = this.dedupe_presorted(
 					Object.keys(this.keymap)
 						.filter(identifier => this.keymap[identifier].is_modifier)
 						.map(identifier => this.keymap[identifier].identifier)
-				).sort()
+						.sort()
+				)
 			}
 
 			if (process.shortcuts || process.keys) {
 				//var because we need it outside of this if statement later
-				var lists = this.create_shortcuts_list(_.cloneDeep(this.shortcuts_list))
-				this.shortcuts = lists.shortcuts_list
+				var lists = this.create_shortcuts_list(this.shortcuts_list)
 			}
 			
 			if (process.shortcuts) {
@@ -28,15 +28,16 @@ export default {
 			if (process.contexts) {
 				this.active_context = this.dev_options.default_context
 			}
-
+			
 			if (this.modifiers_order == undefined
-			|| this.modifiers_order.length == 0) {
-				
-				this.modifiers_order = _.uniq(
-					this.modifiers_names.map(identifier => this.keymap[identifier].character)
-				).sort()
+				|| this.modifiers_order.length == 0) {
+					
+				this.modifiers_order = this.dedupe_presorted(
+					this.modifiers_names.map(identifier => this.keymap[identifier].character).sort()
+				)
 			}
 			if (process.shortcuts || process.keys) {
+				this.shortcuts = lists.shortcuts_list
 				this.$emit("ready", {shortcuts_list: this.shortcuts.map(entry => this.deep_clone_entry(entry))})
 			}
 		},
@@ -69,48 +70,63 @@ export default {
 			this.init(init_options)
 		},
 		//functions for verifying/creating shortcuts/keys/keymaps, some also used elsewhere
-		create_keymap () {
+		create_keymap (keys_list) {
 			let keymap = {}
-			Object.keys(this.keys).map(keyname=> {
-				let key = this.keys[keyname]
-				if (key.ignore == true || typeof key.identifier == "undefined") {return}
+			let keys = {}
+			Object.keys(keys_list).map(keyname=> {
+				let key = keys_list[keyname]
 				
-				// Duplicate identifier error.
-				if (typeof keymap[key.identifier] !== "undefined") {throw "Duplicate key identifier " + key.identifier + " at keys: " + Object.keys(this.keys).filter(otherkey => {return this.keys[otherkey].identifier == key.identifier}).join(", ")}
-				
-				keymap[key.identifier] = {
+				let entry = {
 					identifier: key.identifier,
-					name: typeof key.name !== "undefined" ? key.name.toLowerCase().replace(" ", "") : key.character.toLowerCase().replace(" ", ""),
-					character: typeof key.character !== "undefined" ? key.character : "",
-					classes: typeof key.classes !== "undefined" ? key.classes : [],
-					label_classes: typeof key.label_classes !== "undefined" ? key.label_classes : [],
-					RL: typeof key.RL !== "undefined" ? key.RL : false,
-					is_modifier: typeof key.is_modifier !== "undefined" ? key.is_modifier : false,
-					block_alone: typeof key.block_alone !== "undefined" ? key.block_alone : false,
-					block_single: typeof key.block_single !== "undefined" ? key.block_single : false,
-					block_all: typeof key.block_all !== "undefined" ? key.block_all : false,
-					ignore: typeof key.ignore !== "undefined" ? key.ignore : false,
-					nokeydown: typeof key.nokeydown !== "undefined" ? key.nokeydown : false,
-					toggle: typeof key.toggle !== "undefined" ? key.toggle : false,
-					fake_toggle: typeof key.toggle !== "undefined" ? key.fake_toggle : false,
-					RL: typeof key.RL !== "undefined" ? key.RL : false,
+					character: key.character ||  "",
+					classes: key.classes !== undefined ? key.classes.concat() : [],
+					label_classes: key.label_classes !== undefined ? key.label_classes.concat() : [],
+					RL: key.RL || false,
+					is_modifier: key.is_modifier || false,
+					block_alone: key.block_alone || false,
+					block_single: key.block_single || false,
+					block_all:  key.block_all || false,
+					ignore: key.ignore || false,
+					nokeydown: key.nokeydown || false,
+					toggle: key.toggle || false,
+					fake_toggle: key.fake_toggle || false,
+					RL: key.RL || false,
 					active: false,
 					chain_active: false,
 				}
-				if (keymap[key.identifier].is_modifier) {
-					keymap[key.identifier].classes.push("modifiers")
+				if (key.name !== undefined) {
+					entry.name = key.name.toLowerCase().replace(" ", "")
+				} else {
+					entry.name = entry.character.toLowerCase().replace(" ", "")
 				}
-				if (keymap[key.identifier].block_alone) {
-					keymap[key.identifier].classes.push("block_alone")
-				} 
-				if (keymap[key.identifier].block_all) {
-					keymap[key.identifier].classes.push("block_all")
-				} 
-				if (keymap[key.identifier].block_single) {
-					keymap[key.identifier].classes.push("block_single")
+
+				if (entry.is_modifier) {
+					entry.classes.push("modifiers")
 				}
+				if (entry.block_alone) {
+					entry.classes.push("block_alone")
+				} 
+				if (entry.block_all) {
+					entry.classes.push("block_all")
+				} 
+				if (entry.block_single) {
+					entry.classes.push("block_single")
+				}
+				//keys get added to keys regardless of any errors
+				keys[keyname] = entry
+
+				if (key.ignore == true || typeof key.identifier == "undefined") {
+					return
+				}
+				
+				// Duplicate identifier error.
+				if (keymap[key.identifier] !== undefined) {
+					throw "Duplicate key identifier " + key.identifier + " at keys: " + Object.keys(keys).filter(otherkey => {return keys[otherkey].identifier == key.identifier}).join(", ")
+				}
+				//keys don't get added to keymap unless they pass without errors
+				keymap[key.identifier] = entry
 			})
-			return keymap
+			return {keymap, keys}
 		},
 		create_shortcuts_list (settings_shortcuts) {
 			// create empty array because we might push to it more than once per entry
@@ -121,7 +137,7 @@ export default {
 			this.ready_all(settings_shortcuts)
 			
 			settings_shortcuts.map(entry => {
-				let new_entries = this.create_shortcut_entry(entry, false, shortcuts)
+				let new_entries = this.create_shortcut_entry(this.deep_clone_entry(entry), false, shortcuts)
 				
 				if (new_entries.error) {throw new_entries.error}
 				if (new_entries.remove) {
@@ -286,7 +302,7 @@ export default {
 					} else if (entry.chain_start) {//new entry is a chain start but not existing
 						existing_error = this.create_error(index, entry, existing_entry, "Chain Error", editing)
 					}
-				} else if (_.isEqual(existing_entry._shortcut[0], entry._shortcut[0])) {
+				} else if (this.is_equal(existing_entry._shortcut[0], entry._shortcut[0])) {
 					if (existing_entry._shortcut.length == 1 && !existing_entry.chain_start && !existing_entry.chained) {//if existing entry should be marked as chain start but isn't
 						if (!editing) {existing_error = this.create_error(index, existing_entry, entry, "Chain Error", editing)}
 					} else if (entry._shortcut.length == 1 &&  !existing_entry.chain_start && !entry.chained && !entry.chain_start) {//if new entry should be marked as chain but isn't
@@ -315,7 +331,7 @@ export default {
 				}
 				
 				let existing_index = existing_shortcuts.findIndex((existing_entry, index) => {
-					if (existing_entry.chain_start && _.isEqual(existing_entry._shortcut[0], new_entry._shortcut[0])) {
+					if (existing_entry.chain_start && this.is_equal(existing_entry._shortcut[0], new_entry._shortcut[0])) {
 						if (existing_entry.chain_start) {
 							return true
 						}
@@ -334,7 +350,7 @@ export default {
 			if (overwrite && entry.chain_start) {
 				let existing_index = []
 				existing_shortcuts.map((existing_entry, index) => {
-					if (_.isEqual(existing_entry._shortcut[0], entry._shortcut[0])) {
+					if (this.is_equal(existing_entry._shortcut[0], entry._shortcut[0])) {
 						if (existing_entry.chain_start) {
 							existing_index.push(index)
 						}

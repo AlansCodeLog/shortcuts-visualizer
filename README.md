@@ -149,13 +149,16 @@ To allow you to do things like toggle the theme by toggling the options, you mus
    }
 ```
 
-The keymap function then creates a keymap from the keys for use internally. It excludes ignored keys, filling in any empty properties and changing the format to: 
+The keymap function then creates it's own keys list for use internally. It excludes ignored keys, filling in any empty properties.
+
+It's entries are also used for the keymap (so they both are referring to the same objects), but the keymap also removes ignored keys and changes the format to: 
 
 ```javascript
    [identifier]: {
       //properties
    }
 ```
+This way `keys` can be used when we have a key to look up and `keymap` when we have an identifier (from a shortcut) to look up.
 
 # Tests
 

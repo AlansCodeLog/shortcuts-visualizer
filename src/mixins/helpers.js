@@ -9,26 +9,101 @@ export default {
 			if (!this.dev_options.auto_capitalize_contexts) {return string}
 			return string.replace(/\b[a-z](?!\s)/g, (letter) => letter.toUpperCase())
 		},
+		sorted_merge_dedupe(arr, elements, clone = false) {
+			if (clone) {
+				array = arr.concat()
+			} else {
+				array = arr
+			}
+			let eli = 0
+			for (let i = 0; i < array.length && eli < elements.length; i++) {
+				let value = array[i]
+				let element = elements[eli]
+				if (element == value) {continue}
+				if (element > value && element < array[i + 1]) {
+					array.splice(i + 1, 0, element)
+					eli++
+				} else if (element > array[i - 1] && element < value) {
+					array.splice(i, 0, element)
+					eli++
+					i--
+				}
+			}
+			if (clone) {
+				return array
+			}
+		},
+		dedupe_presorted (array) {
+			for (let i = 1; i < array.length; i++) {
+				if (array[i] == array[i - 1]) {
+					array.splice(i, 1)
+					i = i - 1
+				}
+			}
+			return array
+		},
+		deep_clone_entry(entry) {
+			let clone = {
+				shortcut: entry.shortcut,
+				command: entry.command,
+				chained: entry.chained,
+				chain_start: entry.chain_start,
+				contexts: [...entry.contexts],
+				_shortcut: [
+					entry._shortcut[0].concat(),
+				],
+				editing: entry.editing,
+				changed: entry.changed,
+				dragging: entry.dragging,
+				holder: entry.holder,
+				index: entry.index
+			}
+			if (entry._shortcut.length > 1) {
+				clone._shortcut[1] = entry._shortcut[1].concat()
+			}
+			return clone
+		},
+		is_equal(array_one, array_two) {
+			if (array_one.length !== array_two.length) {return false}
+			for (let i = 0; i < array_one.length; i++) {
+				if (array_one[i] !== array_two[i]) {return false}
+			}
+			return true
+		},
+		difference(array_one, array_two) {
+			let diff = []
+			for (let entry of array_one) {
+				if (array_two.indexOf(entry) == -1) {
+					diff.push(entry)
+				}
+			}
+			return diff
+		},
 		normalize(identifiers) {
 			if (identifiers.length == 0) {
 				return []
 			}
+			let keys_none_mods = []
+			let keys_mods = []
 			let keys = identifiers.map(identifier => {
+				let name = this.keymap[identifier].name
+				if (this.keymap[identifier].is_modifier) {
+					keys_mods.push(name)
+				} else {
+					keys_none_mods.push(name)
+				}
 				return this.keymap[identifier].name
 			})
-			keys = _.uniq(keys)
-			let keys_mods = keys
-				.filter(key => {
-					return this.modifiers_order.includes(key)
-				})
-				.sort((a, b) => {
-					return (
-						this.modifiers_order.indexOf(a) -
-						this.modifiers_order.indexOf(b)
-					)
-				})
-			let keys_none_mods = _.xor(keys, keys_mods)
-			keys = [...keys_mods, ...keys_none_mods]
+			keys_mods.sort((a, b) => {
+				return (
+					this.modifiers_order.indexOf(a) -
+					this.modifiers_order.indexOf(b)
+				)
+			})
+			this.dedupe_presorted(keys_mods)
+			this.dedupe_presorted(keys_none_mods.sort())
+
+			keys = keys_mods.concat(keys_none_mods)
 
 			//capitalize keys
 			keys = keys.map(key => {
@@ -42,17 +117,18 @@ export default {
 			})
 			return keys
 		},
-		keys_from_text(shortcut) {
+		keys_from_text(shortcut_text) {
 			// split into parts, when there's more than two there's a chain
-			shortcut = shortcut.split(" ").filter(entry => entry !== "")
+			let shortcut = shortcut_text.split(" ").filter(entry => entry !== "")
+			if (shortcut.length > 2) {throw `Program only supports two part chains. Shortcut "${shortcut_text}" contains ${shortcut.length}, interpreted as: [${shortcut.join(", ")}].`}
 			//get the keys array
 			//normalize the - or + separator
-			//and replace name of right/left keys with generic name
 			let _shortcut = shortcut.map((keyset, index) => {
+				
 				let keys = keyset
-					.replace(/(\+|-)(?=\1|[\s\S])/gm, "==BREAK==")
-					.split("==BREAK==")
-				shortcut[index] = _.pull(keys, "==BREAK==").join("+")
+					.split(/\+|-(?=\1|[\s\S])/gm)
+
+				shortcut[index] = keys.join("+")
 				let RL = []
 				keys = keys.map(key => {
 					let match = false
@@ -81,7 +157,7 @@ export default {
 						}
 					})
 				}
-				return _.pull(keys, "==BREAK==")
+				return keys
 			})
 			//normalize key names and create string shortcut property
 			shortcut = [this.normalize(_shortcut[0].sort()).join("+")]

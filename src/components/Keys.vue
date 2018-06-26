@@ -13,29 +13,17 @@
 		>
 			<!-- create the key with classes for showing whether we're pressing it and/or if we're in a chain, show the chain's pressed keys -->
 			<div
-				v-if="keys[key]"
 				v-for="(key, index) of row"
+				v-if="keys[key]"
 				:key="index"
 				:id="[keys[key].ignore ? '': key]"
-				:class="[keys[key].classes,
-					typeof keymap[keys[key].identifier] !=='undefined'
-					&& keymap[keys[key].identifier].active === true
-						? 'pressed'
-						: '',
-					typeof keymap[keys[key].identifier] !=='undefined'
-					&& keymap[keys[key].identifier].chain_active === true
-						? 'chain-pressed'
-						: '',
-					blocked_singles && blocked_singles.includes(keys[key].identifier) 
-						? 'blocked_single_key'
-						: '',
-				]"
+				:class="[keys[key].classes, extra_classes(key)]"
 			>
 				<!-- the label for the key character, also contains any label classes -->
 				<div
 					v-if="
 						keys[key]
-						&& !(keys[key].ignore == true)
+						&& !keys[key].ignore
 						"
 					:class="['label', keys[key].label_classes]"
 				>{{keys[key].character}}</div>
@@ -47,8 +35,8 @@
 					<div
 						:class="['draggable', 'key-entry', active_keys[keys[key].identifier].entry.chain_start ? 'is_chain' : '']"
 						v-if="
-							!key.is_modifier
-							&& !keys[key].ignore
+							!keys[key].ignore
+							&& !keys[key].is_modifier
 							&& active_keys[keys[key].identifier] !== undefined
 						"
 						:shortcuts_index="active_keys[keys[key].identifier].entry.index"
@@ -80,6 +68,22 @@ export default {
 				active_keys[(intersect.join(""))] = {entry}
 			})
 			return active_keys
+		},
+	},
+	methods: {
+		extra_classes(key) {
+			let info = this.keys[key]
+			if (info !== undefined) {
+				let classes = []
+				if (info.active) {classes.push("pressed")}
+				if (info.chain_active) {classes.push("chain-pressed")}
+				if (this.blocked_singles && this.blocked_singles.indexOf(info.identifier) !== -1) {
+					classes.push("blocked_single_key")
+				}
+				return classes.join(" ")
+			} else {
+				return ""
+			}
 		}
 	}
 }

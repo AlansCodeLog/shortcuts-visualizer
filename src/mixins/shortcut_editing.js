@@ -1,22 +1,5 @@
-import _ from "lodash"
-// import {keys_from_text, create_shortcut_entry, find_extra_keys_pressed,  find_extra_modifiers, normalize} from "../helpers/helpers"
-
 export default {
 	methods: {
-		//this should be a little less expensive than _.cloneDeep
-		deep_clone_entry(entry) {
-			let clone =  {
-				...entry,
-				contexts: [...entry.contexts],
-				_shortcut: [
-					[...entry._shortcut[0]],
-				]
-			}
-			if (entry._shortcut.length > 1) {
-				clone._shortcut[1] = [...entry._shortcut[1]]
-			}
-			return clone
-		},
 		//just pushes a new entry without any checks, this is because it's easier to do checks and warn the user about an error without chainging a component's temporary state from within that component //todo? change
 		shortcut_add(entry) {
 			entry.index = this.shortcuts.length
@@ -356,7 +339,7 @@ export default {
 				if (old_entry_copy.chained) {
 					
 					let chain_count = this.shortcuts.reduce((count, entry) => {
-						if (!entry.chain_start && _.isEqual(entry._shortcut[0], old_entry_copy._shortcut[0])) {
+						if (!entry.chain_start && this.is_equal(entry._shortcut[0], old_entry_copy._shortcut[0])) {
 							return count + 1
 						} else {return count + 0}
 					}, 0)
@@ -379,7 +362,7 @@ export default {
 					{
 						let old_start = chain_entry == "entry_swap_copy" ? old_entry_copy : entry_swap_copy
 						this.shortcuts.map(entry => {
-							if (entry.chained && _.isEqual(old_start._shortcut[0], entry._shortcut[0])) {
+							if (entry.chained && this.is_equal(old_start._shortcut[0], entry._shortcut[0])) {
 								entry._shortcut[0] = "TEMPSWAMP"
 							}
 						})
@@ -389,7 +372,7 @@ export default {
 					{
 						let old_start = chain_entry == "entry_swap_copy" ? entry_swap_copy : old_entry_copy
 						let chains = this.shortcuts.filter(entry => {
-							if (entry.chained && _.isEqual(old_start._shortcut[0], entry._shortcut[0])) {
+							if (entry.chained && this.is_equal(old_start._shortcut[0], entry._shortcut[0])) {
 								return entry
 							}
 						})

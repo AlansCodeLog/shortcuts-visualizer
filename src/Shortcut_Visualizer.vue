@@ -57,7 +57,6 @@ import Status from "./components/status"
 import Bin from "./components/bin"
 import ShortcutsList from "./components/shortcut_list"
 
-import * as _ from "lodash"
 import dragula from "dragula"
 import {init, helpers, shortcut_editing, input_handlers, drag_handlers} from "./mixins/index.js"
 

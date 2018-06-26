@@ -31,7 +31,7 @@ export default {
 				if (!entry.chained
 					&& entry.chain_start
 					&& entry._shortcut[0].length == this.keymap_active.length
-					&& _.difference(entry._shortcut[0], this.keymap_active).length == 0
+					&& this.difference(entry._shortcut[0], this.keymap_active).length == 0
 				) {
 					return true
 				} else {return false}
@@ -193,7 +193,7 @@ export default {
 						return true
 					} 
 					return false
-				} else if (this.chain.in_chain && entry.chained && _.isEqual(entry._shortcut[0], this.chain.start)) {
+				} else if (this.chain.in_chain && entry.chained && this.is_equal(entry._shortcut[0], this.chain.start)) {
 					//TODO this is almost same check as first
 					let extra_modifiers_in_shortcut = this.find_extra_modifiers(entry._shortcut[1])
 					let extra_keys_pressed = this.find_extra_keys_pressed(entry._shortcut[1])
@@ -220,17 +220,13 @@ export default {
 		},
 		//helpers for above
 		find_extra_modifiers(shortcut_entry) {
-			return _.difference(shortcut_entry, this.keymap_active).filter(identifier => { //the order of difference matters
-				if (this.keymap[identifier].is_modifier) {
-					return true
-				}
+			return this.difference(shortcut_entry, this.keymap_active).filter(identifier => { //the order of difference matters
+				if (this.keymap[identifier].is_modifier) {return true}
 			})
 		},
 		find_extra_keys_pressed(shortcut_entry) {
-			return _.difference(this.keymap_active, shortcut_entry).filter(identifier => {//the order of difference matters
-				if (!shortcut_entry.includes(identifier)) {
-					return true
-				}
+			return this.difference(this.keymap_active, shortcut_entry).filter(identifier => {//the order of difference matters
+				if (!shortcut_entry.includes(identifier)) {return true}
 			})
 		},
 	}
