@@ -43,7 +43,7 @@
 import Shortcut_Visualizer from "./Shortcut_Visualizer"
 import {layout} from "./settings/layout.js"
 import {keys, modifiers_order} from "./settings/keys.js"
-import {shortcuts} from "./settings/shortcuts.js"
+import {shortcuts, generator} from "./settings/shortcuts.js"
 import {commands} from "./settings/commands.js"
 
 export default {
@@ -63,7 +63,8 @@ export default {
 			visualizer_font_size: "1em",
 			visualizer_options: {
 				keys_list: keys,
-				shortcuts_list: shortcuts,
+				// shortcuts_list: shortcuts,
+				shortcuts_list: generator(), //for testing
 				layout: layout,
 				commands: commands,
 				modifiers_order: modifiers_order,
