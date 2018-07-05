@@ -43,27 +43,29 @@ Okay the contexts was a terrible example to show editing suggestions, but you ge
 - [x] Split list contexts so individual contexts can be dragged.
 - [x] Hide options when editing on input focus change.
 - [x] Don't allow dragging while editing.
-- [ ] Check css for things that should be variables, also fix borders variable.
-- [ ] Check all modes work.
+- [x] Check css for things that should be variables, also fix borders variable.
+- [x] Have shortcuts contain all shortcuts, marking binned as binned, and assigning each an index property, so no more different indexes per type.
+- [ ] Check all modes work. Maybe seperate into an edit mode (all toggle) and a test mode (no toggles)?
+- [ ] Better sorting in list (by single keys, then modifiers, then inside those, alphabetically, also somehow chained next to their chain starts.)
+- [ ] Better input suggestion handling. Look into library?
+- [ ] The rest of the todos listed in Tests below.
 - [~] Polishing/Clean/Beta
-- [ ] Have shortcuts contain all shortcuts, marking binned as binned, and assigning each an index property, so no more different indexes per type.
-- [ ] Delete bin stopped working?
 - [~] Demo
 - [~] Documentation
 - [ ] Tests...
 
 Possible future changes/features/ideas:
-- [ ] Confirmation for Batch Deletes
+- [ ] Confirmation for Batch Edits
+- [ ] Confirmation on potentially accidental tab close.
 - [ ] Local Storage in Demo
-- [ ] Proper Keyboard Accesibility?
-- [ ] Command Search
-- [ ] Full Command Bin (without going through list first to create entry)
-- [ ] Command context restrictions.
+- [ ] Proper Keyboard Accesibility? (tab for input fields, etc)
+- [ ] Full Command Bin/List (without going through list first to create entry)
+- [ ] Command Search in Bin/List
+- [ ] Command Context Restrictions
 - [ ] Mouse Commands
 - [ ] Custom Remaps (e.g. Capslock = Ctrl + Alt + Shift)
 - [ ] Per Context Blocks?
-- [ ] Proper exporting (so you can just include a script to use the component).
-	I considered switching to a template that supports this, but did not like any of them. I'm currently waiting for vue-cli 3, hopefully it'll make this a lot easier.
+- [ ] Proper Exporting/Publishing. I'm currently waiting for vue-cli 3, hopefully it'll make this a lot easier. I considered switching to a template that supports this, but did not like any of them.
 
 # Notes 
 
@@ -78,6 +80,8 @@ Possible future changes/features/ideas:
 - Although it might technically be possible to allow a key to be dragged, then change the keys being pressed, this seems to break dragula. To avoid the bugs and not make the code more complex, input is frozen on all dragging.
 - Character property cannot be a space, if you want to hide a character (like space) it must be done through css.
 - Some shortcuts are not overridable (e.g. in chrome Ctrl+W will close the tab, you cannot preventDefault it).
+
+# Documentation Snippets
 
 ## Managing State
 
@@ -123,8 +127,6 @@ The following two might contain multiple entries when a chain start was dragged
 
 To allow you to do things like toggle the theme by toggling the options, you must handle option changes, for this an "options" event if emitted with a [key, value] array. If you want you can hide the options component completely from the user (with `options_dev.hide_options`) and only expose the options you like.
 
-# Documentation Snippets
-
 ## Keys Format
 ```javascript
    menu: { //keyname for layout
@@ -155,11 +157,35 @@ The keymap function then creates a keymap from the keys for use internally. It e
    }
 ```
 
-# Code Notes
+# Tests
 
-- Since contexts and keys arrays are always sorted, quickest way to compare them if needed is to join them to a string.
+I'm not sure really how to even approach the testing. Everything feels like an edge case and a lot of data needs to be injected for the component to work. To make this a bit more manageable I've started to keep a list of tests that should be made, at the very least to be able to test them manually and also just figure out how some edge cases should work. Then slowly I will convert them to real tests, because they are needed. It's far too easy to cause something to regress, especially when editing. 
 
-## Build Setup
+1. When adding a shortcut: 
+	1. Users should not be allowed to replace an existing shortcut.
+	2. They can write a chained shortcut so long as it doesn't already exist. If it's chain start didn't exist it should get created.
+	3. They can write a chain start and it won't get auto-deleted upon creation.
+2. When editing an existing shortcut:
+	It's often important what the entry was just as much as what it was edited to. This is because editing is like dragging from the old entry to the new entry you wrote. This allows us to swap them when possible.
+	1. You can change non-chained to an existing non-chained, they will get swapped.
+	2. 2. above
+	3. You can make a non-chained a chain start, if it conflicts they get swapped.
+	4. You can't edit a chained shortcut into a chain start.
+	5. You can make a chain start without dependents a non-chain.
+3. While adding and editing:
+	1. No dragging should be possible.
+	2. No keyboard input should be possible.
+4. The options. These are not that hard to check. Usually if they regress it's an issue of reactivity (the option wasn't specified in the demo's data so it's not reactive).
+	1. Test for blurring input. This is most likely to actually regress. Note we can't have "some blur option" off then: edit => click away => "some blur option" on => click away, it won't work. 
+5. Contexts
+	1. Like 4.1 the delete contexts automatically when empty won't work if you delete then turn the option on. Except in this case, a check could be run when it's turned on #todo.
+	2. All ways to add a context should add it properly (whitespace properly trimmed, etc): adding when typing, when editing, in future, when adding context directly.
+	3. When adding/deleting a context to a chained command, it's chain start should be auto-modified. #todo
+	4. When a chain start's contexts are edited, nothing should happen to it's chained commands. Contexts will only actually be removed if no chained commands depend on them. #todofuture a prompt will ask user what to do.
+	5. When the command bin exists in #future, it should be added with current context and active keys.
+	6. Similar to 5. When moving things from the bin back to the list, current context and modifiers should be taken into account.
+
+# Build Setup
 
 Based on Vue's Webpack Template
 
@@ -185,25 +211,3 @@ npm run e2e
 # run all tests
 npm test
 ```
-
-# Tests
-
-I'm not sure really how to even approach the testing. Everything feels like an edge case and a lot of data needs to be injected for the component to work. To make this a bit more manageable I've started to keep a list of tests that should be made, at the very least to be able to test them manually and also just figure out how some edge cases should work. Then slowly I will convert them to real tests, because they are needed. It's far too easy to cause something to regress, especially when editing. 
-
-1. When adding a shortcut: 
-	1. Users should not be allowed to replace an existing shortcut.
-	2. They can write a chained shortcut so long as it doesn't already exist. If it's chain start didn't exist it should get created.
-	3. They can write a chain start and it won't get auto-delete upon creation.
-2. When editing an existing shortcut:
-	It's often important what the entry was just as much as what it was edited to. This is because editing is like dragging from the old entry to the new entry you wrote. This allows us to swap them when possible.
-	1. You can change non-chained to an existing non-chained, they will get swapped.
-	2. 2. above
-	3. You can make a non-chained a chain start, if it conflicts they get swapped.
-	4. You can't edit a chained shortcut into a chain start.
-	5. You can make a chain start without dependents a non-chain.
-3. While adding and editing:
-	1. No dragging should be possible.
-	2. No keyboard input should be possible.
-4. The options. These are not that hard to check. Usually if they regress it's an issue of reactivity (the option wasn't specified in the demo's data so it's not reactive).
-	1. Test for blurring input. This is most likely to actually regress. Note we can't have "some blur option" off then: edit => click away => "some blur option" on => click away, it won't work. 
-
