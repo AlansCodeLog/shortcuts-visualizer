@@ -45,6 +45,7 @@ Okay the contexts was a terrible example to show editing suggestions, but you ge
 - [x] Don't allow dragging while editing.
 - [x] Check css for things that should be variables, also fix borders variable.
 - [x] Have shortcuts contain all shortcuts, marking binned as binned, and assigning each an index property, so no more different indexes per type.
+- [ ] Handle editing of modifier only shortcuts. 
 - [ ] Check all modes work. Maybe seperate into an edit mode (all toggle) and a test mode (no toggles)?
 - [ ] Better sorting in list (by single keys, then modifiers, then inside those, alphabetically, also somehow chained next to their chain starts.)
 - [ ] Better input suggestion handling. Look into library?
@@ -52,7 +53,7 @@ Okay the contexts was a terrible example to show editing suggestions, but you ge
 - [~] Polishing/Clean/Beta
 - [~] Demo
 - [~] Documentation
-- [ ] Tests...
+- [~] Tests...
 
 Possible future changes/features/ideas:
 - [ ] Confirmation for Batch Edits
@@ -63,9 +64,11 @@ Possible future changes/features/ideas:
 - [ ] Command Search in Bin/List
 - [ ] Command Context Restrictions
 - [ ] Mouse Commands
-- [ ] Custom Remaps (e.g. Capslock = Ctrl + Alt + Shift)
+- [ ] Type of Presses "Contexts" - It would be too hard to be able to handle things like hold/tapping/double tapping a key, so instead it might be possible to still allow configuring these by having another context like property (e.g. "press_type"). Could also be used to differentiate between any other input "modes" the component can't handle like drag left/right, etc.
+- [ ] Parser/Import/Export Plugin Interface
+- [ ] Custom Remaps (e.g. Capslock = Ctrl + Alt + Shift)?
 - [ ] Per Context Blocks?
-- [ ] Proper Exporting/Publishing. I'm currently waiting for vue-cli 3, hopefully it'll make this a lot easier. I considered switching to a template that supports this, but did not like any of them.
+- [ ] Proper Exporting/Publishing of Component. I'm currently waiting for vue-cli 3, hopefully it'll make this a lot easier. I considered switching to a template that supports this, but did not like any of them.
 
 # Notes 
 
@@ -86,10 +89,11 @@ Possible future changes/features/ideas:
 ## Managing State
 
 Because:
-	- Some options need to be modified internally by the component to work.
-	- Deep watching for prop changes from the component would be expensive.
-	- Letting the component modify them would probably make it not work with vuex and is bad practice generally.
-	- You might also want to keep these options in sync without triggering a change.
+
+- Some options need to be modified internally by the component to work.
+- Deep watching for prop changes from the component would be expensive.
+- Letting the component modify them would probably make it not work with vuex and is bad practice generally.
+- You might also want to keep these options in sync without triggering a change.
 
 ...`keys_list` and `shortcuts_list` will not trigger any changes by default.
 
@@ -118,9 +122,13 @@ To do this you can use one of the component's internal methods as it should be f
 The component will emit a change with {entries, type}, the entries (array) are deep cloned before they're sent and they should all contain an index property telling you were it is in the array. In the case of deletes, where it was. In the case of new entries, they should have an index to where they were placed. Event types are:
 
 `deleted` - was dragged to delete bin or deleted from the shortcut list or the bin - is spliced from array internally
-The following two might contain multiple entries when a chain start was dragged
+
+The following two might contain multiple entries when a chain start was dragged:
+
 `moved_to_bin` - was moved to the bin - gets marked as binned and added holder property, everything else stays the same
+
 `moved_to_shortcuts` - was moved from bin to shortcuts - binned property made false, holder property might still exist*, everything else stays the same
+
 `edited` - entry was edited (manually or through dragging/swapping), might fire a couple of times one after the other (e.g. you drag to/from a chain start). Would recommend replacing the entries in your array by splicing at their index properties (e.g. `for (let entry of entries) {you_shortcuts_array.splice(entry.index, 1, entry)}`)).
 
 ## Regarding Options
@@ -165,8 +173,8 @@ This way `keys` can be used when we have a key to look up and `keymap` when we h
 I'm not sure really how to even approach the testing. Everything feels like an edge case and a lot of data needs to be injected for the component to work. To make this a bit more manageable I've started to keep a list of tests that should be made, at the very least to be able to test them manually and also just figure out how some edge cases should work. Then slowly I will convert them to real tests, because they are needed. It's far too easy to cause something to regress, especially when editing. 
 
 1. When adding a shortcut: 
-	1. Users should not be allowed to replace an existing shortcut.
-	2. They can write a chained shortcut so long as it doesn't already exist. If it's chain start didn't exist it should get created.
+	1. [x] Users should not be allowed to replace an existing shortcut.
+	2. [x] They can write a chained shortcut so long as it doesn't already exist. If it's chain start didn't exist it should get created.
 	3. They can write a chain start and it won't get auto-deleted upon creation.
 2. When editing an existing shortcut:
 	It's often important what the entry was just as much as what it was edited to. This is because editing is like dragging from the old entry to the new entry you wrote. This allows us to swap them when possible.

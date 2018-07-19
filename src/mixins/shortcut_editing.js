@@ -199,7 +199,7 @@ export default {
 							return false
 						}
 					} else {
-						throw "Should never throw unknown error when validating."
+						throw "Should never throw this error when validating."
 					}
 				}
 				return result

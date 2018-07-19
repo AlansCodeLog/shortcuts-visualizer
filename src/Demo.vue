@@ -68,8 +68,7 @@ export default {
 				// shortcuts_list: shortcuts,
 				shortcuts_list: generator(), //for testing
 				layout: layout,
-				commands: commands,
-				modifiers_order: modifiers_order,
+				order_of_modifiers: modifiers_order,
 				options_user: {
 					// mode: "Toggle All",
 					theme_dark: true,

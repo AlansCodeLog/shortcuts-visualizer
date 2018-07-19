@@ -15,6 +15,30 @@ export default {
 						.map(identifier => this.keymap[identifier].identifier)
 						.sort()
 				)
+				if (this.order_of_modifiers !== undefined) {
+					let should_exist = []
+					this.modifiers_names.forEach(key => {
+						let name = this.keymap[key].character
+						if (should_exist.indexOf(name) == -1) {
+							should_exist.push(name)
+						}
+					})
+					let incorrect = this.difference(this.order_of_modifiers,should_exist)
+					if (incorrect.length > 0) {
+						throw `Unknown modifier names in "order_of_modifiers" ["${incorrect.join(",")}"]. Known modifiers are: ["${should_exist.join(", ")}"]`
+					}
+					let missing = this.difference(should_exist, this.order_of_modifiers)
+					if (missing.length > 0) {
+						throw `Missing modifiers in "order_of_modifiers": ["${missing.join(", ")}"]`
+					}
+				}
+				if (this.order_of_modifiers == undefined
+				|| this.order_of_modifiers.length == 0) {
+					
+					this.modifiers_order = this.dedupe_presorted(
+						this.modifiers_names.map(identifier => this.keymap[identifier].character).sort()
+					)
+				}
 			}
 
 			if (process.shortcuts || process.keys) {
@@ -29,13 +53,6 @@ export default {
 				this.active_context = this.dev_options.default_context
 			}
 			
-			if (this.modifiers_order == undefined
-				|| this.modifiers_order.length == 0) {
-					
-				this.modifiers_order = this.dedupe_presorted(
-					this.modifiers_names.map(identifier => this.keymap[identifier].character).sort()
-				)
-			}
 			if (process.shortcuts || process.keys) {
 				this.shortcuts = lists.shortcuts_list
 				this.$emit("ready", {shortcuts_list: this.shortcuts.map(entry => this.deep_clone_entry(entry))})
@@ -55,7 +72,7 @@ export default {
 		//for devs
 		refresh_options(dev_options) {
 			let options_keys = {
-				keys_list: "keys",
+				keys: "keys",
 				shortcuts_list: "shortcuts",
 			}
 
@@ -90,7 +107,6 @@ export default {
 					nokeydown: key.nokeydown || false,
 					toggle: key.toggle || false,
 					fake_toggle: key.fake_toggle || false,
-					RL: key.RL || false,
 					active: false,
 					chain_active: false,
 				}
@@ -123,7 +139,7 @@ export default {
 				if (keymap[key.identifier] !== undefined) {
 					throw "Duplicate key identifier " + key.identifier + " at keys: " + Object.keys(keys).filter(otherkey => {return keys[otherkey].identifier == key.identifier}).join(", ")
 				}
-				//keys don't get added to keymap unless they pass without errors
+				//keys don't get added to keymap unless they  reach this point
 				keymap[key.identifier] = entry
 			})
 			return {keymap, keys}
@@ -140,6 +156,7 @@ export default {
 				let new_entries = this.create_shortcut_entry(this.deep_clone_entry(entry), false, shortcuts)
 				
 				if (new_entries.error) {throw new_entries.error}
+				if (new_entries.invalid) {throw new_entries.invalid}
 				if (new_entries.remove) {
 					this.multisplice(shortcuts, new_entries.remove)
 				}
@@ -158,6 +175,9 @@ export default {
 			let ordered_binned = []
 
 			shortcuts.map((entry, index) => {
+				if (entry._is_not_original) {
+					delete entry._is_not_original
+				}
 				//adds index property to all shortcuts
 				entry.index = index
 				//if entry was binned, check it has holder and push it's group to ordered bin
@@ -192,8 +212,11 @@ export default {
 				entry._shortcut = _shortcut
 				entry.chained = entry._shortcut.length > 1 ? true : false
 				entry.chain_start = typeof entry.chain_start !== "undefined" ? entry.chain_start : false
-				entry.contexts = typeof entry.contexts !== "undefined" ? entry.contexts.map(entry => entry = entry.toLowerCase()).sort() : ["global"]
-				if (!Array.isArray(entry.contexts)) {
+				if (entry.contexts == undefined) {
+					entry.contexts = ["global"]
+				} else if (Array.isArray(entry.contexts)) {
+					entry.contexts = entry.contexts.map(entry => entry.toLowerCase()).sort()
+				} else {
 					throw "Entry contexts: " + entry.contexts + " must be an array. See shortcut: " + entry.shortcut + " for command: " + entry.command
 				}
 			})
@@ -222,6 +245,13 @@ export default {
 
 			let invalid_shortcut = false
 		
+			if (entry.shortcut == "") {
+				invalid_shortcut = {}
+				invalid_shortcut.message = `Shortcut cannot be empty:\n${entry}`
+				invalid_shortcut.code = "Shortcut Empty"
+				return {invalid: invalid_shortcut}
+			}
+
 			if (typeof entry._shortcut == "undefined") {
 				try { //might fail do to invalid keys
 					entry.shortcut = this.keys_from_text(entry.shortcut)
@@ -234,6 +264,9 @@ export default {
 				entry._shortcut = entry.shortcut._shortcut
 				entry.shortcut = entry.shortcut.shortcut
 			}
+			if (typeof entry.command == "undefined") {
+				entry.command = ""
+			}
 			
 			entry.chained = entry._shortcut.length > 1 ? true : false
 			entry.chain_start = typeof entry.chain_start !== "undefined" ? entry.chain_start : false
@@ -241,21 +274,38 @@ export default {
 		
 			for (let keyset of entry._shortcut) {
 				//get modifiers in keyset
-				let modifiers = keyset.filter(key => this.keymap[key].is_modifier)
-
-				//BLOCKED ALONE
-				//blocked_alone should be checked before blocked_single
+				let modifiers = []
+				let non_modifiers = []
+				let blocked_alone = []
 				let not_blocked_alone = []
-				let blocked_alone = keyset.filter(key => {
+
+				keyset.filter(key => {
 					if (!this.keymap[key].block_alone) {
 						not_blocked_alone.push(key)
 					}
-					return this.keymap[key].block_alone
+					if (this.keymap[key].is_modifier) {
+						modifiers.push(key)
+					} else {
+						non_modifiers.push(key)
+					}
+					if (this.keymap[key].block_alone) {
+						blocked_alone.push(key)
+					}
 				})
+
+				if (non_modifiers.length > 1) {
+					invalid_shortcut = {}
+					invalid_shortcut.message = `Invalid shortcut ${entry.shortcut}. Shortcuts cannot contain multiple non-modifiers: ["${this.normalize(non_modifiers).join(", ")}"]`
+					invalid_shortcut.code = "Multiple Non-Modifiers"
+					break
+				}
+
+				//BLOCKED ALONE
+				//blocked_alone should be checked before blocked_single
 				
 				if (not_blocked_alone.length == 0) {
 					invalid_shortcut = {}
-					invalid_shortcut.message = `Invalid shortcut ${entry.shortcut}. Shortcuts with just "${this.normalize(blocked_alone).join(", ")}" as their only key/s are blocked.`
+					invalid_shortcut.message = `Invalid shortcut ${entry.shortcut}. Shortcuts with just ["${this.normalize(blocked_alone).join(", ")}"] as their only key/s are blocked.`
 					invalid_shortcut.code = "Blocked Alone"
 					break
 				}
@@ -264,7 +314,7 @@ export default {
 				let blocked_singles = this.get_blocked_singles(modifiers)
 				if (blocked_singles) {
 					invalid_shortcut = {}
-					invalid_shortcut.message = `Invalid shortcut ${entry.shortcut} Shortcuts containing only "${this.normalize(blocked_singles).join("")}" as a modifier are blocked.`
+					invalid_shortcut.message = `Invalid shortcut ${entry.shortcut} Shortcuts containing only ["${this.normalize(blocked_singles).join("")}"] as a modifier are blocked.`
 					invalid_shortcut.code = "Blocked Single"
 					break
 				}
@@ -292,8 +342,12 @@ export default {
 				if (existing_entry.shortcut == entry.shortcut) { //if the two shortcuts are exactly the same
 					if (entry.chain_start == existing_entry.chain_start) { 
 						if (entry.chain_start) {//if they're both chain starts
-							overwrite = true
-							if (editing) {existing_error = this.create_error(index, entry, existing_entry, "Overwrite", editing)}
+							if (existing_entry._is_not_original) {
+								overwrite = true
+								if (editing) {existing_error = this.create_error(index, entry, existing_entry, "Overwrite", editing)}
+							} else {
+								existing_error = this.create_error(index, entry, existing_entry, "Regular Error", editing)
+							}
 						} else { //if they're both regular
 							existing_error = this.create_error(index, entry, existing_entry, "Regular Error", editing)
 						}
@@ -327,7 +381,8 @@ export default {
 					chained: false,
 					_shortcut: [entry._shortcut[0]],
 					shortcut: this.normalize(entry._shortcut[0]).join("+"),
-					contexts: [...entry.contexts]
+					contexts: [...entry.contexts],
+					_is_not_original: true
 				}
 				
 				let existing_index = existing_shortcuts.findIndex((existing_entry, index) => {

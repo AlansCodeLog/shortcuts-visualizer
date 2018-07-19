@@ -59,22 +59,23 @@ import ShortcutsList from "./components/shortcut_list"
 
 import dragula from "dragula"
 import {init, helpers, shortcut_editing, input_handlers, drag_handlers} from "./mixins/index.js"
+import {defaults} from "./defaults.js"
 
 export default {
 	name: "Shortcut-Visualizer",
 	props: {
-		//required, used directly
+		// required, used directly
 		layout: {type: Array, required: true},
-		commands: {type: Array, required: true},
-		//required
-		shortcuts_list: {type: Array, required: true},
+		// required, cloned
 		keys_list: {type: Object, required: true},
-		//not required, used directly
-		//there is no default order as we don't know what they're actually being called
-		//will get filled in created using modifiers_names if nothing is passed
-		modifiers_order: {type: Array, required: false},
-		//not required
-		//see *_options computed properties below for defaults
+		// not required, used directly
+		commands: {type: Array, required: false, default () {return []}},
+		// not required, cloned
+		shortcuts_list: {type: Array, required: false, default () {return []}},
+		// there is no default order as we don't know what they're actually being called
+		// will be used to fill modifiers_order in created using modifiers_names if nothing is passed
+		order_of_modifiers: {type: Array, required: false},
+		// see *_options computed properties below for defaults
 		options_user: {type: Object, required: false},
 		options_dev: {type: Object, required: false},
 	},
@@ -97,9 +98,10 @@ export default {
 	data() {
 		return {
 			//will be set by props (handled in created)
-			keys: {}, //keys,
-			keymap: {}, //keymap,
-			modifiers_names: [], //modifiers_names,
+			keys: {},
+			keymap: {},
+			modifiers_names: [],
+			modifiers_order: [], //order of modifiers
 			shortcuts: [], //shortcuts_list,
 			contexts_info: {}, //contains count for contexts, used in computed contexts property
 			active_context: "", //for context-bar, set by options
@@ -158,26 +160,13 @@ export default {
 		//mix in options with defaults
 		user_options () {
 			return {
-				mode: "Toggle All",
-				theme_dark: true,
-				accept_on_blur: true,
-				never_blur: false,
-				allow_tab_out: false,
-				delete_empty_contexts: false,
+				...defaults.user_options,
 				...this.options_user
 			}
 		},
 		dev_options () {
 			return {
-				nice_scrollbars: true,
-				timeout: 3000,
-				timeout_error: 3000,
-				timeout_chain_warning: 3000,
-				timeout_no_key_down: 3000/10,
-				timeout_edit_success: 3000/10,
-				default_context: "global",
-				auto_capitalize_contexts: true,
-				hide_options: false,
+				...defaults.dev_options,
 				...this.options_dev
 			}
 		}
