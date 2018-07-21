@@ -17,7 +17,7 @@
 		></contexts-bar>
 		<!-- tabindex is one because once you're here you can't escape -->
 		<Keys
-			tabindex="0" 
+			tabindex="0"
 			@keydown="keydown($event)"
 			@keyup="keyup($event)"
 			v-bind="{chain, keymap, keys, layout, shortcuts_active, blocked_singles}"
@@ -58,26 +58,26 @@ import Bin from "./components/bin"
 import ShortcutsList from "./components/shortcut_list"
 
 import dragula from "dragula"
-import {init, helpers, shortcut_editing, input_handlers, drag_handlers} from "./mixins/index.js"
-import {defaults} from "./defaults.js"
+import { init, helpers, shortcut_editing, input_handlers, drag_handlers } from "./mixins/index.js"
+import { defaults } from "./defaults.js"
 
 export default {
 	name: "Shortcut-Visualizer",
 	props: {
 		// required, used directly
-		layout: {type: Array, required: true},
+		layout: { type: Array, required: true },
 		// required, cloned
-		keys_list: {type: Object, required: true},
+		keys_list: { type: Object, required: true },
 		// not required, used directly
-		commands: {type: Array, required: false, default () {return []}},
+		commands: { type: Array, required: false, default () {return []} },
 		// not required, cloned
-		shortcuts_list: {type: Array, required: false, default () {return []}},
+		shortcuts_list: { type: Array, required: false, default () {return []} },
 		// there is no default order as we don't know what they're actually being called
 		// will be used to fill modifiers_order in created using modifiers_names if nothing is passed
-		order_of_modifiers: {type: Array, required: false},
+		order_of_modifiers: { type: Array, required: false },
 		// see *_options computed properties below for defaults
-		options_user: {type: Object, required: false},
-		options_dev: {type: Object, required: false},
+		options_user: { type: Object, required: false },
+		options_dev: { type: Object, required: false },
 	},
 	components: {
 		ContextsBar,
@@ -88,7 +88,7 @@ export default {
 		ShortcutsList
 	},
 	mixins: [
-		//most of the logic of the component lives in one of the following mixins
+		// most of the logic of the component lives in one of the following mixins
 		init,
 		helpers,
 		shortcut_editing,
@@ -97,28 +97,28 @@ export default {
 	],
 	data() {
 		return {
-			//will be set by props (handled in created)
+			// will be set by props (handled in created)
 			keys: {},
 			keymap: {},
 			modifiers_names: [],
-			modifiers_order: [], //order of modifiers
-			shortcuts: [], //shortcuts_list,
-			contexts_info: {}, //contains count for contexts, used in computed contexts property
-			active_context: "", //for context-bar, set by options
-			//also will be set by props if overriden, else these are the defaults
-			//private to component
+			modifiers_order: [], // order of modifiers
+			shortcuts: [], // shortcuts_list,
+			contexts_info: {}, // contains count for contexts, used in computed contexts property
+			active_context: "", // for context-bar, set by options
+			// also will be set by props if overriden, else these are the defaults
+			// private to component
 			modes: ["As Pressed", "Toggle Modifiers", "Toggle All"],
 			chain: {
-				//allow: true,
+				// allow: true,
 				in_chain: false,
 				start: [],
 				last: [],
 				warning: false,
 			},
-			//bin shortcuts get added a holder property to link chains and not have conflicting shortcut groups
-			//e.g. you have a set of chained shortcuts on Ctrl+B in the bin and add another set chained to the same
-			//it would cause chaos, but we still want to keep the shortcuts used
-			//also allows us to sort them by last added
+			// bin shortcuts get added a holder property to link chains and not have conflicting shortcut groups
+			// e.g. you have a set of chained shortcuts on Ctrl+B in the bin and add another set chained to the same
+			// it would cause chaos, but we still want to keep the shortcuts used
+			// also allows us to sort them by last added
 			bin_holder_index: 0,
 			mods_unknown: true,
 			freeze: false,
@@ -126,7 +126,7 @@ export default {
 		}
 	},
 	watch: {
-		//handles the chain state
+		// handles the chain state
 		keymap_active (newactive) {
 			this.watch_keymap_active(newactive)
 		},
@@ -148,7 +148,7 @@ export default {
 			return this.get_shortcuts_active(true)
 		},
 		bin () {
-			return this.shortcuts.filter(entry => entry.binned).sort((a,b) => {
+			return this.shortcuts.filter(entry => entry.binned).sort((a, b) => {
 				return a.holder > b.holder
 			})
 		},
@@ -157,7 +157,7 @@ export default {
 				.map(entry => (entry = entry.toLowerCase()))
 				.sort()
 		},
-		//mix in options with defaults
+		// mix in options with defaults
 		user_options () {
 			return {
 				...defaults.user_options,
@@ -172,14 +172,14 @@ export default {
 		}
 	},
 	methods: {
-		//set property by key (used to set freeze and options)
+		// set property by key (used to set freeze and options)
 		change (key, data) {
 			this[key] = data
 		},
-		change_options ({key, value}) {
+		change_options ({ key, value }) {
 			this[key] = value
 		},
-		//display error messages to user
+		// display error messages to user
 		set_error(error) {
 			this.error_message = error.message
 			this.$emit("warning", error)
@@ -189,7 +189,7 @@ export default {
 		},
 	},
 	created() {
-		this.init({all: true})
+		this.init({ all: true })
 	},
 	mounted () {
 		this.drag_init()
@@ -229,7 +229,7 @@ export default {
 	& > div {
 		flex: 0 0 auto;
 	}
-	
+
 	.bins {
 		display: flex;
 		margin: $padding-size;

@@ -54,18 +54,18 @@ import dragula from "dragula"
 
 export default {
 	name: "Keys",
-	//any props that look like they weren't used are being used by the helpers!
+	// any props that look like they weren't used are being used by the helpers!
 	props: ["chain", "keymap", "keys", "layout", "shortcuts_active", "blocked_singles"],
 	computed: {
 		active_keys () {
 			let active_keys = {}
-			//assign each active shortcut to an object by key (excluding modifiers)
-			//also add index property for use within this component to quickly get entry
+			// assign each active shortcut to an object by key (excluding modifiers)
+			// also add index property for use within this component to quickly get entry
 			this.shortcuts_active.map(entry => {
-				//if we're in a chain check against the end else check agains the beginning
+				// if we're in a chain check against the end else check agains the beginning
 				let shorcut_index = this.chain.in_chain && entry.chained ? 1 : 0
 				let intersect = entry._shortcut[shorcut_index].filter(identifier => !this.keymap[identifier].is_modifier)
-				active_keys[(intersect.join(""))] = {entry}
+				active_keys[(intersect.join(""))] = { entry }
 			})
 			return active_keys
 		},
@@ -115,7 +115,7 @@ export default {
 			border: none;
 		}
 	}
-	
+
 	.keyboard {
 		margin: $padding-size;
 		.label {
@@ -160,10 +160,10 @@ export default {
 			}
 		}
 		.key:not(.blank) { //we need to match specificity or we can't change the border color
-			&.pressed > .key-container { 
+			&.pressed > .key-container {
 				border-color: $accent-color;
 			}
-			&.is_chain > .key-container { 
+			&.is_chain > .key-container {
 				border-color: transparentize($accent-color, 0.7);
 			}
 			&.chain-pressed > .key-container::before {

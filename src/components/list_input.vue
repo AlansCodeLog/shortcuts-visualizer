@@ -74,11 +74,11 @@ export default {
 					if (temp_index !== -1) {
 						current = this.value.slice(0, no_comma ? first_comma : first_comma - 1)
 					}
-					value = no_comma ? new_value : current + ", " + new_value 
+					value = no_comma ? new_value : current + ", " + new_value
 				} else {
 					value = this.value
 				}
-			} 
+			}
 			this.$emit("input", value)
 		}
 	}

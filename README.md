@@ -45,6 +45,7 @@ Okay the contexts was a terrible example to show editing suggestions, but you ge
 - [x] Don't allow dragging while editing.
 - [x] Check css for things that should be variables, also fix borders variable.
 - [x] Have shortcuts contain all shortcuts, marking binned as binned, and assigning each an index property, so no more different indexes per type.
+- [ ] Better errors.
 - [ ] Handle editing of modifier only shortcuts. 
 - [ ] Check all modes work. Maybe seperate into an edit mode (all toggle) and a test mode (no toggles)?
 - [ ] Better sorting in list (by single keys, then modifiers, then inside those, alphabetically, also somehow chained next to their chain starts.)
@@ -175,7 +176,7 @@ I'm not sure really how to even approach the testing. Everything feels like an e
 1. When adding a shortcut: 
 	1. [x] Users should not be allowed to replace an existing shortcut.
 	2. [x] They can write a chained shortcut so long as it doesn't already exist. If it's chain start didn't exist it should get created.
-	3. They can write a chain start and it won't get auto-deleted upon creation.
+	3. [x] They can write a chain start and it won't get auto-deleted upon creation.
 2. When editing an existing shortcut:
 	It's often important what the entry was just as much as what it was edited to. This is because editing is like dragging from the old entry to the new entry you wrote. This allows us to swap them when possible.
 	1. You can change non-chained to an existing non-chained, they will get swapped.
@@ -195,6 +196,12 @@ I'm not sure really how to even approach the testing. Everything feels like an e
 	4. When a chain start's contexts are edited, nothing should happen to it's chained commands. Contexts will only actually be removed if no chained commands depend on them. #todofuture a prompt will ask user what to do.
 	5. When the command bin exists in #future, it should be added with current context and active keys.
 	6. Similar to 5. When moving things from the bin back to the list, current context and modifiers should be taken into account.
+
+## Existing Tests Still Missing
+
+### Init
+
+- In editing, some functions from init are used.
 
 # Build Setup
 

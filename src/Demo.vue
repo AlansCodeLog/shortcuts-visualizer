@@ -2,7 +2,7 @@
 	<div
 		id="Demo"
 		:class="[visualizer_options.options_user.theme_dark ? 'dark' : 'light']"
-	>	
+	>
 		<div class="view-wrapper">
 			<Shortcut_Visualizer
 				:class="{manual_font_size: manual_visualizer_font_size}"
@@ -43,10 +43,10 @@
 
 <script>
 import Shortcut_Visualizer from "./Shortcut_Visualizer"
-import {layout} from "./settings/layout.js"
-import {keys, modifiers_order} from "./settings/keys.js"
-import {shortcuts, generator} from "./settings/shortcuts.js"
-import {commands} from "./settings/commands.js"
+import { layout } from "./settings/layout.js"
+import { keys, modifiers_order } from "./settings/keys.js"
+import { shortcuts, generator } from "./settings/shortcuts.js"
+import { commands } from "./settings/commands.js"
 
 export default {
 	name: "Demo",
@@ -66,7 +66,7 @@ export default {
 			visualizer_options: {
 				keys_list: keys,
 				// shortcuts_list: shortcuts,
-				shortcuts_list: generator(), //for testing
+				shortcuts_list: generator(), // for testing
 				layout: layout,
 				order_of_modifiers: modifiers_order,
 				options_user: {
@@ -105,7 +105,7 @@ export default {
 		},
 		handle_options ([key, value]) {
 			this.visualizer_options.options_user[key] = value
-		},	
+		},
 		handle_change (event) {
 			console.log(event)
 			this.change = event
@@ -206,7 +206,7 @@ body {
 				font-size: 1em; //will make keyboard use the parent div's em size
 			}
 		}
-		
+
 		& > .buttons, & > .demo_options {
 			display: flex;
 			justify-content: center;

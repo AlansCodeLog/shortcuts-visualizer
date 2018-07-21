@@ -21,7 +21,7 @@
 					v-model="entry_to_add.shortcut"
 					:allow_chain="false"
 					@enter="add()"
-					@esc="toggle_adding(false)"               
+					@esc="toggle_adding(false)"
 				>
 				</list_input>
 			</div>
@@ -32,7 +32,7 @@
 					:list="commands"
 					:allow_chain="false"
 					@enter="add()"
-					@esc="toggle_adding(false)"               
+					@esc="toggle_adding(false)"
 				>
 				</list_input>
 			</div>
@@ -43,7 +43,7 @@
 					:list="contexts"
 					:allow_chain="true"
 					@enter="add()"
-					@esc="toggle_adding(false)"               
+					@esc="toggle_adding(false)"
 				>
 				</list_input>
 			</div>
@@ -58,12 +58,12 @@
 			<div class="contexts">Contexts</div>
 			<div class="delete" title="delete"></div>
 		</div>
-		
+
 		<div
 			:class="['entry', entry.editing ? 'editing' : '', 'entry'+index, entry.changed ? 'changed' : '', entry.dragging ? 'dragging' : '']"
 			v-for="(entry, index) of shortcuts_list_active" :key="entry.shortcut+entry.command"
 			:shortcuts_index="shortcuts_list_active[index].index"
-		>  
+		>
 		<!-- COLUMN EDIT -->
 		<div :class="['edit']">
 			<!-- Edit -->
@@ -98,7 +98,7 @@
 				v-model="editing.chain_start"
 			/>
 		</div>
-		
+
 		<!-- note: don't leave spaces between {{variables}} in shortcut, command, and contexts columns -->
 
 		<!-- COLUMN SHORTCUT -->
@@ -162,7 +162,7 @@
 				:allow_chain="true"
 				@enter="toggle_editing(false, entry, index)"
 				@blur="check_blur(entry, index)"
-				@esc="cancel_edit(entry)"               
+				@esc="cancel_edit(entry)"
 			>
 			</list_input>
 		</div>
@@ -218,14 +218,14 @@ export default {
 			this.adding = adding
 		},
 		add() {
-			let result = this.validate_entry({...this.entry_to_add})
+			let result = this.validate_entry({ ...this.entry_to_add })
 			if (!result) {return}
-			
+
 			this.$emit("add", result.entry)
 			if (result.extra) {
 				this.$emit("add", result.extra)
 			}
-			//reset
+			// reset
 			this.entry_to_add.shortcut = ""
 			this.entry_to_add.command = ""
 			this.entry_to_add.contexts = this.active_context
@@ -234,17 +234,17 @@ export default {
 		},
 		toggle_editing (editing, entry, index, focusto = "shortcut", check_existing = true) {
 
-			//we need to keep a reference to the original values in case we accept_on_blur
+			// we need to keep a reference to the original values in case we accept_on_blur
 			let shortcut = this.editing.shortcut
 			let command = this.editing.command
 			let contexts = this.editing.contexts
 			let chain_start = this.editing.chain_start
-			
-			//the first time, we want to check if we were editing something (that is we were editing a shortcut then clicked to another) and cancel/accept depending on whether to accept on blur
-			//but we don't want to check again when this function calls itself here
+
+			// the first time, we want to check if we were editing something (that is we were editing a shortcut then clicked to another) and cancel/accept depending on whether to accept on blur
+			// but we don't want to check again when this function calls itself here
 			if (check_existing) {
 				let existing = this.shortcuts_list_active.findIndex((existing_entry, existing_index) => existing_entry.editing && existing_index !== index)
-			
+
 				if (existing !== -1) {
 					let existing_entry = this.shortcuts_list_active[existing]
 					if (this.options.accept_on_blur) {
@@ -254,10 +254,10 @@ export default {
 					}
 				}
 			}
-			
+
 			entry.editing = editing
-			
-			//if we're toggling true set our variables
+
+			// if we're toggling true set our variables
 			if (editing) {
 				this.$emit("freeze", true)
 				this.editing_index = index
@@ -265,16 +265,16 @@ export default {
 				this.editing.command = entry.command
 				this.editing.contexts = entry.contexts.join(", ").toLowerCase()
 				this.editing.chain_start = entry.chain_start
-				//focus when possible
+				// focus when possible
 				this.$nextTick(() => {
 					let element_to_focus = this.$el.querySelector(".entry" + index + " ." + focusto + " input")
-					//the input might not exist if it's a chain_start because the chained commands get edited
+					// the input might not exist if it's a chain_start because the chained commands get edited
 					if (element_to_focus) {
 						element_to_focus.focus()
 					} else {
-						//so we have to redo the action on the next tick
+						// so we have to redo the action on the next tick
 						this.$nextTick(() => {
-							//we need a new reference to the entry for it to be affected
+							// we need a new reference to the entry for it to be affected
 							let entry = this.shortcuts_list_active[index]
 							this.toggle_editing (true, entry, index, focusto)
 						})
@@ -283,10 +283,10 @@ export default {
 			} else {
 				this.$emit("freeze", false)
 				this.editing_index = undefined
-				
+
 				contexts = contexts.toLowerCase().split(/\s*,\s*/g).sort()
 
-				//else send our change
+				// else send our change
 				let change = {
 					old_entry: entry,
 					new_entry: {
@@ -298,15 +298,15 @@ export default {
 						holder: entry.holder
 					},
 				}
-			
-				//only if something changed though
+
+				// only if something changed though
 				if (change.new_entry.shortcut !== change.old_entry.shortcut
 						|| change.new_entry.command !== change.old_entry.command
 						|| change.new_entry.contexts.join() !== change.old_entry.contexts.join()
 						|| change.new_entry.chain_start !== change.old_entry.chain_start) {
 					this.$emit("edit", change)
 				}
-				//reset our variables
+				// reset our variables
 				this.editing.shortcut = ""
 				this.editing.command = ""
 				this.editing.contexts = "global"
@@ -317,11 +317,11 @@ export default {
 			entry.editing = false
 		},
 		check_blur(entry, index) {
-			//no need to look at the blur event, which is a mess
-			//we know we clicked away and not to another shortcut if editing is true because
-			//if we had clicked to another shortcut, editing would have already been set to false
-			//when toggled_editing (triggered by the shortcut we clicked to)
-			//checked for existing shortcuts with editing true
+			// no need to look at the blur event, which is a mess
+			// we know we clicked away and not to another shortcut if editing is true because
+			// if we had clicked to another shortcut, editing would have already been set to false
+			// when toggled_editing (triggered by the shortcut we clicked to)
+			// checked for existing shortcuts with editing true
 			if (this.options.never_blur) {return}
 			if (entry.editing) {
 				if (this.options.accept_on_blur) {
@@ -548,7 +548,7 @@ export default {
 					content: "Add a Shortcut +";
 				}
 				&.will_be_added {
-					border: $borders/2.5 solid transparentize($accent-color, 0.2) !important; 
+					border: $borders/2.5 solid transparentize($accent-color, 0.2) !important;
 					& > div {
 						border: $borders/5 solid transparent;
 						&::before {

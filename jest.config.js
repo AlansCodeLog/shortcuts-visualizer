@@ -3,7 +3,7 @@ const path = require("path")
 module.exports = {
 	moduleFileExtensions: [
 		"js",
-		"json", 
+		"json",
 		"vue"
 	],
 	moduleNameMapper: {
@@ -14,7 +14,7 @@ module.exports = {
 		".*\\.(vue)$": "./node_modules/vue-jest"
 	},
 	testPathIgnorePatterns: [
-		"test/e2e"
+		"test/e2e",
 	],
 	testRegex: ".*?(\\.spec\\.|\\.test\\.)js",
 	snapshotSerializers: ["./node_modules/jest-serializer-vue"],
@@ -24,7 +24,9 @@ module.exports = {
 	collectCoverageFrom: [
 		"src/**/*.{js,vue}",
 		"!src/main.js",
+		"!src/Demo.vue",
+		"!src/defaults.js",
+		"!src/settings/**",
 		"!**/node_modules/**"
 	]
-} 
- 
+}

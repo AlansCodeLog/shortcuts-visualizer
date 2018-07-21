@@ -105,7 +105,7 @@ export default {
 
 			keys = keys_mods.concat(keys_none_mods)
 
-			//capitalize keys
+			// capitalize keys
 			keys = keys.map(key => {
 				for (let identifier of identifiers) {
 					let key_info = this.keymap[identifier]
@@ -118,13 +118,14 @@ export default {
 			return keys
 		},
 		keys_from_text(shortcut_text) {
+			if (shortcut_text == "") {throw "Invalid"}
 			// split into parts, when there's more than two there's a chain
 			let shortcut = shortcut_text.split(" ").filter(entry => entry !== "")
 			if (shortcut.length > 2) {throw `Program only supports two part chains. Shortcut "${shortcut_text}" contains ${shortcut.length}, interpreted as: [${shortcut.join(", ")}].`}
-			//get the keys array
-			//normalize the - or + separator
+			// get the keys array
+			// normalize the - or + separator
 			let _shortcut = shortcut.map((keyset, index) => {
-				
+
 				let keys = keyset
 					.split(/\+|-(?=\1|[\s\S])/gm)
 
@@ -159,7 +160,7 @@ export default {
 				}
 				return keys
 			})
-			//normalize key names and create string shortcut property
+			// normalize key names and create string shortcut property
 			shortcut = [this.normalize(_shortcut[0].sort()).join("+")]
 			if (_shortcut.length > 1) {
 				shortcut.push(this.normalize(_shortcut[1].sort()).join("+"))
@@ -167,13 +168,13 @@ export default {
 			return { shortcut: shortcut.join(" "), _shortcut: _shortcut }
 		},
 		get_blocked_singles(modifiers) {
-			
+
 			let blocked_modifiers = []
-			//set limit to check length again because we might have 2 blocked single keys pressed
-			//in which case it's allowed
-			//but the following function might give us an array of 2 blocked modifiers
-			//which if they are right/left means we have to up the limit to 2
-			let limit = 1 
+			// set limit to check length again because we might have 2 blocked single keys pressed
+			// in which case it's allowed
+			// but the following function might give us an array of 2 blocked modifiers
+			// which if they are right/left means we have to up the limit to 2
+			let limit = 1
 			let unblocked_modifiers = modifiers.filter(keyname => {
 				if (this.keymap[keyname].block_single) {
 					blocked_modifiers.push(keyname)

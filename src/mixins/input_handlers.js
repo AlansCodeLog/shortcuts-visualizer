@@ -1,7 +1,7 @@
 export default {
 	methods: {
-		//handles the chain state
-		//again actually moving the entire watch function here creates problems
+		// handles the chain state
+		// again actually moving the entire watch function here creates problems
 		watch_keymap_active(newactive) {
 			if (this.chain.in_chain) {
 				let none_modifiers_pressed =
@@ -10,7 +10,7 @@ export default {
 					).length > 0
 						? true
 						: false
-				//is there are keys being pressed that aren't modifiers that have not shortcuts
+				// is there are keys being pressed that aren't modifiers that have not shortcuts
 				if (
 					newactive.length > 0 &&
 					none_modifiers_pressed &&
@@ -25,8 +25,8 @@ export default {
 				}
 			}
 		},
-		//helper for above
-		chain_in_active () { //second argument is spreading this
+		// helper for above
+		chain_in_active () { // second argument is spreading this
 			let chain = this.shortcuts_active.filter(entry => {
 				if (!entry.chained
 					&& entry.chain_start
@@ -37,10 +37,10 @@ export default {
 				} else {return false}
 			})
 			if (chain.length > 0) {
-				return {in_chain: true, start: [...this.keymap_active], shortcut: chain[0].shortcut, warning: false}
+				return { in_chain: true, start: [...this.keymap_active], shortcut: chain[0].shortcut, warning: false }
 			} else {return false}
 		},
-		//handles the chain state and setting chain not found error
+		// handles the chain state and setting chain not found error
 		toggle_chain(data) {
 			this.chain = { ...this.chain, ...data }
 			if (this.chain.in_chain == true) {
@@ -65,7 +65,7 @@ export default {
 				}, this.dev_options.timeout_chain_warning)
 			}
 		},
-		//handles keypresses
+		// handles keypresses
 		keydown(e) {
 			let identifier = e.code
 			if (
@@ -75,7 +75,7 @@ export default {
 				e.preventDefault()
 				e.stopPropagation()
 				if (this.freeze) {
-					this.set_error({message: "Input on keyboard is frozen while dragging or editing."})
+					this.set_error({ message: "Input on keyboard is frozen while dragging or editing." })
 					return
 				}
 				if (this.user_options.mode == "Toggle All") {
@@ -142,8 +142,8 @@ export default {
 			this.keypress_set_RL(e, identifier)
 			this.$emit("input", this.keymap)
 		},
-		//small helpers for handling keypresses
-		//sets the state of special keys like numlock
+		// small helpers for handling keypresses
+		// sets the state of special keys like numlock
 		keypress_set_mods(e, identifier) {
 			if (this.mods_unknown) {
 				this.keymap["CapsLock"].active = e.getModifierState("CapsLock")
@@ -154,7 +154,7 @@ export default {
 				this.keymap[identifier].active = e.getModifierState(identifier)
 			}
 		},
-		//makes both left and right versions of a key active
+		// makes both left and right versions of a key active
 		keypress_set_RL(e, identifier) {
 			if (this.keymap[identifier].RL == true) {
 				if (identifier.indexOf("Right") !== -1) {
@@ -169,13 +169,13 @@ export default {
 			}
 		},
 		get_shortcuts_active (show_unpressed_modifiers = false) {
-			//params for functions used, to clean things up a bit
+			// params for functions used, to clean things up a bit
 			let result = this.shortcuts.filter(entry => {
 				if (entry.binned || !entry.contexts.includes(this.active_context)) {return false}
 				if (!this.chain.in_chain && !entry.chained) {
 					let extra_modifiers_in_shortcut = this.find_extra_modifiers(entry._shortcut[0])
 					let extra_keys_pressed = this.find_extra_keys_pressed(entry._shortcut[0])
-					
+
 					if (extra_modifiers_in_shortcut.length > 0 && !show_unpressed_modifiers) {
 						return false
 					}
@@ -186,18 +186,18 @@ export default {
 				} else if (!this.chain.in_chain) {
 					if (show_unpressed_modifiers) {
 						let extra_keys_pressed = this.find_extra_keys_pressed(entry._shortcut[0])
-						
+
 						if (extra_keys_pressed.length !== 0) {
 							return false
 						}
 						return true
-					} 
+					}
 					return false
 				} else if (this.chain.in_chain && entry.chained && this.is_equal(entry._shortcut[0], this.chain.start)) {
-					//TODO this is almost same check as first
+					// TODO this is almost same check as first
 					let extra_modifiers_in_shortcut = this.find_extra_modifiers(entry._shortcut[1])
 					let extra_keys_pressed = this.find_extra_keys_pressed(entry._shortcut[1])
-					
+
 					if (extra_modifiers_in_shortcut.length > 0 && !show_unpressed_modifiers) {
 						return false
 					}
@@ -211,21 +211,21 @@ export default {
 			})
 
 			if (show_unpressed_modifiers) {
-				return result.sort((a,b) => {
+				return result.sort((a, b) => {
 					return a.shortcut > b.shortcut
 				})
 			}
 
 			return result
 		},
-		//helpers for above
+		// helpers for above
 		find_extra_modifiers(shortcut_entry) {
-			return this.difference(shortcut_entry, this.keymap_active).filter(identifier => { //the order of difference matters
+			return this.difference(shortcut_entry, this.keymap_active).filter(identifier => { // the order of difference matters
 				if (this.keymap[identifier].is_modifier) {return true}
 			})
 		},
 		find_extra_keys_pressed(shortcut_entry) {
-			return this.difference(this.keymap_active, shortcut_entry).filter(identifier => {//the order of difference matters
+			return this.difference(this.keymap_active, shortcut_entry).filter(identifier => {// the order of difference matters
 				if (!shortcut_entry.includes(identifier)) {return true}
 			})
 		},

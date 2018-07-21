@@ -11,7 +11,7 @@
 				@click="$emit('change', context)"
 			>{{capitalize(context)}}</div>
 		</div>
-		
+
 	</div>
 </template>
 
@@ -51,7 +51,7 @@ export default {
 		justify-content: center;
 		box-sizing: border-box;
 		border: $borders/2.5 solid rgba(0,0,0,0);
-		.contexts-bar-entry {	
+		.contexts-bar-entry {
 			padding: $padding-size /4 $padding-size;
 			border-radius: $borders;
 		}
