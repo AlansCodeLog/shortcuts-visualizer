@@ -148,28 +148,33 @@ export default {
 			// create empty array because we might push to it more than once per entry
 			let shortcuts = []
 			let contexts_info = {}
-			// normalizes all the names, creates _shortcut entry, and adds chained and chained_start
-			// this way create_shortcut_entry can check existing shortcuts much more cleanly
-			this.ready_all(settings_shortcuts)
 
 			settings_shortcuts.map(entry => {
-				let new_entries = this.create_shortcut_entry(this.deep_clone_entry(entry), false, shortcuts)
+				let new_entry = this.create_shortcut_entry(this.deep_clone_entry(entry), false, shortcuts)
 
-				if (new_entries.error) {throw new_entries.error}
-				if (new_entries.invalid) {throw new_entries.invalid}
-				if (new_entries.remove) {
-					this.multisplice(shortcuts, new_entries.remove)
-				}
-				shortcuts.push(new_entries.entry)
-				if (new_entries.extra) {
-					shortcuts.push(new_entries.extra)
-				}
-				for (let context of entry.contexts) {
-					if (contexts_info[context] == undefined) {
-						contexts_info[context.toLowerCase()] = { count: 1 }
-					} else{
-						contexts_info[context].count += 1
+				if (new_entry.error) {throw new_entry.error}
+				if (new_entry.invalid) {throw new_entry.invalid}
+				if (new_entry.remove) {
+					for (let index of new_entry.remove) {
+						for (let context of shortcuts[index].contexts) {
+							contexts_info[context].count -= 1
+						}
 					}
+					this.multisplice(shortcuts, new_entry.remove)
+				}
+				let entries = [new_entry.entry, ...new_entry.extra]
+				for (let _new_entry of entries) {
+					for (let context of _new_entry.contexts) {
+						if (contexts_info[context] == undefined) {
+							contexts_info[context.toLowerCase()] = { count: 1 }
+						} else{
+							contexts_info[context].count += 1
+						}
+					}
+				}
+				shortcuts.push(new_entry.entry)
+				if (new_entry.extra) {
+					shortcuts.push(new_entry.extra)
 				}
 			})
 			let ordered_binned = []
@@ -204,34 +209,6 @@ export default {
 
 			return { shortcuts_list: shortcuts, contexts_info: contexts_info }
 		},
-		ready_all(shortcuts) {
-			shortcuts.map(entry =>{
-				try {
-					var { shortcut, _shortcut } = this.keys_from_text(entry.shortcut)
-				} catch (err) {
-					if (err == "Invalid") {
-						let invalid_shortcut = {}
-						invalid_shortcut.message = `Shortcut cannot be empty:\n${entry}`
-						invalid_shortcut.code = "Shortcut Empty"
-						throw { invalid: invalid_shortcut }
-					} else {
-						throw err
-					}
-				}
-				// add to our shortcut entry
-				entry.shortcut = shortcut
-				entry._shortcut = _shortcut
-				entry.chained = entry._shortcut.length > 1 ? true : false
-				entry.chain_start = typeof entry.chain_start !== "undefined" ? entry.chain_start : false
-				if (entry.contexts == undefined) {
-					entry.contexts = ["global"]
-				} else if (Array.isArray(entry.contexts)) {
-					entry.contexts = entry.contexts.map(entry => entry.toLowerCase()).sort()
-				} else {
-					throw "Entry contexts: " + entry.contexts + " must be an array. See shortcut: " + entry.shortcut + " for command: " + entry.command
-				}
-			})
-		},
 		create_error(index, entry, existing_entry, type, editing) {
 			if (type == "Regular Error") {
 				var error = {}
@@ -256,7 +233,13 @@ export default {
 
 			let invalid_shortcut = false
 
-			// note these two invalid shortcut checks are never reached on init
+
+			if (entry.shortcut == undefined) {
+				invalid_shortcut = {}
+				invalid_shortcut.message = `Shortcut property missing:\n${entry}`
+				invalid_shortcut.code = "Shortcut Property Missing"
+				return { invalid: invalid_shortcut }
+			}
 			if (entry.shortcut == "") {
 				invalid_shortcut = {}
 				invalid_shortcut.message = `Shortcut cannot be empty:\n${entry}`
@@ -264,20 +247,32 @@ export default {
 				return { invalid: invalid_shortcut }
 			}
 
-			if (typeof entry._shortcut == "undefined") {
+			if (entry._shortcut == undefined) {
+				let result
 				try { // might fail do to invalid keys
-					entry.shortcut = this.keys_from_text(entry.shortcut)
+					result = this.keys_from_text(entry.shortcut)
 				} catch (error) {
 					invalid_shortcut = {}
 					invalid_shortcut.message = error
 					invalid_shortcut.code = "Invalid Key"
 					return { invalid: invalid_shortcut }
 				}
-				entry._shortcut = entry.shortcut._shortcut
-				entry.shortcut = entry.shortcut.shortcut
+				entry._shortcut = result._shortcut
+				entry.shortcut = result.shortcut
 			}
-			if (typeof entry.command == "undefined") {
+			if (entry.command == undefined) {
 				entry.command = ""
+			}
+
+			if (entry.contexts == undefined) {
+				entry.contexts = ["global"]
+			} else if (Array.isArray(entry.contexts)) {
+				entry.contexts = entry.contexts.map(entry => entry.toLowerCase()).sort()
+			} else {
+				invalid_shortcut = {}
+				invalid_shortcut.message = "Entry contexts: " + entry.contexts + " must be an array. See shortcut: " + entry.shortcut + " for command: " + entry.command
+				invalid_shortcut.code = "Invalid Contexts Type"
+				return { invalid: invalid_shortcut }
 			}
 
 			entry.chained = entry._shortcut.length > 1 ? true : false

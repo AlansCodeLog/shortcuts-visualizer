@@ -40,7 +40,7 @@ describe("shortcut editing - validation", () => {
 		expect(entry.entry.shortcut).to.equal("Ctrl+A")
 		expect(entry.entry._shortcut).to.deep.equal([["ControlRight", "ControlLeft", "KeyA"].sort()])
 		expect(entry.entry.command).to.equal("somecommand")
-		expect(entry.entry.contexts).to.deep.equal(["some", "contexts"])
+		expect(entry.entry.contexts).to.deep.equal(["some", "contexts"].sort())
 	})
 	it("should call set_error when no shortcut", () => {
 		let wrapper = shallowMount(ShortcutVisualizer, {
@@ -77,7 +77,7 @@ describe("shortcut editing - validation", () => {
 			command: "somecommand",
 			contexts: "some, contexts" // must already be lowercase
 		})
-		expect(entry.entry.contexts).to.deep.equal(["some", "contexts"])
+		expect(entry.entry.contexts).to.deep.equal(["some", "contexts"].sort())
 	})
 	it("should redirect create_shortcut_entry errors", () => {
 		let wrapper = shallowMount(ShortcutVisualizer, {

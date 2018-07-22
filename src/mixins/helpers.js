@@ -48,17 +48,17 @@ export default {
 				command: entry.command,
 				chained: entry.chained,
 				chain_start: entry.chain_start,
-				contexts: [...entry.contexts],
-				_shortcut: [
-					entry._shortcut[0].concat(),
-				],
+				contexts: Array.isArray(entry.contexts) ? entry.contexts.concat() : entry.contexts,
+				_shortcut: entry._shortcut
+					? [entry._shortcut[0].concat()]
+					: entry._shortcut,
 				editing: entry.editing,
 				changed: entry.changed,
 				dragging: entry.dragging,
 				holder: entry.holder,
 				index: entry.index
 			}
-			if (entry._shortcut.length > 1) {
+			if (entry._shortcut && entry._shortcut.length > 1) {
 				clone._shortcut[1] = entry._shortcut[1].concat()
 			}
 			return clone
