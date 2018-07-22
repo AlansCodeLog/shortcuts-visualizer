@@ -1,6 +1,6 @@
 export default {
 	methods: {
-		// just pushes a new entry without any checks, this is because it's easier to do checks and warn the user about an error without chainging a component's temporary state from within that component //todo? change
+		// just pushes a new entry without any checks, this is because it's easier to do checks and warn the user about an error without changing a component's temporary state from within that component //todo? change
 		shortcut_add(entry) {
 			entry.index = this.shortcuts.length
 			this.check_add_contexts([entry])
@@ -43,7 +43,6 @@ export default {
 			this.shortcuts.map((entry, index) => entry.index = index)
 		},
 		// add an entry to the bin, note these entries still technically have most of their properties and they are used
-		// extra is used internally by the function to call itself again for handling chains
 		add_to_bin(entry) {
 			this.bin_holder_index += 1
 			entry.holder = this.bin_holder_index
@@ -143,6 +142,8 @@ export default {
 			try {
 				var result = this.create_shortcut_entry(entry, true)
 			} catch (error) {
+				console.log(error)
+
 				this.set_error({ message: error })
 				return false
 			}

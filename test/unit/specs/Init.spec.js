@@ -172,6 +172,33 @@ describe("init", () => {
 			})
 		}).to.throw()
 	})
+	it("should not throw when duplicate in other context", () => {
+		console.error = console_stub
+		let wrapper = shallowMount(ShortcutVisualizer, {
+			propsData: {
+				keys_list: keys,
+				layout,
+				shortcuts_list: [
+					{ shortcut: "a" },
+					{ shortcut: "a", contexts: ["some_other_context"] }
+				]
+			}
+		})
+		expect(wrapper.vm.shortcuts.length).to.equal(2)
+	})
+	it("should allow context with spaces and not set global if all shortcuts have other contexts", () => {
+		console.error = console_stub
+		let wrapper = shallowMount(ShortcutVisualizer, {
+			propsData: {
+				keys_list: keys,
+				layout,
+				shortcuts_list: [
+					{ shortcut: "a", contexts: ["some context"] }
+				]
+			}
+		})
+		expect(wrapper.vm.contexts).to.deep.equal(["some context"])
+	})
 	it("should throw error when shortcut is blank", () => {
 		console.error = console_stub
 		expect(function(){

@@ -351,6 +351,10 @@ export default {
 			let existing_error = false
 			let overwrite = false
 			existing_shortcuts.findIndex((existing_entry, index) => {
+				// ignore shortcuts without conflicting contexts
+				let conflicting_contexts = existing_entry.contexts.filter(context => entry.contexts.indexOf(context) !== -1)
+				if (conflicting_contexts.length == 0) {return false}
+				// else if conflicting contexts
 				if (existing_entry.shortcut == entry.shortcut) { // if the two shortcuts are exactly the same
 					if (entry.chain_start == existing_entry.chain_start) {
 						if (entry.chain_start) {// if they're both chain starts
@@ -368,7 +372,7 @@ export default {
 					} else if (entry.chain_start) {// new entry is a chain start but not existing
 						existing_error = this.create_error(index, entry, existing_entry, "Chain Error", editing)
 					}
-				} else if (this.is_equal(existing_entry._shortcut[0], entry._shortcut[0])) {
+				} else if (this.is_equal(existing_entry._shortcut[0], entry._shortcut[0])) { // else if they are chained or chain starts
 					if (existing_entry._shortcut.length == 1 && !existing_entry.chain_start && !existing_entry.chained) {// if existing entry should be marked as chain start but isn't
 						if (!editing) {existing_error = this.create_error(index, existing_entry, entry, "Chain Error", editing)}
 					} else if (entry._shortcut.length == 1 &&  !existing_entry.chain_start && !entry.chained && !entry.chain_start) {// if new entry should be marked as chain but isn't
