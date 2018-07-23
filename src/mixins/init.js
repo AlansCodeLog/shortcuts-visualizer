@@ -18,23 +18,26 @@ export default {
 				if (this.order_of_modifiers !== undefined) {
 					let should_exist = []
 					this.modifiers_names.forEach(key => {
-						let name = this.keymap[key].character
+						let name = this.keymap[key].character.toLowerCase()
 						if (should_exist.indexOf(name) == -1) {
 							should_exist.push(name)
 						}
 					})
-					let incorrect = this.difference(this.order_of_modifiers, should_exist)
+					let lowercase_order_of_modifiers = this.order_of_modifiers.map(entry => {
+						return entry.toLowerCase()
+					})
+					let incorrect = this.difference(lowercase_order_of_modifiers, should_exist)
 					if (incorrect.length > 0) {
 						throw `Unknown modifier names in "order_of_modifiers" ["${incorrect.join(",")}"]. Known modifiers are: ["${should_exist.join(", ")}"]`
 					}
-					let missing = this.difference(should_exist, this.order_of_modifiers)
+					let missing = this.difference(should_exist, lowercase_order_of_modifiers)
 					if (missing.length > 0) {
 						throw `Missing modifiers in "order_of_modifiers": ["${missing.join(", ")}"]`
 					}
-
+					this.modifiers_order = lowercase_order_of_modifiers
 				} else {
 					this.modifiers_order = this.dedupe_presorted(
-						this.modifiers_names.map(identifier => this.keymap[identifier].character).sort()
+						this.modifiers_names.map(identifier => this.keymap[identifier].character.toLowerCase()).sort()
 					)
 				}
 			}
@@ -128,7 +131,7 @@ export default {
 				if (entry.block_single) {
 					entry.classes.push("block_single")
 				}
-				// keys get added to keys regardless of any errors
+				// keys get added to keys regardless of any error
 				keys[keyname] = entry
 
 				if (key.ignore == true || typeof key.identifier == "undefined") {
@@ -150,19 +153,33 @@ export default {
 			let contexts_info = {}
 
 			settings_shortcuts.map(entry => {
-				let new_entry = this.create_shortcut_entry(this.deep_clone_entry(entry), false, shortcuts)
+				let { error, to_add, to_remove, entry: new_entry } = this.create_shortcut_entry(this.deep_clone_entry(entry), false, shortcuts)
 
-				if (new_entry.error) {throw new_entry.error}
-				if (new_entry.invalid) {throw new_entry.invalid}
-				if (new_entry.remove) {
-					for (let index of new_entry.remove) {
+				if (error) {
+					// if error has no message then it can usually be ignored
+					this.validate_error("init", error)
+					if (error.message) {
+						throw error
+					} else {
+						// we forgot to add proper message to some error
+						// or mispelled it
+						throw error
+						throw `Should never throw (create_shortcuts_list should always throw on any error). If this is throwing an error isn't being handled properly, please file an issue. \n${error}`
+					}
+				}
+				if (to_remove) {
+					for (let index of to_remove) {
 						for (let context of shortcuts[index].contexts) {
 							contexts_info[context].count -= 1
 						}
 					}
-					this.multisplice(shortcuts, new_entry.remove)
+					this.multisplice(shortcuts, to_remove)
 				}
-				let entries = [new_entry.entry, ...new_entry.extra]
+				let entries = [new_entry]
+				if (to_add) {
+					entries.push(to_add)
+				}
+
 				for (let _new_entry of entries) {
 					for (let context of _new_entry.contexts) {
 						if (contexts_info[context] == undefined) {
@@ -172,9 +189,9 @@ export default {
 						}
 					}
 				}
-				shortcuts.push(new_entry.entry)
-				if (new_entry.extra) {
-					shortcuts.push(new_entry.extra)
+				shortcuts.push(new_entry)
+				if (to_add) {
+					shortcuts.push(to_add)
 				}
 			})
 			let ordered_binned = []
@@ -209,42 +226,17 @@ export default {
 
 			return { shortcuts_list: shortcuts, contexts_info: contexts_info }
 		},
-		create_error(index, entry, existing_entry, type, editing) {
-			if (type == "Regular Error") {
-				var error = {}
-				error.message = "Shortcut '" + entry.shortcut + "' (command: " + entry.command +") already exists: '" + existing_entry.shortcut + "' (command: " + existing_entry.command+")"
-				error.code = type
-				error.index = index
-			} else if (type == "Chain Error") {
-				var error = {}
-				error.message = "Shortcut '" + entry.shortcut + "' is the start of a chain. It cannot be overwritten for command '" + entry.command + "'. If you'd like to just change the command text, chain_start must be set to true for the shortcut."
-				error.code = type
-				error.index = index
-			} else {
-				var error = {}
-				error.code = type
-				error.index = index
-			}
-			if (!editing) {throw error} else {return error}
-		},
 		create_shortcut_entry (entry, editing = false, existing_shortcuts = this.shortcuts) {
 
-			entry.binned = entry.binned || false
-
-			let invalid_shortcut = false
-
+			let error = false
 
 			if (entry.shortcut == undefined) {
-				invalid_shortcut = {}
-				invalid_shortcut.message = `Shortcut property missing:\n${entry}`
-				invalid_shortcut.code = "Shortcut Property Missing"
-				return { invalid: invalid_shortcut }
+				error = this.create_error("shortcut undefined", { entry })
+				return { error }
 			}
 			if (entry.shortcut == "") {
-				invalid_shortcut = {}
-				invalid_shortcut.message = `Shortcut cannot be empty:\n${entry}`
-				invalid_shortcut.code = "Shortcut Empty"
-				return { invalid: invalid_shortcut }
+				error = this.create_error("shortcut empty", { entry })
+				return { error }
 			}
 
 			if (entry._shortcut == undefined) {
@@ -252,16 +244,12 @@ export default {
 				try { // might fail do to invalid keys
 					result = this.keys_from_text(entry.shortcut)
 				} catch (error) {
-					invalid_shortcut = {}
-					invalid_shortcut.message = error
-					invalid_shortcut.code = "Invalid Key"
-					return { invalid: invalid_shortcut }
+					// forward error
+					error = error
+					return { error }
 				}
 				entry._shortcut = result._shortcut
 				entry.shortcut = result.shortcut
-			}
-			if (entry.command == undefined) {
-				entry.command = ""
 			}
 
 			if (entry.contexts == undefined) {
@@ -269,15 +257,25 @@ export default {
 			} else if (Array.isArray(entry.contexts)) {
 				entry.contexts = entry.contexts.map(entry => entry.toLowerCase()).sort()
 			} else {
-				invalid_shortcut = {}
-				invalid_shortcut.message = "Entry contexts: " + entry.contexts + " must be an array. See shortcut: " + entry.shortcut + " for command: " + entry.command
-				invalid_shortcut.code = "Invalid Contexts Type"
-				return { invalid: invalid_shortcut }
+				error = this.create_error("invalid contexts type", { entry })
+				return { error }
+			}
+			if (entry.contexts.length == 0) {
+				error = this.create_error("missing contexts", { entry })
+				return { error }
 			}
 
+			entry.command = entry.command || ""
+			entry.binned = entry.binned || false
 			entry.chained = entry._shortcut.length > 1 ? true : false
 			entry.chain_start = entry.chain_start || false
 
+			if (entry.chained && entry.chain_start) {
+				error = this.create_error("invalid chained chain start", { entry })
+				return { error }
+			}
+
+			// if it passed without error untill this point then the entry object was formatted validly
 
 			for (let keyset of entry._shortcut) {
 				// get modifiers in keyset
@@ -301,80 +299,92 @@ export default {
 				})
 
 				if (non_modifiers.length > 1) {
-					invalid_shortcut = {}
-					invalid_shortcut.message = `Invalid shortcut ${entry.shortcut}. Shortcuts cannot contain multiple non-modifiers: ["${this.normalize(non_modifiers).join(", ")}"]`
-					invalid_shortcut.code = "Multiple Non-Modifiers"
-					break
+					error = this.create_error("multiple non-modifiers", { entry, non_modifiers })
+					return { error }
 				}
 
 				// BLOCKED ALONE
 				// blocked_alone should be checked before blocked_single
-
-				if (not_blocked_alone.length == 0) {
-					invalid_shortcut = {}
-					invalid_shortcut.message = `Invalid shortcut ${entry.shortcut}. Shortcuts with just ["${this.normalize(blocked_alone).join(", ")}"] as their only key/s are blocked.`
-					invalid_shortcut.code = "Blocked Alone"
-					break
+				// note i think the first condition is always true?
+				if (blocked_alone.length > 0 && not_blocked_alone.length == 0) {
+					error = this.create_error("blocked alone", { entry, blocked_alone })
+					return { error }
 				}
 
 				// BLOCKED SINGLE
 				let blocked_singles = this.get_blocked_singles(modifiers)
 				if (blocked_singles) {
-					invalid_shortcut = {}
-					invalid_shortcut.message = `Invalid shortcut ${entry.shortcut} Shortcuts containing only ["${this.normalize(blocked_singles).join("")}"] as a modifier are blocked.`
-					invalid_shortcut.code = "Blocked Single"
-					break
+					error = this.create_error("blocked single", { entry, blocked_singles })
+					return { error }
 				}
 
 				// BLOCKED ALL
-				let block_all = keyset.filter(key => this.keymap[key].block_all)
-				if (block_all.length > 0) {
+				let blocked_all = keyset.filter(key => this.keymap[key].block_all)
+				if (blocked_all.length > 0) {
 					if (entry.chained) {
 						entry._shortcut[1].map(key => {
 							if (this.keymap[key].block_all) {
-								block_all.push(key)
+								blocked_all.push(key)
 							}
 						})
 					}
-					invalid_shortcut = {}
-					invalid_shortcut.message = `Invalid shortcut " + entry.shortcut + ". Shortcuts cannot contain keys: ["${this.normalize(block_all).join(", ")}"], assignments to the keys are blocked.`
-					invalid_shortcut.code = "Blocked All"
-					break
+					error = this.create_error("blocked all", { entry, blocked_all })
+					return { error }
 				}
 			}
+			// if it passed to this point the entire entry was formatted validly and an entry will
+			// be returned regardless of further errors
 
-			let existing_error = false
 			let overwrite = false
+
+			// using findIndex because returning inside findIndex is like break in a loop
 			existing_shortcuts.findIndex((existing_entry, index) => {
 				// ignore shortcuts without conflicting contexts
 				let conflicting_contexts = existing_entry.contexts.filter(context => entry.contexts.indexOf(context) !== -1)
 				if (conflicting_contexts.length == 0) {return false}
-				// else if conflicting contexts
-				if (existing_entry.shortcut == entry.shortcut) { // if the two shortcuts are exactly the same
-					if (entry.chain_start == existing_entry.chain_start) {
-						if (entry.chain_start) {// if they're both chain starts
-							if (existing_entry._is_not_original) {
-								overwrite = true
-								if (editing) {existing_error = this.create_error(index, entry, existing_entry, "Overwrite", editing)}
-							} else {
-								existing_error = this.create_error(index, entry, existing_entry, "Regular Error", editing)
+
+				if (entry.shortcut == existing_entry.shortcut) {
+					// IF both are chain starts
+					if (entry.chain_start && existing_entry.chain_start) {
+						// it's not a problem if the existing entry was auto created
+						if (existing_entry._is_not_original) {
+							overwrite = true
+							if (editing && entry.index !== existing_entry.index) {
+								error = this.create_error("duplicate chain start", { entry, existing_entry, index })
+								return true
 							}
-						} else { // if they're both regular
-							existing_error = this.create_error(index, entry, existing_entry, "Regular Error", editing)
+						} else {
+							error = this.create_error("duplicate chain start", { entry, existing_entry, index })
+							return true
 						}
-					} else if (existing_entry.chain_start) {// existing entry is a chain start but not new
-						existing_error = this.create_error(index, existing_entry, entry, "Chain Error", editing)
-					} else if (entry.chain_start) {// new entry is a chain start but not existing
-						existing_error = this.create_error(index, entry, existing_entry, "Chain Error", editing)
+					// ELSE if the user created them...
+					// neither is a chain start
+					} else if (!entry.chain_start && !existing_entry.chain_start) {
+						error = this.create_error("duplicate shortcut", { entry, existing_entry, index })
+						return true
+					// existing entry is a chain start but new entry isn't
+					} else if (!entry.chain_start && existing_entry.chain_start) {
+						error = this.create_error("chain error new", { entry, existing_entry, index })
+						return true
+					// new entry is chain start but existing isn't
+					} else if (entry.chain_start && !existing_entry.chain_start) {
+						if (!editing || (editing && entry.index !== existing_entry.index)) {
+							error = this.create_error("chain error existing", { entry, existing_entry, index })
+							return true
+						}
 					}
-				} else if (this.is_equal(existing_entry._shortcut[0], entry._shortcut[0])) { // else if they are chained or chain starts
-					if (existing_entry._shortcut.length == 1 && !existing_entry.chain_start && !existing_entry.chained) {// if existing entry should be marked as chain start but isn't
-						if (!editing) {existing_error = this.create_error(index, existing_entry, entry, "Chain Error", editing)}
-					} else if (entry._shortcut.length == 1 &&  !existing_entry.chain_start && !entry.chained && !entry.chain_start) {// if new entry should be marked as chain but isn't
-						if (!editing) {existing_error = this.create_error(index, entry, existing_entry, "Chain Error", editing)}
-					} else if (existing_entry._shortcut.length == 1 && entry._shortcut.length == 1 && !existing_entry.chain_start && !entry.chained) {// if new entry is a chain start, existing isn't and should be overwritten
-						overwrite = true
-						if (editing) {existing_error = this.create_error(index, entry, existing_entry, "Overwrite", editing)}
+				} else if (this.is_equal(entry._shortcut[0], existing_entry._shortcut[0])) {
+					// if long new entry e.g. ctrl+a a and ctrl+a exists but it isn't a chain start
+					if (entry.chained && !existing_entry.chained && !existing_entry.chain_start) {
+						error = this.create_error("should be chain existing", { entry: existing_entry, index  })
+						return true
+
+					// if short new entry e.g. ctrl+a should be chain start because ctrl+a a exists but it isn't
+					} else if (!entry.chained && existing_entry.chained && !entry.chain_start) {
+						if (!editing) { // if editing we should eventually hit the real chain start
+							error = this.create_error("should be chain new", { entry, index })
+							return true
+						}
 					}
 				}
 			})
@@ -432,7 +442,7 @@ export default {
 			entry.changed = false
 			entry.dragging = false
 
-			return { entry, extra: extra_entry, remove: chain_starts_to_remove, error: existing_error, invalid: invalid_shortcut }
+			return { entry, to_add: extra_entry, to_remove: chain_starts_to_remove, error }
 		},
 	},
 }

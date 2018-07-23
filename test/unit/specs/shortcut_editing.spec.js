@@ -32,7 +32,7 @@ describe("shortcut editing - validation", () => {
 			command: "somecommand",
 			contexts: ["some", "contexts"] // must already be lowercase
 		})
-		for (let property of ["error", "extra", "invalid", "remove"]) {
+		for (let property of ["error", "to_add", "to_remove"]) {
 			expect(entry[property]).to.be.false
 		}
 		expect(entry.entry.chained).to.be.false
@@ -55,7 +55,7 @@ describe("shortcut editing - validation", () => {
 		expect(wrapper.vm.set_error.calledOnce).to.be.true
 		expect(wrapper.vm.set_error.getCall(0).args[0].message).to.include("shortcut")
 	})
-	it("should call set_error when no command", () => {
+	it("should not error when no command", () => {
 		let wrapper = shallowMount(ShortcutVisualizer, {
 			propsData: { keys_list: keys, layout },
 		})
@@ -65,8 +65,7 @@ describe("shortcut editing - validation", () => {
 			command: "",
 			contexts: "Some, Contexts"
 		})
-		expect(wrapper.vm.set_error.calledOnce).to.be.true
-		expect(wrapper.vm.set_error.getCall(0).args[0].message).to.include("command")
+		expect(wrapper.vm.set_error.callCount).to.equal(0)
 	})
 	it("should handle non-array contexts", () => {
 		let wrapper = shallowMount(ShortcutVisualizer, {
@@ -97,7 +96,31 @@ describe("shortcut editing - validation", () => {
 		expect(wrapper.vm.set_error.calledOnce).to.be.true
 		expect(wrapper.vm.set_error.getCall(0).args[0].message).to.include("key").and.to.include("illegalkey")
 	})
-	it("should not allow duplicate shortcuts", () => {
+	it("should allow duplicate shortcuts (but internally there was error)", () => {
+		let wrapper = shallowMount(ShortcutVisualizer, {
+			propsData: {
+				keys_list: keys,
+				layout,
+				shortcuts_list: [
+					{
+						shortcut: "ctrl+a",
+						command: "some conflicting shortcut"
+					}
+				]
+			}
+		})
+		wrapper.setMethods({ set_error: sinon.stub() })
+		wrapper.setMethods({ validate_error: sinon.stub() })
+		let entry = wrapper.vm.validate_entry({
+			shortcut: "ctrl+a",
+			command: "somecommand",
+			contexts: "global"
+		})
+
+		expect(wrapper.vm.set_error.callCount).to.equal(0)
+		expect(wrapper.vm.validate_error.getCall(0).args[1].code).to.equal("duplicate shortcut")
+	})
+	it("should allow duplicate shortcuts in different context", () => {
 		let wrapper = shallowMount(ShortcutVisualizer, {
 			propsData: {
 				keys_list: keys,
@@ -115,33 +138,9 @@ describe("shortcut editing - validation", () => {
 		let entry = wrapper.vm.validate_entry({
 			shortcut: "ctrl+a",
 			command: "somecommand",
-			contexts: "global"
+			contexts: "othercontext"
 		})
 
-		expect(wrapper.vm.set_error.calledOnce).to.be.true
-		expect(wrapper.vm.set_error.getCall(0).args[0].message).to.include("already exists")
+		expect(wrapper.vm.set_error.callCount).to.equal(0)
 	})
-	// it.skip("should allow duplicate shortcuts in different context", () => {
-	// 	let wrapper = shallowMount(ShortcutVisualizer, {
-	// 		propsData: {
-	// 			keys_list: keys,
-	// 			layout,
-	// 			shortcuts_list: [
-	// 				{
-	// 					shortcut: "ctrl+a",
-	// 					command: "some conflicting shortcut"
-	// 				}
-	// 			]
-	// 		}
-	// 	})
-	// 	wrapper.setMethods({ set_error: sinon.stub() })
-
-	// 	let entry = wrapper.vm.validate_entry({
-	// 		shortcut: "ctrl+a",
-	// 		command: "somecommand",
-	// 		contexts: "othercontext"
-	// 	})
-
-	// 	expect(wrapper.vm.set_error.calledOnce).to.be.false
-	// })
 })

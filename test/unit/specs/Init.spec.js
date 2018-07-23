@@ -68,6 +68,17 @@ describe("init", () => {
 			})
 		}).to.throw()
 	})
+	it("should not throw error when correctly passing all modifiers in order_of_modifiers regardless of case", () => {
+		console.error = console_stub
+		let wrapper = shallowMount(ShortcutVisualizer, {
+			propsData: {
+				keys_list: keys,
+				layout,
+				order_of_modifiers: ["Ctrl", "shift", "Super", "ALT", "MeNu"]
+			}
+		})
+		expect(wrapper.vm.modifiers_order).to.deep.equal(["ctrl", "shift", "super", "alt", "menu"])
+	})
 	it("should throw error when missing modifiers when specifying order_of_modifiers", () => {
 		console.error = console_stub
 		expect(function(){
@@ -127,22 +138,20 @@ describe("init", () => {
 					]
 				}
 			})
-		}).to.throw()
+		}).to.throw().with.property("code", "invalid contexts type")
 	})
 	it("should not throw error if contexts is array and should sort and lowercase", () => {
 		console.error = console_stub
-		expect(function(){
-			let wrapper = shallowMount(ShortcutVisualizer, {
-				propsData: {
-					keys_list: keys,
-					layout,
-					shortcuts_list: [
-						{ shortcut: "a", contexts: ["C", "B", "A"] }
-					]
-				}
-			})
-			expect(wrapper.vm.shortcuts[0].contexts).to.deep.equal(["a", "b", "c"])
-		}).not.to.throw()
+		let wrapper = shallowMount(ShortcutVisualizer, {
+			propsData: {
+				keys_list: keys,
+				layout,
+				shortcuts_list: [
+					{ shortcut: "a", contexts: ["C", "B", "A"] }
+				]
+			}
+		})
+		expect(wrapper.vm.shortcuts[0].contexts).to.deep.equal(["a", "b", "c"])
 	})
 	it("should fill command when shortcut does not have a command", () => {
 		console.error = console_stub
@@ -170,9 +179,9 @@ describe("init", () => {
 					]
 				}
 			})
-		}).to.throw()
+		}).to.throw().with.property("code", "duplicate shortcut")
 	})
-	it("should not throw when duplicate in other context", () => {
+ 	it("should not throw when duplicate in other context", () => {
 		console.error = console_stub
 		let wrapper = shallowMount(ShortcutVisualizer, {
 			propsData: {
@@ -211,7 +220,7 @@ describe("init", () => {
 					]
 				}
 			})
-		}).to.throw()
+		}).to.throw().with.property("code", "shortcut empty")
 	})
 	it("should throw error when shortcut does not contain shortcut", () => {
 		console.error = console_stub
@@ -225,7 +234,7 @@ describe("init", () => {
 					]
 				}
 			})
-		}).to.throw()
+		}).to.throw().with.property("code", "shortcut undefined")
 	})
 	it("should throw error when duplicate key identifier", () => {
 		console.error = console_stub
@@ -266,9 +275,9 @@ describe("init", () => {
 					]
 				}
 			})
-		}).to.throw()
+		}).to.throw().with.property("code", "multiple non-modifiers")
 	})
-	it("should throw error when shortcut contains just multiple modifiers", () => {
+	it("should throw error when shortcut contains just multiple keys that are block_alone", () => {
 		console.error = console_stub
 		expect(function() {
 			let wrapper = shallowMount(ShortcutVisualizer, {
@@ -276,11 +285,12 @@ describe("init", () => {
 					keys_list: keys,
 					layout,
 					shortcuts_list: [
+						// in default keymap all modifiers are block alone
 						{ shortcut: "ctrl+shift+alt" }
 					]
 				}
 			})
-		}).to.throw()
+		}).to.throw().with.property("code", "blocked alone")
 	})
 	it("should block key if key is block_all", () => {
 		console.error = console_stub
@@ -300,7 +310,7 @@ describe("init", () => {
 					]
 				}
 			})
-		}).to.throw()
+		}).to.throw().with.property("code", "blocked all")
 	})
 	it("should block key with modifiers if key is block_all", () => {
 		console.error = console_stub
@@ -321,7 +331,7 @@ describe("init", () => {
 					]
 				}
 			})
-		}).to.throw()
+		}).to.throw().with.property("code", "blocked all")
 	})
 	it("should block key in chain if key is block_all", () => {
 		console.error = console_stub
@@ -342,7 +352,7 @@ describe("init", () => {
 					]
 				}
 			})
-		}).to.throw()
+		}).to.throw().with.property("code", "blocked all")
 	})
 	it("should block shift if block_single", () => {
 		console.error = console_stub
@@ -367,7 +377,7 @@ describe("init", () => {
 					]
 				}
 			})
-		}).to.throw()
+		}).to.throw().with.property("code", "blocked single")
 	})
 	it("should not block shift if not block_single", () => {
 		console.error = console_stub
@@ -412,7 +422,7 @@ describe("init", () => {
 					]
 				}
 			})
-		}).to.throw()
+		}).to.throw().with.property("code", "blocked alone")
 	})
 	it("should not block shift if not block_alone and modifier", () => {
 		console.error = console_stub
@@ -620,7 +630,7 @@ describe("init", () => {
 					]
 				}
 			})
-		}).to.throw()
+		}).to.throw().with.property("code", "chain error new")
 		// reversed
 		expect(function() {
 			let wrapper = shallowMount(ShortcutVisualizer, {
@@ -634,7 +644,7 @@ describe("init", () => {
 					]
 				}
 			})
-		}).to.throw()
+		}).to.throw().with.property("code", "chain error existing")
 	})
 	it("should throw when conflicting chain start", () => {
 		console.error = console_stub
@@ -650,7 +660,7 @@ describe("init", () => {
 					]
 				}
 			})
-		}).to.throw()
+		}).to.throw().with.property("code", "duplicate chain start")
 	})
 	it("should throw when setting chain start without setting chain_start", () => {
 		console.error = console_stub
@@ -665,7 +675,7 @@ describe("init", () => {
 					]
 				}
 			})
-		}).to.throw()
+		}).to.throw().with.property("code", "should be chain existing")
 		// reversed
 		expect(function() {
 			let wrapper = shallowMount(ShortcutVisualizer, {
@@ -678,7 +688,7 @@ describe("init", () => {
 					]
 				}
 			})
-		}).to.throw()
+		}).to.throw().with.property("code", "should be chain new")
 	})
 	it("should throw when setting chain start when setting chain_start false", () => {
 		console.error = console_stub
@@ -693,7 +703,7 @@ describe("init", () => {
 					]
 				}
 			})
-		}).to.throw()
+		}).to.throw().with.property("code", "should be chain existing")
 	})
 })
 

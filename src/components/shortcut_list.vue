@@ -222,8 +222,8 @@ export default {
 			if (!result) {return}
 
 			this.$emit("add", result.entry)
-			if (result.extra) {
-				this.$emit("add", result.extra)
+			if (result.to_add) {
+				this.$emit("add", result.to_add)
 			}
 			// reset
 			this.entry_to_add.shortcut = ""

@@ -37,7 +37,7 @@ module.exports = {
 		"spaced-comment": ["error", "always"],
 		"linebreak-style": ["error", "unix"],
 		"brace-style": ["error", "1tbs", { "allowSingleLine": true }],
-		"no-lonely-if": "error",
+		"no-lonely-if": "warn",
 		"curly": "error",
 		"no-multiple-empty-lines": ["error", { "max": 2, "maxBOF": 1, "maxEOF":1}],
 		"object-curly-spacing": ["error", "always"],

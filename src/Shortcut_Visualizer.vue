@@ -58,7 +58,7 @@ import Bin from "./components/bin"
 import ShortcutsList from "./components/shortcut_list"
 
 import dragula from "dragula"
-import { init, helpers, shortcut_editing, input_handlers, drag_handlers } from "./mixins/index.js"
+import { init, helpers, shortcut_editing, input_handlers, drag_handlers, errors } from "./mixins/index.js"
 import { defaults } from "./defaults.js"
 
 export default {
@@ -94,6 +94,7 @@ export default {
 		shortcut_editing,
 		input_handlers,
 		drag_handlers,
+		errors
 	],
 	data() {
 		return {

@@ -96,8 +96,8 @@ export default {
 			})
 			keys_mods.sort((a, b) => {
 				return (
-					this.modifiers_order.indexOf(a) -
-					this.modifiers_order.indexOf(b)
+					this.modifiers_order.indexOf(a.toLowerCase()) -
+					this.modifiers_order.indexOf(b.toLowerCase())
 				)
 			})
 			this.dedupe_presorted(keys_mods)
@@ -118,10 +118,12 @@ export default {
 			return keys
 		},
 		keys_from_text(shortcut_text) {
-			if (shortcut_text == "") {throw "Invalid"}
+			if (shortcut_text == "") {throw "should never throw"}
 			// split into parts, when there's more than two there's a chain
 			let shortcut = shortcut_text.split(" ").filter(entry => entry !== "")
-			if (shortcut.length > 2) {throw `Program only supports two part chains. Shortcut "${shortcut_text}" contains ${shortcut.length}, interpreted as: [${shortcut.join(", ")}].`}
+			if (shortcut.length > 2) {
+				throw this.create_error("invalid chain length", { shortcut_text, shortcut })
+			}
 			// get the keys array
 			// normalize the - or + separator
 			let _shortcut = shortcut.map((keyset, index) => {
@@ -142,7 +144,7 @@ export default {
 						}
 					})
 					if (match == false) {
-						throw "Unknown key: " + key
+						throw this.create_error("unknown key", { key })
 					}
 					if (this.keymap[key].RL == true) {
 						RL.push(key)

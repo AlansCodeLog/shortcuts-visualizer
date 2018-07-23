@@ -120,93 +120,35 @@ export default {
 		},
 		validate_entry(entry, editing_existing = false) {// TODO abstract
 
-			// handle any errors
-			if (entry.command == "") {
-				this.set_error({ message: "Entry command cannot be empty." })
-				return false
-			}
-			if (entry.shortcut == "") {
-				this.set_error({ message: "Entry shortcut cannot be empty." })
-				return false
-			}
-
-			if (entry.contexts == "") {
-				this.set_error({ message: "A context wasn't specified, setting to global." })
+			// handle any error
+			let contexts_is_array = Array.isArray(entry.contexts)
+			if (entry.contexts == "" || (contexts_is_array && entry.contexts.length == 0)) {
+				this.set_error({ message: "A context wasn't specified, setting to global.", type: "warning" })
 				entry.contexts = [this.active_context]
 			}
 
-			if (!Array.isArray(entry.contexts)) {
+			if (!contexts_is_array) {
 				entry.contexts = entry.contexts.toLowerCase().split(/\s*,\s*/g)
 			}
 
-			try {
-				var result = this.create_shortcut_entry(entry, true)
-			} catch (error) {
-				console.log(error)
-
-				this.set_error({ message: error })
-				return false
-			}
+			let result = this.create_shortcut_entry(entry, true)
 
 			let valid_entry = result.entry || false
 
-			let { remove, error, invalid } = result
+			let { error } = result
 
-			if (invalid) {
-				this.set_error(invalid)
-				return false
-			}
-
-			if (valid_entry) {
-				if (remove && !editing_existing) {
-					this.set_error({ message: "Shortcut " +result.entry.shortcut+" is a chain start. It cannot be overwritten." })
-					return false
+			if (error) {
+				this.validate_error("validate", error, {
+					editing_existing,
+					index: entry.index,
+					result
+				})
+				// if error has no message then it can be ignored
+				if (error.message) {
+					this.set_error({ ...error, type: "error" })
 				}
-				if (error) {
-					if (error.code == "Chain Error") {
-						if (editing_existing) {
-							if (this.shortcuts[entry.index].chained && error.index !== entry.index) {
-								this.set_error({ message: "Shortcut " +result.entry.shortcut+" is a chain start and your entry was chained. They cannot be swapped." })
-								return false
-							} else if (this.shortcuts[entry.index].chain_start && !entry.chain_start && error.index == entry.index) {
-								let chain_start = this.shortcuts[error.index]._shortcut[0]
-								let chain_count = this.shortcuts.reduce((count, entry) => {
-									if (!entry.chain_start && chain_start.join("") == entry._shortcut[0].join("")) {
-										return count + 1
-									} else {return count + 0}
-								}, 0)
-								if (chain_count > 0) {
-									this.set_error({ message: "Shortcut " +result.entry.shortcut+" is a chain start with dependent chains. It cannot be unchained." })
-									return false
-								}
-							}
-						} else {
-							this.set_error({ message: "Shortcut "+result.entry.shortcut+" already exists. It cannot be overwritten." })
-							return false
-						}
-					} else if (error.code == "Overwrite") {
-						if (editing_existing) {
-							if (this.shortcuts[entry.index].chained && this.shortcuts[error.index].chain_start && error.index !== entry.index) {
-								this.set_error({ message: "Shortcut " +result.entry.shortcut+" is a chain start and your entry was chained. They cannot be swapped." })
-								return false
-							}
-						} else {
-							this.set_error(error)
-							return false
-						}
-					} else if (error.code == "Regular Error") {
-						if (!editing_existing) {
-							this.set_error({ message: "Shortcut "+result.entry.shortcut+" already exists. It cannot be overwritten." })
-							return false
-						}
-					} else {
-						throw "Should never throw this error when validating."
-					}
-				}
-				return result
-			} else {
-				throw "Should not happen (empty entry)"
 			}
+			return result
 		},
 		// for editing any existing entries and/or swapping between them, NOT for adding an entry
 		shortcut_edit({ old_entry, new_entry }, checks = true, is_hand_edit = false) {
@@ -214,6 +156,7 @@ export default {
 			if (is_hand_edit) {
 				// fetch our entry
 				var result = this.validate_entry(new_entry, true)
+				// validate_entry will handle errors
 				if (result === false) {return}
 			}
 
@@ -247,24 +190,27 @@ export default {
 			if (!is_hand_edit) {
 				var result = this.create_shortcut_entry(new_entry, true)
 			}
-			// we can't spread new entry from the result because it's already defined
-			new_entry = result.entry
+			new_entry = result.entry || undefined
 			// spread variables returned by result
-			let { extra, remove, error, invalid } = result
+			let { to_add, error } = result
 
 
 			// if the shortcut is invalid (any keys are invalid or if a key is blocked)
-			if (invalid) {
-				this.set_error(invalid)
+			if (new_entry == undefined) {
+				this.set_error(error)
 				return
 			}
 
+			// if we get an error, which is only possible when it's NOT a hand edit
+			// then because of that we know there's an entry we can swap with
+			// if we can/can't swap should have been checked in the dragging/etc
+
 			// get and "backup" the entry to swap if it exists since we will change it
 			if (error) {
-				var existing_index = error.index
-				var entry_swap = this.shortcuts[existing_index]
-				var entry_swap_copy = { ...this.shortcuts[existing_index] }
+				var entry_swap = error.entry
+				var entry_swap_copy = { ...error.entry }
 			}
+
 			// "backup" the old object
 			let old_entry_copy = { ...old_entry }
 			let swap_exists = error && old_entry_copy.shortcut !== entry_swap_copy.shortcut
@@ -299,10 +245,10 @@ export default {
 			if (checks && !old_entry_copy.chain_start && !new_entry.chain_start) {
 
 				// if we need to add a chain start
-				if (extra && !entry_swap) {
-					extra.index = this.shortcuts.length
-					this.shortcuts.push(extra)
-					entries.push(extra)
+				if (to_add && !entry_swap) {
+					to_add.index = this.shortcuts.length
+					this.shortcuts.push(to_add)
+					entries.push(to_add)
 				}
 
 				// if either the old or entry swapped with is a chain, then we need to change all the dependent chains

@@ -51,6 +51,7 @@ Okay the contexts was a terrible example to show editing suggestions, but you ge
 - [ ] Better sorting in list (by single keys, then modifiers, then inside those, alphabetically, also somehow chained next to their chain starts.)
 - [ ] Better input suggestion handling. Look into library?
 - [ ] The rest of the todos listed in Tests below.
+- [ ] block_alone_with_similar needed
 - [~] Polishing/Clean/Beta
 - [~] Demo
 - [~] Documentation

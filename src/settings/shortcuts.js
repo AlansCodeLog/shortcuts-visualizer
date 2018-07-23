@@ -61,7 +61,8 @@ function generator () {
 			shortcuts.push({ shortcut: mod+letter, command: "Cmd. for " + mod+letter })
 		}
 		for (let letter of alphabet.slice(0, 4)) {
-			shortcuts.push({ shortcut: mod+letter + " " + letter, command: "Cmd. for " + mod+letter + " " + letter, chain_start: true })
+			shortcuts.push({ shortcut: mod+letter, command: "Cmd. for " + mod+letter + " " + letter, chain_start: true })
+			shortcuts.push({ shortcut: mod+letter + " " + letter, command: "Cmd. for " + mod+letter + " " + letter })
 		}
 	}
 	return shortcuts
