@@ -24,8 +24,8 @@
 		></Keys>
 		<!-- tells us what's being pressed, whether we're waiting for a chain, etc -->
 		<Status
-			v-if="chain.warning || error_message"
-			v-bind="{keymap_active, chain, blocked_singles, error_message, normalize}"
+			v-if="chain.warning || error"
+			v-bind="{keymap_active, chain, blocked_singles, error, normalize}"
 		></Status>
 		<div class="bins">
 			<Bin
@@ -123,7 +123,7 @@ export default {
 			bin_holder_index: 0,
 			mods_unknown: true,
 			freeze: false,
-			error_message: ""
+			error: ""
 		}
 	},
 	watch: {
@@ -182,10 +182,10 @@ export default {
 		},
 		// display error messages to user
 		set_error(error) {
-			this.error_message = error.message
-			this.$emit("warning", error)
+			this.error = error
+			this.$emit(error.type || "error", error)
 			setTimeout(() => {
-				this.error_message = false
+				this.error = false
 			}, this.dev_options.timeout_error)
 		},
 	},

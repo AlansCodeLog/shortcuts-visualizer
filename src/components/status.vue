@@ -22,16 +22,16 @@
 		>Shortcuts containing only {{normalize(blocked_singles).join("")}} as a modifier are blocked.</div>
 		<div
 			tabindex="0"
-			class="error"
-			v-if="error_message"
-		>{{error_message}}</div>
+			:class="[error.type]"
+			v-if="error"
+		>{{error.message}}</div>
 	</div>
 </template>
 
 <script>
 export default {
 	name: "Status",
-	props: ["keymap_active", "chain", "blocked_singles", "error_message", "normalize"]
+	props: ["keymap_active", "chain", "blocked_singles", "error", "normalize"]
 }
 </script>
 

@@ -125,6 +125,7 @@ export default {
 			if (entry.contexts == "" || (contexts_is_array && entry.contexts.length == 0)) {
 				this.set_error({ message: "A context wasn't specified, setting to global.", type: "warning" })
 				entry.contexts = [this.active_context]
+				contexts_is_array = true
 			}
 
 			if (!contexts_is_array) {
@@ -141,12 +142,12 @@ export default {
 				this.validate_error("validate", error, {
 					editing_existing,
 					index: entry.index,
-					result
 				})
 				// if error has no message then it can be ignored
 				if (error.message) {
 					this.set_error({ ...error, type: "error" })
 				}
+				return false
 			}
 			return result
 		},
@@ -207,8 +208,8 @@ export default {
 
 			// get and "backup" the entry to swap if it exists since we will change it
 			if (error) {
-				var entry_swap = error.entry
-				var entry_swap_copy = { ...error.entry }
+				var entry_swap = error.context.entry
+				var entry_swap_copy = { ...error.context.entry }
 			}
 
 			// "backup" the old object
