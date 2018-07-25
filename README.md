@@ -45,7 +45,8 @@ Okay the contexts was a terrible example to show editing suggestions, but you ge
 - [x] Don't allow dragging while editing.
 - [x] Check css for things that should be variables, also fix borders variable.
 - [x] Have shortcuts contain all shortcuts, marking binned as binned, and assigning each an index property, so no more different indexes per type.
-- [ ] Better errors.
+- [x] Better errors.
+- [ ] Need to change dragging libraries, dragula project seems dead.
 - [ ] Handle editing of modifier only shortcuts. 
 - [ ] Check all modes work. Maybe seperate into an edit mode (all toggle) and a test mode (no toggles)?
 - [ ] Better sorting in list (by single keys, then modifiers, then inside those, alphabetically, also somehow chained next to their chain starts.)

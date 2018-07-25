@@ -86,7 +86,7 @@ export default {
 </script>
 <style lang="scss" scoped>
 .shortcut-visualizer {
-	@import "../settings/theme.scss";
+	@import "../../settings/theme.scss";
 
 	&.background-light {
 		background: $theme-light-background;

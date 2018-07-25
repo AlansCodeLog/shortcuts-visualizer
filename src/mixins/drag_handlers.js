@@ -80,11 +80,12 @@ export default {
 				revertOnSpill: true, // so cancel will revert position of element
 				copy: true, // copy false was causing glitching sometimes, this should be smoother, might introduce new bugs //to test
 				isContainer: (el) => {
-					return this.drag_is_container(el)
+					return !this.freeze && this.drag_is_container(el)
 				},
 				moves: (el, source, handle, sibling) => {
 					let can_move = this.drag_moves(el, source, handle, sibling)
-					if (can_move && this.freeze) {
+
+					if (can_move && this.freeze && !el.classList.contains("list-entry")) { // TODO temp fix
 						this.set_error({ message: "Dragging while editing a shortcut is not allowed." })
 						return false
 					}

@@ -10,6 +10,7 @@ export default {
 			return string.replace(/\b[a-z](?!\s)/g, (letter) => letter.toUpperCase())
 		},
 		sorted_merge_dedupe(arr, elements, clone = false) {
+			let array
 			if (clone) {
 				array = arr.concat()
 			} else {
