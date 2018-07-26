@@ -118,7 +118,7 @@ export default {
 				}, this.dev_options.timeout_edit_success)
 			})
 		},
-		validate_entry(entry, editing_existing = false) {// TODO abstract
+		validate_entry(entry, adding_entry = true) {// TODO abstract
 
 			// handle any error
 			let contexts_is_array = Array.isArray(entry.contexts)
@@ -140,23 +140,24 @@ export default {
 
 			if (error) {
 				this.validate_error("validate", error, {
-					editing_existing,
+					adding_entry,
 					index: entry.index,
 				})
 				// if error has no message then it can be ignored
 				if (error.message) {
 					this.set_error({ ...error, type: "error" })
+					return false
 				}
-				return false
 			}
 			return result
 		},
 		// for editing any existing entries and/or swapping between them, NOT for adding an entry
 		shortcut_edit({ old_entry, new_entry }, checks = true, is_hand_edit = false) {
+
 			// if an entry was hand edited it should pass the same exact checks as a new entry
 			if (is_hand_edit) {
 				// fetch our entry
-				var result = this.validate_entry(new_entry, true)
+				var result = this.validate_entry(new_entry, false)
 				// validate_entry will handle errors
 				if (result === false) {return}
 			}

@@ -350,39 +350,39 @@ export default {
 						if (existing_entry._is_not_original) {
 							overwrite = true
 							if (editing && entry.index !== existing_entry.index) {
-								error = this.create_error("duplicate chain start", { entry, existing_entry, index })
+								error = this.create_error("duplicate chain start", { entry, existing_entry, index, conflicting_contexts })
 								return true
 							}
 						} else {
-							error = this.create_error("duplicate chain start", { entry, existing_entry, index })
+							error = this.create_error("duplicate chain start", { entry, existing_entry, index, conflicting_contexts })
 							return true
 						}
 					// ELSE if the user created them...
 					// neither is a chain start
 					} else if (!entry.chain_start && !existing_entry.chain_start) {
-						error = this.create_error("duplicate shortcut", { entry, existing_entry, index })
+						error = this.create_error("duplicate shortcut", { entry, existing_entry, index, conflicting_contexts })
 						return true
 					// existing entry is a chain start but new entry isn't
 					} else if (!entry.chain_start && existing_entry.chain_start) {
-						error = this.create_error("chain error new", { entry, existing_entry, index })
+						error = this.create_error("chain error new", { entry, existing_entry, index, conflicting_contexts })
 						return true
 					// new entry is chain start but existing isn't
 					} else if (entry.chain_start && !existing_entry.chain_start) {
 						if (!editing || (editing && entry.index !== existing_entry.index)) {
-							error = this.create_error("chain error existing", { entry, existing_entry, index })
+							error = this.create_error("chain error existing", { entry, existing_entry, index, conflicting_contexts })
 							return true
 						}
 					}
 				} else if (this.is_equal(entry._shortcut[0], existing_entry._shortcut[0])) {
 					// if long new entry e.g. ctrl+a a and ctrl+a exists but it isn't a chain start
 					if (entry.chained && !existing_entry.chained && !existing_entry.chain_start) {
-						error = this.create_error("should be chain existing", { entry: existing_entry, index  })
+						error = this.create_error("should be chain existing", { entry, existing_entry, index, conflicting_contexts })
 						return true
 
 					// if short new entry e.g. ctrl+a should be chain start because ctrl+a a exists but it isn't
 					} else if (!entry.chained && existing_entry.chained && !entry.chain_start) {
 						if (!editing) { // if editing we should eventually hit the real chain start
-							error = this.create_error("should be chain new", { entry, index })
+							error = this.create_error("should be chain new", { entry, existing_entry, index, conflicting_contexts })
 							return true
 						}
 					}

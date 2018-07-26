@@ -29,7 +29,7 @@
 					ref="shortcut_being_edited"
 					v-if="entry.editing"
 					v-bind="{ entry, editing_index, shortcuts_list_active, contexts, commands, index }"
-					@edit="toggle_editing({editing: false, entry, edit: $event, index})"
+					@edit="toggle_editing({editing: false, entry, entry_edit: $event, index})"
 					@delete="remove(index)"
 					@cancel="cancel_edit(entry)"
 					@blur="check_blur(entry, $event, index)"
