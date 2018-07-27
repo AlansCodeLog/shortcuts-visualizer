@@ -1,7 +1,3 @@
-import dragula from "dragula"
-
-const container_types = ["shortcut", "command", "contexts", "key-container", "bin", "delete-bin", "contexts-bar-container", "add"]
-const draggable_types = ["shortcut-entry", "command-entry", "context-entry", "contexts-bar-entry", "key-entry", "bin-entry"]
 
 // LOGIC
 
@@ -67,6 +63,10 @@ const draggable_types = ["shortcut-entry", "command-entry", "context-entry", "co
 // Key-Entry Chain Start => Copies Context just to Dragged, not to Chain Starts //maybe add option?
 // Bin-Entry => Adds Context to Shortcut
 
+import { Droppable } from "@shopify/draggable"
+
+const container_types = ["shortcut", "command", "contexts", "key-container", "bin", "delete-bin", "contexts-bar-container", "add"]
+const draggable_types = ["shortcut-entry", "command-entry", "context-entry", "contexts-bar-entry", "key-entry", "bin-entry"]
 
 export default {
 	methods: {
@@ -75,56 +75,58 @@ export default {
 			let container_keys = this.$el.querySelectorAll(".draggable-container")
 			// some place to store info about what we're dragging between handlers
 			this.d = {}
-			this.drake = dragula([...container_keys], {
-				mirrorContainer: this.$el, // we want to keep the dragged element within this component to style it apropriately
-				revertOnSpill: true, // so cancel will revert position of element
-				copy: true, // copy false was causing glitching sometimes, this should be smoother, might introduce new bugs //to test
-				isContainer: (el) => {
-					return !this.freeze && this.drag_is_container(el)
-				},
-				moves: (el, source, handle, sibling) => {
-					let can_move = this.drag_moves(el, source, handle, sibling)
-
-					if (can_move && this.freeze && !el.classList.contains("list-entry")) { // TODO temp fix
-						this.set_error({ message: "Dragging while editing a shortcut is not allowed." })
-						return false
-					}
-					return can_move
-				},
-				accepts: (el, target, source, sibling) => {
-					if (this.drag_accepts(el, target, source, sibling)) {
-						return true
-					} else {
-						this.drag_not_accepted(el, target, source, sibling)
-						return false
-					}
-				},
+			this.drag_instance = new Droppable([...container_keys], {
+				draggable: ".draggable",
+				appendTo: this.$el,
+				dropzone: container_keys,
 			})
-			this.drake.on("drag", () => {
-				this.freeze = true
-			}).on("over", (el, container, source) => {
-				this.drag_on_over(el, container, source)
-			}).on("out", (el, container, source) => {
-				this.drag_on_out(el, container, source)
-			}).on("drop", (el, target, source, sibling) => {
-				this.drag_on_drop(el, target, source, sibling)
-			}).on("cancel", (el, container, source) => {
-				this.drag_on_cancel(el, container, source)
+			this.drag_instance.on("drag:start", (event) => {
+				if (this.freeze) {
+					this.set_error({ message: "Dragging while editing a shortcut is not allowed." })
+					event.cancel()
+				} else {
+					this.freeze = true
+				}
+			}).on("drag:over", (event) => {
+				this.d.element = this.get_draggabled_element_info(event.data.source, event.data.sourceContainer)
+				this.d.element.dragging = true
+
+				let accepts = this.drag_accepts(event.data.source, event.data.overContainer)
+				if (accepts) {
+					this.drag_on_over(event.data.source, event.data.overContainer, event.data.originalSource)
+				} else {
+					this.drag_not_accepted(event.data.overContainer, event.data.sourceContainer)
+				}
+			}).on("drag:out", (event) =>{
+				this.drag_on_out()
+			}).on("droppable:stop", (event) =>{
+				let accepts = this.drag_accepts(event.dragEvent.data.source, event.dropzone)
+				if (event.dragEvent.data.sourceContainer !== event.dropzone && accepts) {
+					this.drag_on_drop(event.dragEvent.data.sourceContainer, event.dropzone)
+				} else {
+					this.drag_not_accepted(event.dropzone, event.dragEvent.data.sourceContainer)
+				}
+				this.drag_on_cancel()
+
+				// we don't actually want to drop the element and change the dom, vue will handle rerendering it in the proper place
+				// event.cancel() // not working yet
 			})
 		},
 		get_container_info(el, type, is_list) {
 			let shortcut = false
 			let entry = false
 			if (type == "key-container") {
+
 				let key = el.previousElementSibling.innerText.toLowerCase().replace(" ", "")
 				// keysss because modifiers might be right/left and keys_from_text will add both for us
 				let keys = this.keys_from_text(key)._shortcut[0]
+
 				// all this means is get the chain start, mix the active keys with the keys, remove any duplicates, sort them
 				shortcut = [this.chain.start, this.sorted_merge_dedupe(this.keymap_active, keys, true)]
 					// then filter the entire thing for empty arrays (to clean an empty chain start)
 					.filter(keyset => keyset.length !== 0)
 
-				let existing = el.querySelector(".key-entry")
+				let existing = el.querySelector(".key-entry:not(.draggable-source--is-dragging)")
 				if (existing) {
 					let index = existing.getAttribute("shortcuts_index")
 					entry = this.shortcuts[index]
@@ -139,12 +141,13 @@ export default {
 			return { shortcut, entry }
 		},
 		get_target_container_info(target) {
+
 			for (let type of container_types) {
 				if (target.classList.contains(type)) {
 					let is_list = false
 					let is_filled = false
 					if ("key-container" === type) {
-						is_filled = target.querySelector(".key-entry") == null ? false : true
+						is_filled = target.querySelector(".key-entry:not(.draggable-source--is-dragging)") == null ? false : true
 					} else if (["shortcut", "contexts", "command"].includes(type)) {
 						is_filled = true
 						is_list = true
@@ -159,8 +162,11 @@ export default {
 						if (class_name == "block_alone") {is_block_alone = true}
 						if (class_name == "block_single") {is_block_single = true}
 					}
+					console.log(target)
 
 					let { shortcut, entry } = this.get_container_info(target, type, is_list)
+					console.log(shortcut)
+
 					let is_chain = entry.chain_start ? true : false
 
 					return { type, is_filled, is_list, entry, is_chain, is_modifier, is_block_all, is_block_alone, is_block_single, shortcut }
@@ -210,15 +216,7 @@ export default {
 		drag_is_container (el) {
 			return el.classList.contains("draggable-container")
 		},
-		drag_moves(el, source, handle, sibling) { // fires first
-			if (el.classList.contains("draggable")) {
-				this.d.element = this.get_draggabled_element_info(el, source)
-				this.d.element.dragging = true
-				return true
-			}
-			return false
-		},
-		drag_accepts(el, target, source, sibling) { // fires after over
+		drag_accepts(el, target) {
 
 			this.d.target_container = this.get_target_container_info(target)
 			let target_container = this.d.target_container
@@ -282,7 +280,7 @@ export default {
 				}
 			}
 		},
-		drag_not_accepted(el, target, source, sibling) {
+		drag_not_accepted(target, source) {
 			// drag_on_out won't trigger when dragging in out of unaccepted containers
 			this.$el.querySelectorAll(".unselectable").forEach(el => el.classList.remove("unselectable"))
 			this.$el.querySelectorAll(".hovering").forEach(el => el.classList.remove("hovering"))
@@ -310,7 +308,7 @@ export default {
 				// added needed classes
 				switch(target_container.type) {
 					case "key-container": {
-						let existing = target.querySelector(".key-entry:not(.gu-transit)")
+						let existing = target.querySelector(".key-entry:not(.draggable-source--is-dragging)")
 						if (existing) {
 							if (["key-entry", "command-entry", "bin-entry"].includes(element.type)) {
 								el.classList.add("will_replace")
@@ -335,7 +333,7 @@ export default {
 
 				if (target_container.is_list) {
 					if (["key-entry", "command-entry", "shortcut-entry", "bin-entry"].includes(element.type)) {
-						let existing = target.querySelector(".list-entry:not(.gu-transit)")
+						let existing = target.querySelector(".list-entry:not(.draggable-mirror)")
 						if (existing) {
 							el.classList.add("will_replace")
 							existing.classList.add("will_be_replaced")
@@ -349,12 +347,14 @@ export default {
 
 			}
 		},
-		drag_on_drop(el, target, source, sibling) {
+		drag_on_drop(el, target) {
+
 			this.d.target_container = this.get_target_container_info(target)
 			let target_container = this.d.target_container
 			let element = this.d.element
 
 			switch(target_container.type) {
+
 				case "bin": {
 					this.add_to_bin(element.entry)
 				} break
@@ -406,24 +406,23 @@ export default {
 					this.shortcut_edit(change)
 				}
 			}
-			// we don't actually want to drop the element and change the dom, vue will handle rerendering it in the proper place
-			this.drake.cancel()
 			this.d = {}
 		},
 		drag_on_cancel() {
 			this.freeze = false
+			console.log("unforxen", this.freeze)
+
 			// in case we missed any, set dragging to false on all
 			this.shortcuts.map(entry => entry.dragging = false)
 			// sometimes drag_on_out doesn't reset them properly
 			this.drag_reset_all_classes()
 		},
-		drag_on_out(el, container, source) {
+		drag_on_out() {
 			this.drag_reset_all_classes()
 			// because sometimes the drag_on_over will have already triggered
 			// and we'll accidently delete the new classes, this will make it let it
 			// past the first condition that reduces how many times it's called
 			this.d.last_target = undefined
-
 		},
 		drag_reset_all_classes() {
 			this.$el.querySelectorAll(".will_be_replaced").forEach(el => el.classList.remove("will_be_replaced"))

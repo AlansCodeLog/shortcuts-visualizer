@@ -123,7 +123,8 @@ export default {
 			bin_holder_index: 0,
 			mods_unknown: true,
 			freeze: false,
-			error: ""
+			error: "",
+			// drag_instance
 		}
 	},
 	watch: {
@@ -194,6 +195,9 @@ export default {
 	},
 	mounted () {
 		this.drag_init()
+	},
+	beforeDestroy() {
+		this.drag_instance.destroy()
 	}
 }
 </script>

@@ -21,7 +21,7 @@ export default {
 				let value = array[i]
 				let element = elements[eli]
 				if (element == value) {continue}
-				if (element > value && element < array[i + 1]) {
+				if (element > value && (element < array[i + 1]  || i == array.length - 1)) {
 					array.splice(i + 1, 0, element)
 					eli++
 				} else if (element > array[i - 1] && element < value) {

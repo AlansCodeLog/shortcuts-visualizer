@@ -298,7 +298,7 @@ export default {
 						this.delete_entry(this.shortcuts[index_chain_start])
 					}
 				}
-			} else if (checks) { // swapping chain starts is similar but more of a mess
+			} else if (checks && swap_exists) { // swapping chain starts is similar but more of a mess
 				// if we need to swap chain starts and all their chains, first we have to do the chains
 				let chain_entry = entry_swap_copy && entry_swap_copy.chain_start
 					? "entry_swap_copy"

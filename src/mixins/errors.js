@@ -130,7 +130,9 @@ export default {
 								error.message = `Creating this chained shortcut would require creating a chain start at ${this.normalize(context.entry._shortcut[0])} but that shortcut already exists in a conflicting context/s for command ${context.existing_entry.command} (contexts: ["${context.existing_entry.contexts.join(", ")}"]).`
 							}
 							case "duplicate shortcut":
-							case "duplicate chain start" //DOING
+							case "duplicate chain start":{// DOING
+
+							} break
 						}
 					}
 				}
