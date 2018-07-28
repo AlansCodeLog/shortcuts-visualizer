@@ -140,6 +140,20 @@ describe("init", () => {
 			})
 		}).to.throw().with.property("code", "invalid contexts type")
 	})
+	it("should throw error if contexts are empty", () => {
+		console.error = console_stub
+		expect(function(){
+			let wrapper = shallowMount(ShortcutVisualizer, {
+				propsData: {
+					keys_list: keys,
+					layout,
+					shortcuts_list: [
+						{ shortcut: "a", contexts: [] }
+					]
+				}
+			})
+		}).to.throw().with.property("code", "missing contexts")
+	})
 	it("should not throw error if contexts is array and should sort and lowercase", () => {
 		console.error = console_stub
 		let wrapper = shallowMount(ShortcutVisualizer, {
@@ -562,6 +576,34 @@ describe("init", () => {
 		expect(wrapper.vm.shortcuts.filter(entry => entry.command == "Custom Chain Start").length).to.equal(1)
 		expect(wrapper.vm.shortcuts.filter(entry => entry.chain_start).length).to.equal(1)
 		expect(console.error.callCount).to.equal(0)
+	})
+	it("should not allow chained custom chain start", () => {
+		console.error = console_stub
+		expect(function() {
+			let wrapper = shallowMount(ShortcutVisualizer, {
+				propsData: {
+					keys_list: keys,
+					layout,
+					shortcuts_list: [
+						{ shortcut: "ctrl+a a", command: "Custom Chain Start", chain_start: true }
+					]
+				}
+			})
+		}).to.throw().with.property("code", "invalid chained chain start" )
+	})
+	it("should not allow more than two chains", () => {
+		console.error = console_stub
+		expect(function() {
+			let wrapper = shallowMount(ShortcutVisualizer, {
+				propsData: {
+					keys_list: keys,
+					layout,
+					shortcuts_list: [
+						{ shortcut: "ctrl+a a a", command: "chained shortcut", }
+					]
+				}
+			})
+		}).to.throw().with.property("code", "invalid chain length" )
 	})
 	it("should allow custom chain start", () => {
 		console.error = console_stub

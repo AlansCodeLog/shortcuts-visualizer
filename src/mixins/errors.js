@@ -78,12 +78,7 @@ export default {
 					error.message = `Entry shortcut cannot be empty.`
 					return
 				}
-				if (error.code == "missing contexts")  {
-					error.message = `A context wasn't specified, setting to global.`
-					return
-				}
 				let { index, adding_entry } = context
-				let editing_entry = !adding_entry
 
 				if (adding_entry) {
 					switch (error.code) {
@@ -100,37 +95,58 @@ export default {
 							error.message = `Shortcut "${context.entry.shortcut}" already exists in a conflicting contexts/s for command: "${context.existing_entry.command}" (contexts: ["${context.existing_entry.contexts.join(", ")}"])`
 						} break
 					}
-				} else if (editing_entry) {
-					// error is with the entry we're editing
+				} else { // error is with the entry we're editing
+					// either the same entry
 					if (error.context.index == index) {
 						if (error.code == "chain error new" || error.code == "should be chain existing") { // todo check latter works
 							// check can be unchained
-							let chain_start = this.shortcuts[index]._shortcut[0]
-							let chain_count = this.shortcuts.reduce((count, entry) => {
+							let chain_start = context.entry._shortcut[0]
+							let chain_count = this.shortcuts.reduce((count = 0, entry) => {
 								if (!entry.chain_start && chain_start.join("") == entry._shortcut[0].join("")) {
 									return count + 1
 								} else {return count + 0}
 							}, 0)
-							if (chain_count > 0) {
+							let limit = context.entry.chained ? 1 : 0
+							if (chain_count > limit) {// greater than one because chain count includes self
 								error.message = `Shortcut ${context.entry.shortcut} is a chain start with ${chain_count} dependent chains. It cannot be unchained.`
 							}
 						}
-					// error is with a different entry
+					// or error is with a different entry
 					} else {
 						switch(error.code) {
 							case "chain error new": {
-								error.message = `Shortcut "${context.existing_entry.shortcut}" (command: "${context.existing_entry.command}", contexts: ["${context.existing_entry.contexts.join(", ")}"]) is the start of a chain in a conflicting context/s. It cannot be overwritten.`
+								error.message = `Shortcut "${context.existing_entry.shortcut}" is the start of a chain in a conflicting context/s for command: "${context.existing_entry.command}" (contexts: ["${context.existing_entry.contexts.join(", ")}"]). It cannot be overwritten.`
 								return
 							}
 							case "chain error existing" : {
-								error.message = `Shortcut "${context.entry.shortcut}" (command: "${context.entry.command}", contexts: ["${context.entry.contexts.join(", ")}"]) is the start of a chain in a conflicting context/s. It cannot be overwritten.`
+								error.message = `Shortcut "${context.entry.shortcut}" is the start of a chain in a conflicting context/s for command: "${context.entry.command}" (contexts: ["${context.entry.contexts.join(", ")}"]. It cannot be overwritten.`
 								return
 							}
 							case "should be chain existing": {
 								error.message = `Creating this chained shortcut would require creating a chain start at ${this.normalize(context.entry._shortcut[0])} but that shortcut already exists in a conflicting context/s for command ${context.existing_entry.command} (contexts: ["${context.existing_entry.contexts.join(", ")}"]).`
+								return
 							}
-							case "duplicate shortcut":
-							case "duplicate chain start" //DOING
+							case "duplicate chain start": {
+								let old_entry = this.shortcuts[index]
+								if (context.entry.chain_start !== old_entry.chain_start) {
+									// check can be unchained
+									let chain_start = context.entry._shortcut[0]
+									let chain_count = this.shortcuts.reduce((count = 0, entry) => {
+										if (!entry.chain_start && chain_start.join("") == entry._shortcut[0].join("")) {
+											return count + 1
+										} else {return count + 0}
+									}, 0)
+									let limit = context.existing_entry.chained ? 0 : 1
+									if (chain_count > limit) {
+										error.message = `Shortcut ${context.entry.shortcut} is a chain start with ${chain_count} dependent chains. It cannot be unchained.`
+									}
+									return
+								} // else continues to duplicate shortcut error
+							}
+							case "duplicate shortcut": {
+								error.message = `Shortcut "${context.entry.shortcut}" already exists in a conflicting context/s for command ${context.existing_entry.command} (contexts: ["${context.existing_entry.contexts.join(", ")}"]). It cannot be overwritten.`
+								return
+							}
 						}
 					}
 				}

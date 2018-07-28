@@ -343,6 +343,8 @@ export default {
 				let conflicting_contexts = existing_entry.contexts.filter(context => entry.contexts.indexOf(context) !== -1)
 				if (conflicting_contexts.length == 0) {return false}
 
+				let editing_conditions = !editing || (editing && entry.index !== existing_entry.index)
+
 				if (entry.shortcut == existing_entry.shortcut) {
 					// IF both are chain starts
 					if (entry.chain_start && existing_entry.chain_start) {
@@ -353,25 +355,25 @@ export default {
 								error = this.create_error("duplicate chain start", { entry, existing_entry, index, conflicting_contexts })
 								return true
 							}
-						} else {
+						} else if (editing_conditions) {
 							error = this.create_error("duplicate chain start", { entry, existing_entry, index, conflicting_contexts })
 							return true
 						}
 					// ELSE if the user created them...
 					// neither is a chain start
 					} else if (!entry.chain_start && !existing_entry.chain_start) {
-						error = this.create_error("duplicate shortcut", { entry, existing_entry, index, conflicting_contexts })
-						return true
+						if (editing_conditions) {
+							error = this.create_error("duplicate shortcut", { entry, existing_entry, index, conflicting_contexts })
+							return true
+						}
 					// existing entry is a chain start but new entry isn't
 					} else if (!entry.chain_start && existing_entry.chain_start) {
 						error = this.create_error("chain error new", { entry, existing_entry, index, conflicting_contexts })
 						return true
 					// new entry is chain start but existing isn't
 					} else if (entry.chain_start && !existing_entry.chain_start) {
-						if (!editing || (editing && entry.index !== existing_entry.index)) {
-							error = this.create_error("chain error existing", { entry, existing_entry, index, conflicting_contexts })
-							return true
-						}
+						error = this.create_error("chain error existing", { entry, existing_entry, index, conflicting_contexts })
+						return true
 					}
 				} else if (this.is_equal(entry._shortcut[0], existing_entry._shortcut[0])) {
 					// if long new entry e.g. ctrl+a a and ctrl+a exists but it isn't a chain start

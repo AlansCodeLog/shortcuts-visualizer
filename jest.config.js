@@ -1,6 +1,8 @@
 const path = require("path")
 
 module.exports = {
+	verbose: true,
+	testURL: "http://localhost/",
 	moduleFileExtensions: [
 		"js",
 		"json",
@@ -19,11 +21,12 @@ module.exports = {
 	testRegex: ".*?(\\.spec\\.|\\.test\\.)js",
 	snapshotSerializers: ["./node_modules/jest-serializer-vue"],
 	setupFiles: ["./test/unit/setup"],
-	mapCoverage: true,
+	// mapCoverage: true,
 	coverageDirectory: "./test/unit/coverage",
 	collectCoverageFrom: [
 		"src/**/*.{js,vue}",
 		"!src/main.js",
+		"!src/mixins/index.js",
 		"!src/Demo.vue",
 		"!src/defaults.js",
 		"!src/settings/**",

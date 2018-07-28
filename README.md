@@ -46,7 +46,7 @@ Okay the contexts was a terrible example to show editing suggestions, but you ge
 - [x] Check css for things that should be variables, also fix borders variable.
 - [x] Have shortcuts contain all shortcuts, marking binned as binned, and assigning each an index property, so no more different indexes per type.
 - [x] Better errors.
-- [ ] Need to change dragging libraries, dragula project seems dead.
+- [~] Need to change dragging libraries, dragula project seems dead. Mostly done, awaiting draggable library to get ability to cancel drop event.
 - [ ] Handle editing of modifier only shortcuts. 
 - [ ] Check all modes work. Maybe seperate into an edit mode (all toggle) and a test mode (no toggles)?
 - [ ] Better sorting in list (by single keys, then modifiers, then inside those, alphabetically, also somehow chained next to their chain starts.)
@@ -173,19 +173,12 @@ This way `keys` can be used when we have a key to look up and `keymap` when we h
 
 # Tests
 
-I'm not sure really how to even approach the testing. Everything feels like an edge case and a lot of data needs to be injected for the component to work. To make this a bit more manageable I've started to keep a list of tests that should be made, at the very least to be able to test them manually and also just figure out how some edge cases should work. Then slowly I will convert them to real tests, because they are needed. It's far too easy to cause something to regress, especially when editing. 
+I'm not sure really how to even approach the testing 100%. Everything feels like an edge case. To make this a bit more manageable I've started to keep a list of tests that should be made, at the very least to be able to test them manually and also just figure out how some edge cases should work. Then slowly I will convert them to real tests, because they are needed. It's far too easy to cause something to regress, especially when editing. 
 
-1. When adding a shortcut: 
-	1. [x] Users should not be allowed to replace an existing shortcut.
-	2. [x] They can write a chained shortcut so long as it doesn't already exist. If it's chain start didn't exist it should get created.
-	3. [x] They can write a chain start and it won't get auto-deleted upon creation.
-2. When editing an existing shortcut:
-	It's often important what the entry was just as much as what it was edited to. This is because editing is like dragging from the old entry to the new entry you wrote. This allows us to swap them when possible.
-	1. You can change non-chained to an existing non-chained, they will get swapped.
-	2. 2. above
-	3. You can make a non-chained a chain start, if it conflicts they get swapped.
-	4. You can't edit a chained shortcut into a chain start.
-	5. You can make a chain start without dependents a non-chain.
+1. When editing an existing shortcut: #future
+   For now most changes that could be swaps will error, in future most will prompt for confirmation.
+	1. You can change non-chained to an existing non-chained, they can get swapped.
+	2. You can make a non-chained a chain start, if it conflicts they can get swapped.
 3. While adding and editing:
 	1. No dragging should be possible.
 	2. No keyboard input should be possible.
