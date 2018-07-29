@@ -212,6 +212,7 @@ export default {
 		},
 		drag_moves(el, source, handle, sibling) { // fires first
 			if (el.classList.contains("draggable")) {
+
 				this.d.element = this.get_draggabled_element_info(el, source)
 				this.d.element.dragging = true
 				return true
@@ -238,7 +239,7 @@ export default {
 					return true
 				}
 				case "command": {
-					if (element.type == "shortcut-entry") { return false }
+					if (element.type == "shortcut-entry") {return false}
 					return true
 				}
 				case "contexts": {
@@ -368,7 +369,8 @@ export default {
 						old_entry: element.entry,
 						new_entry: {
 							...element.entry,
-							contexts: this.sorted_merge_dedupe(element.entry.contexts, [target.children[0].innerText.toLowerCase()], true)
+							contexts: this.sorted_merge_dedupe(element.entry.contexts, [target.children[0].innerText.toLowerCase()], true),
+							chain_start: old_entry.chain_start
 						}
 					}
 					this.shortcut_edit(change)
@@ -393,16 +395,43 @@ export default {
 						old_entry: target_container.entry,
 						new_entry: {
 							...target_container.entry,
-							contexts: this.sorted_merge_dedupe(target_container.entry.contexts, [el.innerText], true)
+							contexts: this.sorted_merge_dedupe(target_container.entry.contexts, [el.innerText], true),
+							chain_start: old_entry.chain_start
 						}
 					}
 					this.shortcut_edit(change)
+				} else if (element.type == "command-entry") {
+					// we need to send the individual changes
+					// shortcut_edit isn't designed to handle swapping these types of changes
+					// for now does not swap contexts, maybe prompt in future?
+					// contexts: [...target_container.entry.contexts]
+					let change1 = {
+						old_entry: element.entry,
+						new_entry: {
+							...element.entry,
+							command: target_container.entry.command
+						}
+					}
+					let change2 = {
+						old_entry: target_container.entry,
+						new_entry: {
+							...target_container.entry,
+							command: element.entry.command
+						}
+					}
+					this.shortcut_edit(change1)
+					this.shortcut_edit(change2)
+
 				} else {
+
 					new_entry.command = element.entry.command
+					new_entry.chain_start = target_container.is_chain
+					new_entry.contexts = [...target_container.entry.contexts]
 					let change = {
 						old_entry: element.entry,
 						new_entry: new_entry
 					}
+
 					this.shortcut_edit(change)
 				}
 			}

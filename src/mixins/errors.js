@@ -72,6 +72,12 @@ export default {
 					}
 				}
 			}
+			if (type == "bin validate") {
+				if (error.code == "shortcut empty")  {
+					error.message = `Entry shortcut cannot be empty.`
+					return
+				}
+			}
 			if (type == "validate") {
 				// change messages
 				if (error.code == "shortcut empty")  {

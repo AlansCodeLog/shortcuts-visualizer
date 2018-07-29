@@ -1,6 +1,6 @@
 import { expect } from "chai"
 import sinon from "sinon"
-import { shallowMount } from "@vue/test-utils"
+import { shallowMount, createLocalVue } from "@vue/test-utils"
 
 import ShortcutVisualizer from "@/Shortcut_Visualizer.vue"
 import { layout } from "@/settings/layout.js"
@@ -96,7 +96,6 @@ describe("shortcut editing - validation - new entries", () => {
 		expect(wrapper.vm.set_error.calledOnce).to.be.true
 		expect(wrapper.vm.set_error.getCall(0).args[0].message).to.include("key").and.to.include("illegalkey")
 	})
-
 	it("should not allow duplicate shortcuts", () => {
 		let wrapper = shallowMount(ShortcutVisualizer, {
 			propsData: {

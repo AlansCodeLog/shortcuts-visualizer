@@ -161,10 +161,15 @@ export default {
 					if (error.message) {
 						throw error
 					} else {
-						// we forgot to add proper message to some error
-						// or mispelled it
-						throw error
-						throw `Should never throw (create_shortcuts_list should always throw on any error). If this is throwing an error isn't being handled properly, please file an issue. \n${error}`
+						if (error.type) {
+							// we forgot to add proper message to some error
+							// or mispelled it
+							throw { message: `Should never throw (create_shortcuts_list should always throw on any error). If this is throwing, this error type (${error.type}) isn't being handled properly, please file an issue.` }
+
+						} else {
+							// something else caused an error?
+							throw error
+						}
 					}
 				}
 				if (to_remove) {
@@ -349,12 +354,9 @@ export default {
 					// IF both are chain starts
 					if (entry.chain_start && existing_entry.chain_start) {
 						// it's not a problem if the existing entry was auto created
-						if (existing_entry._is_not_original) {
+						if (existing_entry._is_not_original) { // never happens when editing btw because _is_not_original property is deleted
 							overwrite = true
-							if (editing && entry.index !== existing_entry.index) {
-								error = this.create_error("duplicate chain start", { entry, existing_entry, index, conflicting_contexts })
-								return true
-							}
+							return true
 						} else if (editing_conditions) {
 							error = this.create_error("duplicate chain start", { entry, existing_entry, index, conflicting_contexts })
 							return true

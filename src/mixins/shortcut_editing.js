@@ -118,7 +118,7 @@ export default {
 				}, this.dev_options.timeout_edit_success)
 			})
 		},
-		validate_entry(entry, adding_entry = true) {// TODO abstract
+		validate_entry(entry, adding_entry = true, validate_errors_type = "validate") {
 
 			// handle any error
 			let contexts_is_array = Array.isArray(entry.contexts)
@@ -139,7 +139,7 @@ export default {
 			let { error } = result
 
 			if (error) {
-				this.validate_error("validate", error, {
+				this.validate_error(validate_errors_type, error, {
 					adding_entry,
 					index: entry.index,
 				})
@@ -160,74 +160,56 @@ export default {
 				var result = this.validate_entry(new_entry, false)
 				// validate_entry will handle errors
 				if (result === false) {return}
-			}
-
-			// get our shortcut array if we didn't already
-			new_entry._shortcut = new_entry._shortcut
-				? new_entry._shortcut
-				: this.keys_from_text(new_entry.shortcut)._shortcut
-
-			// since we don't allow non-chains to replace chain starts and vice versa, we can always get whether an entry is a chain start from the old entry
-			if (old_entry.chain_start) {
-				new_entry.chain_start = true
-			}
-
-			// if contexts are undefined, just use the old contexts
-			if (!new_entry.contexts) {
-				new_entry.contexts = old_entry.contexts
-			} else {
-				this.check_remove_contexts([old_entry])
-			}
-			new_entry.contexts.sort()
-			this.check_add_contexts([new_entry])
-
-			// check if we need to create any new contexts
-			for (let context of new_entry.contexts) {
-				if (!this.contexts.includes(context)) {
-					this.contexts.push(context)
-				}
-			}
-			this.contexts.sort()
-
-			if (!is_hand_edit) {
+			} else { // otherwise with dragging, it has already passed some checks
 				var result = this.create_shortcut_entry(new_entry, true)
 			}
-			new_entry = result.entry || undefined
-			// spread variables returned by result
-			let { to_add, error } = result
 
+			if (!this.is_equal(new_entry.contexts, old_entry.contexts)) {
+				this.check_remove_contexts([old_entry])
+				this.check_add_contexts([new_entry])
+				new_entry.contexts.sort()
+			}
 
 			// if the shortcut is invalid (any keys are invalid or if a key is blocked)
-			if (new_entry == undefined) {
+			if (result.entry == undefined) {
 				this.set_error(error)
 				return
 			}
 
-			// if we get an error, which is only possible when it's NOT a hand edit
+			// spread variables returned by result
+			let { to_add, error } = result
+			new_entry = result.entry // can't be spread, already exists
+
+
+			// if we get an error but there's a valid entry
 			// then because of that we know there's an entry we can swap with
 			// if we can/can't swap should have been checked in the dragging/etc
+			// when hand editing, advanced swapping is blocked (in future will prompts)
 
 			// get and "backup" the entry to swap if it exists since we will change it
 			if (error) {
-				var entry_swap = error.context.entry
-				var entry_swap_copy = { ...error.context.entry }
+				var entry_swap = error.context.existing_entry
+				var entry_swap_copy = this.deep_clone_entry(entry_swap)
 			}
 
 			// "backup" the old object
-			let old_entry_copy = { ...old_entry }
+			let old_entry_copy = this.deep_clone_entry(old_entry)
 			let swap_exists = error && old_entry_copy.shortcut !== entry_swap_copy.shortcut
 
 			if (swap_exists) {
-				new_entry.chain_start = entry_swap.chain_start
-				new_entry.chained = entry_swap.chained
+				new_entry.chain_start = old_entry.chain_start
+				new_entry.chained = old_entry.chained
 			}
+
+			// somwhere to put all the entries we'll changed
+			let entries = []
 
 			// overwrite the old entry
 			Object.keys(new_entry).map(prop => {
 				old_entry[prop] = new_entry[prop]
 			})
+			entries.push(old_entry)
 
-			let entries = []
 
 			// if no chain starts to deal with, swap everything but the shortcut
 			if (swap_exists && !old_entry_copy.chain_start && !new_entry.chain_start) {
@@ -240,92 +222,36 @@ export default {
 				entries.push(entry_swap)
 
 			}
-			entries.push(old_entry)
 
 			// checks means whether to check if we need to clean up anything, when called from within here it's set to false
-
-			if (checks && !old_entry_copy.chain_start && !new_entry.chain_start) {
-
-				// if we need to add a chain start
-				if (to_add && !entry_swap) {
-					to_add.index = this.shortcuts.length
-					this.shortcuts.push(to_add)
-					entries.push(to_add)
-				}
-
+			if (checks) {
 				// if either the old or entry swapped with is a chain, then we need to change all the dependent chains
-				let chain_entry = entry_swap_copy && entry_swap_copy.chain_start
-					? "entry_swap_copy"
-					: old_entry_copy.chain_start
-						? "old_entry_copy"
-						: false
 
-
-				if (chain_entry && old_entry_copy.shortcut !== entry_swap_copy.shortcut) {
-
-					let old_start = chain_entry == "entry_swap_copy" ? entry_swap_copy : old_entry_copy
-					let chains = this.shortcuts.filter(entry => {
-						if (entry.chained && old_start._shortcut[0].join("") == entry._shortcut[0].join("")) {
-							return entry
-						}
-					})
-					let new_start = chain_entry == "entry_swap_copy" ? old_entry_copy : new_entry
-					for (let entry of chains) {
-						let otherchange = {
-							old_entry: entry,
-							new_entry: {
-								shortcut: new_start.shortcut + " " + this.normalize(entry._shortcut[1]).join("+"),
-								command: entry.command,
-								contexts: entry.contexts
-							}
-						}
-
-						this.shortcut_edit(otherchange, false)
+				let chain_entry = false
+				if (entry_swap_copy !== undefined && entry_swap_copy.chain_start !== undefined) {
+					if (entry_swap_copy && entry_swap_copy.chain_start) {
+						chain_entry = "entry_swap_copy"
+					} else if (old_entry_copy.chain_start) {
+						chain_entry = "old_entry_copy"
 					}
 				}
 
-				// if the old entry was chained we have to do some cleanup
-				if (old_entry_copy.chained) {
-
-					let chain_count = this.shortcuts.reduce((count, entry) => {
-						if (!entry.chain_start && this.is_equal(entry._shortcut[0], old_entry_copy._shortcut[0])) {
-							return count + 1
-						} else {return count + 0}
-					}, 0)
-					// if there are no other chains dependent on chain start, remove it
-					if (chain_count == 0) {
-						let index_chain_start = this.shortcuts.findIndex(entry => entry.chain_start && entry._shortcut[0].join("") == old_entry_copy._shortcut[0].join(""))
-						this.delete_entry(this.shortcuts[index_chain_start])
+				if (!old_entry_copy.chain_start && !new_entry.chain_start) {
+					// if we need to add a chain start
+					if (to_add && !entry_swap) {
+						to_add.index = this.shortcuts.length
+						this.shortcuts.push(to_add)
+						entries.push(to_add)
 					}
-				}
-			} else if (checks) { // swapping chain starts is similar but more of a mess
-				// if we need to swap chain starts and all their chains, first we have to do the chains
-				let chain_entry = entry_swap_copy && entry_swap_copy.chain_start
-					? "entry_swap_copy"
-					: old_entry_copy.chain_start
-						? "old_entry_copy"
-						: false
 
-				if (chain_entry && old_entry_copy.shortcut !== entry_swap_copy.shortcut) {
-					// first temporarily overwrite the chain start of our target chain
-					{
-						let old_start = chain_entry == "entry_swap_copy" ? old_entry_copy : entry_swap_copy
-						this.shortcuts.map(entry => {
-							if (entry.chained && this.is_equal(old_start._shortcut[0], entry._shortcut[0])) {
-								entry._shortcut[0] = "TEMPSWAMP"
-							}
-						})
+					if (chain_entry && old_entry_copy.shortcut !== entry_swap_copy.shortcut) {
 
-					}
-					// change chains based on source
-					{
 						let old_start = chain_entry == "entry_swap_copy" ? entry_swap_copy : old_entry_copy
 						let chains = this.shortcuts.filter(entry => {
-							if (entry.chained && this.is_equal(old_start._shortcut[0], entry._shortcut[0])) {
+							if (entry.chained && old_start._shortcut[0].join("") == entry._shortcut[0].join("")) {
 								return entry
 							}
 						})
-
 						let new_start = chain_entry == "entry_swap_copy" ? old_entry_copy : new_entry
 						for (let entry of chains) {
 							let otherchange = {
@@ -333,6 +259,8 @@ export default {
 								new_entry: {
 									shortcut: new_start.shortcut + " " + this.normalize(entry._shortcut[1]).join("+"),
 									command: entry.command,
+									contexts: entry.contexts,
+									chain_start: entry.chain_start
 								}
 							}
 
@@ -340,36 +268,94 @@ export default {
 						}
 					}
 
-					// then the same thing reversed for the chains we previously swapped out //TODO simplify to method
-					{
-						let chains = this.shortcuts.filter(entry => {
-							if (entry.chained && entry._shortcut[0] == "TEMPSWAMP") {
-								return entry
+					// if the old entry was chained we have to do some cleanup
+					if (old_entry_copy.chained) {
+
+						let chain_count = this.shortcuts.reduce((count, entry) => {
+							if (!entry.chain_start && this.is_equal(entry._shortcut[0], old_entry_copy._shortcut[0])) {
+								return count + 1
+							} else {return count + 0}
+						}, 0)
+						// if there are no other chains dependent on chain start, remove it
+						if (chain_count == 0) {
+							let index_chain_start = this.shortcuts.findIndex(entry => entry.chain_start && entry._shortcut[0].join("") == old_entry_copy._shortcut[0].join(""))
+							this.delete_entry(this.shortcuts[index_chain_start])
+						}
+					}
+				} else { // swapping chain starts is similar but more of a mess
+
+					// if we need to swap chain starts and all their chains, first we have to do the chains
+					if (chain_entry) {
+						if (old_entry_copy.shortcut !== entry_swap_copy.shortcut) {
+							// first temporarily overwrite the chain start of our target chain
+							{
+								let old_start = chain_entry == "entry_swap_copy" ? old_entry_copy : entry_swap_copy
+								this.shortcuts.map(entry => {
+									if (entry.chained && this.is_equal(old_start._shortcut[0], entry._shortcut[0])) {
+										entry._shortcut[0] = "TEMPSWAMP"
+									}
+								})
+
+							}
+							// change chains based on source
+							{
+								let old_start = chain_entry == "entry_swap_copy" ? entry_swap_copy : old_entry_copy
+								let chains = this.shortcuts.filter(entry => {
+									if (entry.chained && this.is_equal(old_start._shortcut[0], entry._shortcut[0])) {
+										return entry
+									}
+								})
+
+								let new_start = chain_entry == "entry_swap_copy" ? old_entry_copy : new_entry
+								for (let entry of chains) {
+									let otherchange = {
+										old_entry: entry,
+										new_entry: {
+											shortcut: new_start.shortcut + " " + this.normalize(entry._shortcut[1]).join("+"),
+											command: entry.command,
+											contexts: entry.contexts,
+											chain_start: entry.chain_start
+										}
+									}
+
+									this.shortcut_edit(otherchange, false)
+								}
+							}
+
+							// then the same thing reversed for the chains we previously swapped out //TODO simplify to method
+							{
+								let chains = this.shortcuts.filter(entry => {
+									if (entry.chained && entry._shortcut[0] == "TEMPSWAMP") {
+										return entry
+									}
+								})
+
+								let new_start = chain_entry == "entry_swap_copy" ? new_entry : old_entry_copy
+								for (let entry of chains) {
+									let otherchange = {
+										old_entry: entry,
+										new_entry: {
+											shortcut: new_start.shortcut + " " + this.normalize(entry._shortcut[1]).join("+"),
+											command: entry.command,
+											contexts: entry.contexts,
+											chain_start: entry.chain_start
+										}
+									}
+
+									this.shortcut_edit(otherchange, false)
+								}
+							}
+						}
+						// then we do the final chain swap
+						Object.keys(new_entry).map(prop => {
+							if (["shortcut", "_shortcut"].includes(prop)) {
+								entry_swap[prop] = old_entry_copy[prop]
 							}
 						})
-
-						let new_start = chain_entry == "entry_swap_copy" ? new_entry : old_entry_copy
-						for (let entry of chains) {
-							let otherchange = {
-								old_entry: entry,
-								new_entry: {
-									shortcut: new_start.shortcut + " " + this.normalize(entry._shortcut[1]).join("+"),
-									command: entry.command,
-								}
-							}
-
-							this.shortcut_edit(otherchange, false)
-						}
+						entries.push(entry_swap)
+						entries.push(old_entry)
 					}
 				}
-				// then we do the final chain swap
-				Object.keys(new_entry).map(prop => {
-					if (["shortcut", "_shortcut"].includes(prop)) {
-						entry_swap[prop] = old_entry_copy[prop]
-					}
-				})
-				entries.push(entry_swap)
-				entries.push(old_entry)
 			}
 			this.shortcut_edit_success(entries, "edited")
 		},

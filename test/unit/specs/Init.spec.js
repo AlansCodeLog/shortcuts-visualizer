@@ -53,6 +53,50 @@ describe("init", () => {
 		expect(wrapper.vm.user_options).to.deep.equal(defaults.user_options)
 		expect(wrapper.vm.modifiers_order).to.deep.equal(wrapper.vm.modifiers_order.slice().sort())
 	})
+
+	it("should throw unknown errors correctly", () => {
+		console.error = console_stub
+		expect(function() {
+			let wrapper = shallowMount(ShortcutVisualizer, {
+				propsData: {
+					keys_list: keys,
+					layout,
+					shortcuts_list: [
+						{
+							shortcut: "a",
+							command: "some command"
+						},
+					]
+				},
+				mixins: [{
+					methods: {
+						create_shortcut_entry: sinon.stub().returns({ error: { type: "unknown error" } })
+					}
+				}]
+			})
+		}).to.throw().with.property("message").to.include("unknown error")
+
+		expect(function() {
+			let wrapper = shallowMount(ShortcutVisualizer, {
+				propsData: {
+					keys_list: keys,
+					layout,
+					shortcuts_list: [
+						{
+							shortcut: "a",
+							command: "some command"
+						},
+					]
+				},
+				mixins: [{
+					methods: {
+						create_shortcut_entry: sinon.stub().returns({ error: "some other error" })
+					}
+				}]
+			})
+		}).to.throw().with.property("message").to.include("some other error")
+	})
+
 	it("should throw warnings when missing a required prop", () => {
 		console.error = console_stub
 

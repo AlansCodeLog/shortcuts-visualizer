@@ -36,9 +36,9 @@
 			<div tabindex="0" class="draggable-container delete-bin"></div>
 		</div>
 		<ShortcutsList
+			class="shortcuts-list"
 			tabindex="0"
 			@add="shortcut_add($event)"
-			@error="set_error($event)"
 			@delete="delete_entry($event)"
 			@edit="shortcut_edit($event, undefined, true)"
 			@freeze="change('freeze', $event)"
@@ -46,6 +46,17 @@
 			:options="user_options"
 			:nice_scrollbars="dev_options.nice_scrollbars"
 		></ShortcutsList>
+		<!-- <ShortcutsList
+			class="bin-list"
+			tabindex="0"
+			@add="bin_shortcut_add($event)"
+			@delete="bin_delete_entry($event)"
+			@edit="bin_shortcut_edit($event, undefined, true)"
+			@freeze="change('freeze', $event)"
+			v-bind="{freeze, commands, contexts, keymap, shortcuts_list_active, normalize, capitalize, active_context, validate_entry}"
+			:options="user_options"
+			:nice_scrollbars="dev_options.nice_scrollbars"
+		></ShortcutsList> -->
 	</div>
 </template>
 
