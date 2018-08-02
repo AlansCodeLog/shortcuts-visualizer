@@ -80,7 +80,7 @@ export default {
 				this.bin.map((existing_entry, index) => {
 					if (existing_entry.holder == entry.holder) {
 						existing_entry._shortcut[0] = new_entry._shortcut[0]
-						existing_entry.shortcut = existing_entry._shortcut.map(keyset => this.normalize(keyset, this).join("+")).join(" ")
+						existing_entry.shortcut = existing_entry._shortcut.map(keyset => this.normalize(keyset).join("+")).join(" ")
 						// add the current context if it's missing
 						if (!existing_entry.contexts.includes(this.active_context)) {
 							existing_entry.contexts.push(this.active_context)
@@ -152,34 +152,47 @@ export default {
 			return result
 		},
 		// for editing any existing entries and/or swapping between them, NOT for adding an entry
-		shortcut_edit({ old_entry, new_entry }, checks = true, is_hand_edit = false) {
-
-			// if an entry was hand edited it should pass the same exact checks as a new entry
-			if (is_hand_edit) {
-				// fetch our entry
-				var result = this.validate_entry(new_entry, false)
-				// validate_entry will handle errors
-				if (result === false) {return}
-			} else { // otherwise with dragging, it has already passed some checks
-				var result = this.create_shortcut_entry(new_entry, true)
+		shortcut_edit({ old_entry, new_entry }, called_internally = false, is_hand_edit = false) {
+			if (old_entry.index == undefined) {
+				throw "Old entry index is undefined."
+			} else if (new_entry.index == undefined) {
+				throw "New entry index is undefined."
 			}
 
-			if (!this.is_equal(new_entry.contexts, old_entry.contexts)) {
+			if (!called_internally) { // validate entries
+				// if an entry was hand edited it should pass the same exact checks as a new entry
+				if (is_hand_edit) {
+					// fetch our entry
+					var result = this.validate_entry(new_entry, false)
+					// validate_entry will handle errors
+					if (result === false) {return}
+				} else {
+					// otherwise with dragging, it has already passed some checks
+					var result = this.create_shortcut_entry(new_entry, true)
+				}
+			}
+
+			if (!called_internally && !this.is_equal(new_entry.contexts, old_entry.contexts)) {
 				this.check_remove_contexts([old_entry])
 				this.check_add_contexts([new_entry])
 				new_entry.contexts.sort()
 			}
 
 			// if the shortcut is invalid (any keys are invalid or if a key is blocked)
-			if (result.entry == undefined) {
+			if (!called_internally && result.entry == undefined) {
 				this.set_error(error)
 				return
 			}
 
-			// spread variables returned by result
-			let { to_add, error } = result
-			new_entry = result.entry // can't be spread, already exists
+			let to_add, error = false
+			if (!called_internally) {
+				// spread variables returned by result
+				({ to_add, error } = result)
+				new_entry = result.entry // can't be spread, already exists
+			}
 
+
+			let swap_exists = false // might be set to true below if error entry
 
 			// if we get an error but there's a valid entry
 			// then because of that we know there's an entry we can swap with
@@ -190,21 +203,23 @@ export default {
 			if (error) {
 				var entry_swap = error.context.existing_entry
 				var entry_swap_copy = this.deep_clone_entry(entry_swap)
+				swap_exists = old_entry.shortcut !== entry_swap.shortcut
 			}
 
 			// "backup" the old object
+			// when swapping this is the old entry we will be swapping with
 			let old_entry_copy = this.deep_clone_entry(old_entry)
-			let swap_exists = error && old_entry_copy.shortcut !== entry_swap_copy.shortcut
+
 
 			if (swap_exists) {
-				new_entry.chain_start = old_entry.chain_start
-				new_entry.chained = old_entry.chained
+				new_entry.chain_start = entry_swap.chain_start
+				new_entry.chained = entry_swap.chained
 			}
 
 			// somwhere to put all the entries we'll changed
 			let entries = []
 
-			// overwrite the old entry
+			// overwrite the old entry (in the case of swaps, overwrite the entry we're swapping with)
 			Object.keys(new_entry).map(prop => {
 				old_entry[prop] = new_entry[prop]
 			})
@@ -223,8 +238,7 @@ export default {
 
 			}
 
-			// checks means whether to check if we need to clean up anything, when called from within here it's set to false
-			if (checks) {
+			if (!called_internally) {
 				// if either the old or entry swapped with is a chain, then we need to change all the dependent chains
 
 				let chain_entry = false
@@ -257,14 +271,12 @@ export default {
 							let otherchange = {
 								old_entry: entry,
 								new_entry: {
+									...entry,
 									shortcut: new_start.shortcut + " " + this.normalize(entry._shortcut[1]).join("+"),
-									command: entry.command,
-									contexts: entry.contexts,
-									chain_start: entry.chain_start
 								}
 							}
 
-							this.shortcut_edit(otherchange, false)
+							this.shortcut_edit(otherchange, true)
 						}
 					}
 
@@ -311,14 +323,12 @@ export default {
 									let otherchange = {
 										old_entry: entry,
 										new_entry: {
+											...entry,
 											shortcut: new_start.shortcut + " " + this.normalize(entry._shortcut[1]).join("+"),
-											command: entry.command,
-											contexts: entry.contexts,
-											chain_start: entry.chain_start
 										}
 									}
 
-									this.shortcut_edit(otherchange, false)
+									this.shortcut_edit(otherchange, true)
 								}
 							}
 
@@ -335,14 +345,12 @@ export default {
 									let otherchange = {
 										old_entry: entry,
 										new_entry: {
+											...entry,
 											shortcut: new_start.shortcut + " " + this.normalize(entry._shortcut[1]).join("+"),
-											command: entry.command,
-											contexts: entry.contexts,
-											chain_start: entry.chain_start
 										}
 									}
 
-									this.shortcut_edit(otherchange, false)
+									this.shortcut_edit(otherchange, true)
 								}
 							}
 						}

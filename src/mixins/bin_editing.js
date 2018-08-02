@@ -40,7 +40,7 @@ export default {
 			if (new_entry == undefined) {
 				this.set_error(error)
 				return
-			})
+			}
 		}
 	}
 }

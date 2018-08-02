@@ -73,7 +73,7 @@
 </template>
 
 <script>
-import list_input from "./list_input"
+import list_input from "../input/list_input"
 
 export default {
 	name: "Editing-Entry",

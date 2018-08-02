@@ -28,22 +28,10 @@
 					:class="['label', keys[key].label_classes]"
 				>{{keys[key].character}}</div>
 				<!-- the key container, used to style most of the key, is also dragging container for dragula and ignored keys can't get dragged -->
-				<div
-					:class="['key-container', keys[key].ignore ? '' : 'draggable-container']"
-				>
-					<!-- the actual shortcut entry command, this is what gets dragged if we drag -->
-					<div
-						:class="['draggable', 'key-entry', active_keys[keys[key].identifier].entry.chain_start ? 'is_chain' : '']"
-						v-if="
-							!keys[key].ignore
-							&& !keys[key].is_modifier
-							&& active_keys[keys[key].identifier] !== undefined
-						"
-						:shortcuts_index="active_keys[keys[key].identifier].entry.index"
-					>
-						<div class="command">{{active_keys[keys[key].identifier].entry.command}}</div>
-					</div>
-				</div>
+				<key_entry
+					:key_info="keys[key]"
+					:active_keys="active_keys"
+				></key_entry>
 			</div>
 		</div>
 	</div>
@@ -51,9 +39,13 @@
 
 <script>
 import dragula from "dragula"
+import key_entry from "./entry_components/key_entry"
 
 export default {
 	name: "Keys",
+	components: {
+		key_entry
+	},
 	// any props that look like they weren't used are being used by the helpers!
 	props: ["chain", "keymap", "keys", "layout", "shortcuts_active", "blocked_singles"],
 	computed: {

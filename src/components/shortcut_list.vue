@@ -48,10 +48,10 @@
 <script>
 
 import dragula from "dragula"
-import list_input from "./shortcut_list/list_input"
-import add_entry from "./shortcut_list/add_entry"
-import editing_entry from "./shortcut_list/editing_entry"
-import regular_entry from "./shortcut_list/regular_entry"
+import list_input from "./input/list_input"
+import add_entry from "./entry_components/add_entry"
+import editing_entry from "./entry_components/editing_entry"
+import regular_entry from "./entry_components/regular_entry"
 
 export default {
 	name: "Shortcuts",
