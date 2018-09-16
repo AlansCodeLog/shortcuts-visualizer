@@ -394,7 +394,7 @@ export default {
 			})
 
 			let extra_entry = false
-
+			let missing_contexts = false
 			// create chain start if entry chained and custom chain start not set
 			if (entry.chained) {
 				let new_entry = {
@@ -422,6 +422,10 @@ export default {
 
 				if (!exists) {
 					extra_entry = new_entry
+				} else {
+					// let existing_chain_start = existing_shortcuts[existing_index]
+					// let contexts = this.sorted_merge_dedupe(existing_chain_start.contexts, entry.contexts, true)
+					// let conflict_exists = existing_shortcuts.findIndex()
 				}
 			}
 
@@ -429,14 +433,17 @@ export default {
 			let chain_starts_to_remove = false
 			if (overwrite && entry.chain_start) {
 				let existing_indexes = []
+				let all_contexts = [...entry.contexts]
 				existing_shortcuts.map((existing_entry, index) => {
 					if (this.is_equal(existing_entry._shortcut[0], entry._shortcut[0])) {
 						if (existing_entry.chain_start) {
 							existing_indexes.push(index)
+							this.sorted_merge_dedupe(all_contexts, existing_entry.contexts)
 						}
 					}
 				})
 				if (existing_indexes.length > 0) {
+					entry.contexts = all_contexts
 					chain_starts_to_remove = existing_indexes
 				}
 			}

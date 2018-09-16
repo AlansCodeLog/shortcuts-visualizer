@@ -980,6 +980,49 @@ describe("shortcut editing - editing entries - hand edits", () => {
 		expect(wrapper.vm.shortcuts.length).to.equal(1)
 		expect(exists_entry(wrapper.vm.shortcuts, { ...edit, changed: false, holder: undefined })).to.equal(true)
 		expect(wrapper.vm.shortcut_edit_success.callCount).to.equal(1)
+		expect(wrapper.vm.contexts_info.global.count).to.equal(0)
+		expect(wrapper.vm.contexts_info["other context"].count).to.equal(1)
+	})
+	it.skip("should allow non-conflicting context edit w chained and handle chain start", () => {
+		let wrapper = shallowMount(ShortcutVisualizer, {
+			propsData: {
+				keys_list: keys,
+				layout,
+				shortcuts_list: [
+					{
+						shortcut: "ctrl+a",
+						command: "custom chain start",
+						chain_start: true
+					},
+					{
+						shortcut: "ctrl+a a",
+						command: "command"
+					},
+				]
+			}
+		})
+		wrapper.setMethods({ shortcut_edit_success: sinon.stub() })
+		let edit = {
+			shortcut: "ctrl+b",
+			command: "command",
+			contexts: ["other context"],
+			index: 0
+		}
+		wrapper.vm.shortcut_edit(
+			{
+				old_entry: wrapper.vm.shortcuts[0],
+				new_entry: edit
+			},
+			undefined, // is handled by function, ignore
+			is_hand_edit
+		)
+		expect(wrapper.vm.shortcuts.length).to.equal(2)
+		expect(exists_entry(wrapper.vm.shortcuts, { ...edit, changed: false, holder: undefined })).to.equal(true)
+		expect(exists_entry(wrapper.vm.shortcuts, { shortcut: "Ctrl+A", contexts: ["global", "other context"], chain_start: true })).to.equal(true)
+		expect(exists_entry(wrapper.vm.shortcuts, { shortcut: "Ctrl+A A", contexts: ["other context"], chain_start: false, chained: true })).to.equal(true)
+		expect(wrapper.vm.shortcut_edit_success.callCount).to.equal(1)
+		expect(wrapper.vm.contexts_info.global.count).to.equal(1)
+		expect(wrapper.vm.contexts_info["other context"].count).to.equal(2)
 	})
 	it("should allow non-conflicting adding context edit", () => {
 		let wrapper = shallowMount(ShortcutVisualizer, {
@@ -1012,8 +1055,45 @@ describe("shortcut editing - editing entries - hand edits", () => {
 		expect(wrapper.vm.shortcuts.length).to.equal(1)
 		expect(exists_entry(wrapper.vm.shortcuts, { ...edit, changed: false, holder: undefined })).to.equal(true)
 		expect(wrapper.vm.shortcut_edit_success.callCount).to.equal(1)
+		expect(wrapper.vm.contexts_info.global.count).to.equal(1)
+		expect(wrapper.vm.contexts_info["other context"].count).to.equal(1)
 	})
-	it("should not allow non-conflicting edits", () => {
+	it("should allow non-conflicting removing context edit", () => {
+		let wrapper = shallowMount(ShortcutVisualizer, {
+			propsData: {
+				keys_list: keys,
+				layout,
+				shortcuts_list: [
+					{
+						shortcut: "ctrl+a",
+						command: "command",
+						contexts: ["global", "other context"],
+					},
+				]
+			}
+		})
+		wrapper.setMethods({ shortcut_edit_success: sinon.stub() })
+		let edit = {
+			shortcut: "ctrl+b",
+			command: "command",
+			contexts: ["other context"],
+			index: 0
+		}
+		wrapper.vm.shortcut_edit(
+			{
+				old_entry: wrapper.vm.shortcuts[0],
+				new_entry: edit
+			},
+			undefined, // is handled by function, ignore
+			is_hand_edit
+		)
+		expect(wrapper.vm.shortcuts.length).to.equal(1)
+		expect(exists_entry(wrapper.vm.shortcuts, { ...edit, changed: false, holder: undefined })).to.equal(true)
+		expect(wrapper.vm.shortcut_edit_success.callCount).to.equal(1)
+		expect(wrapper.vm.contexts_info.global.count).to.equal(0)
+		expect(wrapper.vm.contexts_info["other context"].count).to.equal(1)
+	})
+	it("should not allow conflicting edits", () => {
 		// this can basically cover ALL hand edits because we tested the validation of the entries
 		// here we're just testing that when they error we don't edit anything
 		let wrapper = shallowMount(ShortcutVisualizer, {
@@ -1487,5 +1567,64 @@ describe("shortcut editing - editing entries - controlled edits - shortcut swaps
 		expect(wrapper.vm.shortcuts.length).to.equal(4)
 		expect(exists_entry(wrapper.vm.shortcuts, { shortcut: "Ctrl+B", contexts: ["shared", "original c a"].sort(), chain_start: true, command: "chain start a" })).to.equal(true)
 		expect(exists_entry(wrapper.vm.shortcuts, { shortcut: "Ctrl+A", contexts: ["shared", "original c b"].sort(), chain_start: true, command: "chain start b" })).to.equal(true)
+		expect(exists_entry(wrapper.vm.shortcuts, { shortcut: "Ctrl+B A", contexts: ["original c a"].sort(), chain_start: false, command: "command1" })).to.equal(true)
+		expect(exists_entry(wrapper.vm.shortcuts, { shortcut: "Ctrl+A B", contexts: ["original c b"].sort(), chain_start: false, command: "command2" })).to.equal(true)
+	})
+	it.skip("should not swap with chain starts that don't share the same context", () => {
+		let wrapper = shallowMount(ShortcutVisualizer, {
+			propsData: {
+				keys_list: keys,
+				layout,
+				shortcuts_list: [
+					{
+						shortcut: "ctrl+a a",
+						command: "command1",
+						contexts: ["original c a"]
+					},
+					{
+						shortcut: "ctrl+b b",
+						command: "command2",
+						contexts: ["original c b"],
+					},
+					{
+						shortcut: "ctrl+a",
+						command: "chain start a",
+						chain_start: true,
+						contexts: ["original c a"]
+					},
+					{
+						shortcut: "ctrl+b",
+						command: "chain start b",
+						chain_start: true,
+						contexts: ["original c b"],
+					}
+				]
+			}
+		})
+		wrapper.setMethods({ validate_entry: sinon.spy(wrapper.vm.validate_entry) })
+		wrapper.setMethods({ shortcut_edit_success: sinon.stub() })
+		wrapper.setMethods({ set_error: sinon.stub() })
+		let edit = {
+			shortcut: "ctrl+b",
+			command: "chain start a",
+			// chain_start: true,
+			contexts: ["original c a"],
+			index: 2
+		}
+		wrapper.vm.shortcut_edit(
+			{
+				old_entry: wrapper.vm.shortcuts[2],
+				new_entry: edit
+			},
+			undefined, // is handled by function, ignore
+			is_hand_edit
+		)
+		expect(wrapper.vm.validate_entry.callCount).to.equal(0)
+		expect(wrapper.vm.set_error.callCount).to.equal(0)
+		expect(wrapper.vm.shortcuts.length).to.equal(4)
+		expect(exists_entry(wrapper.vm.shortcuts, { shortcut: "Ctrl+B", contexts: ["original c a"].sort(), chain_start: true, command: "chain start a" })).to.equal(true)
+		expect(exists_entry(wrapper.vm.shortcuts, { shortcut: "Ctrl+B", contexts: ["original c b"].sort(), chain_start: true, command: "chain start b" })).to.equal(true)
+		expect(exists_entry(wrapper.vm.shortcuts, { shortcut: "Ctrl+B A", contexts: ["original c a"].sort(), chain_start: false, command: "command1" })).to.equal(true)
+		expect(exists_entry(wrapper.vm.shortcuts, { shortcut: "Ctrl+B B", contexts: ["original c b"].sort(), chain_start: false, command: "command2" })).to.equal(true)
 	})
 })

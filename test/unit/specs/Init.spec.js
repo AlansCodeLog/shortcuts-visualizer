@@ -7,6 +7,9 @@ import { layout } from "@/settings/layout.js"
 import { keys, modifiers_order } from "@/settings/keys.js"
 import { defaults } from "@/defaults.js"
 
+
+import { exists_entry } from "./helpers.js" // check the tests for this aren't failing before checking here
+
 let base_options = {
 	keys_list: keys,
 	// shortcuts_list: [],
@@ -53,7 +56,6 @@ describe("init", () => {
 		expect(wrapper.vm.user_options).to.deep.equal(defaults.user_options)
 		expect(wrapper.vm.modifiers_order).to.deep.equal(wrapper.vm.modifiers_order.slice().sort())
 	})
-
 	it("should throw unknown errors correctly", () => {
 		console.error = console_stub
 		expect(function() {
@@ -170,6 +172,20 @@ describe("init", () => {
 			})
 		}).to.throw()
 	})
+
+	it("should fill command when shortcut does not have a command", () => {
+		console.error = console_stub
+		let wrapper = shallowMount(ShortcutVisualizer, {
+			propsData: {
+				keys_list: keys,
+				layout,
+				shortcuts_list: [
+					{ shortcut: "a" }
+				]
+			}
+		})
+		expect(exists_entry(wrapper.vm.shortcuts, { shortcut: "A", command: "" })).to.equal(true)
+	})
 	it("should throw error if contexts aren't array", () => {
 		console.error = console_stub
 		expect(function(){
@@ -209,21 +225,9 @@ describe("init", () => {
 				]
 			}
 		})
-		expect(wrapper.vm.shortcuts[0].contexts).to.deep.equal(["a", "b", "c"])
+		expect(exists_entry(wrapper.vm.shortcuts, { shortcut: "A", contexts: ["c", "b", "a"].sort() })).to.equal(true)
 	})
-	it("should fill command when shortcut does not have a command", () => {
-		console.error = console_stub
-		let wrapper = shallowMount(ShortcutVisualizer, {
-			propsData: {
-				keys_list: keys,
-				layout,
-				shortcuts_list: [
-					{ shortcut: "a" }
-				]
-			}
-		})
-		expect(wrapper.vm.shortcuts[0].command).to.equal("")
-	})
+
 	it("should throw when duplicate shortcut", () => {
 		console.error = console_stub
 		expect(function(){
@@ -702,7 +706,23 @@ describe("init", () => {
 		expect(wrapper.vm.shortcuts.filter(entry => entry.chain_start).length).to.equal(1)
 		expect(console.error.callCount).to.equal(0)
 	})
-	it("should throw when conflicting chain start", () => {
+	it("should throw when conflicting custom chain starts", () => {
+		console.error = console_stub
+		expect(function() {
+			let wrapper = shallowMount(ShortcutVisualizer, {
+				propsData: {
+					keys_list: keys,
+					layout,
+					shortcuts_list: [
+						{ shortcut: "ctrl+a", command: "Custom Chain Start", chain_start: true },
+						{ shortcut: "ctrl+a", command: "Custom Chain Start2", chain_start: true },
+						{ shortcut: "ctrl+a a" }
+					]
+				}
+			})
+		}).to.throw().with.property("code", "duplicate chain start")
+	})
+	it("should throw when conflicting custom chain starts when one is not labeled as such", () => {
 		console.error = console_stub
 		expect(function() {
 			let wrapper = shallowMount(ShortcutVisualizer, {
@@ -731,22 +751,6 @@ describe("init", () => {
 				}
 			})
 		}).to.throw().with.property("code", "chain error existing")
-	})
-	it("should throw when conflicting chain start", () => {
-		console.error = console_stub
-		expect(function() {
-			let wrapper = shallowMount(ShortcutVisualizer, {
-				propsData: {
-					keys_list: keys,
-					layout,
-					shortcuts_list: [
-						{ shortcut: "ctrl+a", command: "Custom Chain Start", chain_start: true },
-						{ shortcut: "ctrl+a", command: "Custom Chain Start2", chain_start: true },
-						{ shortcut: "ctrl+a a" }
-					]
-				}
-			})
-		}).to.throw().with.property("code", "duplicate chain start")
 	})
 	it("should throw when setting chain start without setting chain_start", () => {
 		console.error = console_stub
@@ -791,6 +795,76 @@ describe("init", () => {
 			})
 		}).to.throw().with.property("code", "should be chain existing")
 	})
+	it("should add missing contexts to chain starts", () => {
+		console.error = console_stub
+		let wrapper
+		// expect(function() {
+		// 	wrapper = shallowMount(ShortcutVisualizer, {
+		// 		propsData: {
+		// 			keys_list: keys,
+		// 			layout,
+		// 			shortcuts_list: [
+		// 				{ shortcut: "ctrl+a", command: "Custom Chain Start", chain_start: true },
+		// 				{ shortcut: "ctrl+a a", contexts: ["missing from chain start"] }
+		// 			]
+		// 		}
+		// 	})
+		// }).to.throw()
+
+		wrapper = shallowMount(ShortcutVisualizer, {
+			propsData: {
+				keys_list: keys,
+				layout,
+				shortcuts_list: [
+					{ shortcut: "ctrl+a", command: "Custom Chain Start", chain_start: true, contexts: ["missing from chain start"] },
+					{ shortcut: "ctrl+a a", contexts: ["missing from chain start"] }
+				]
+			}
+		})
+		expect(exists_entry(wrapper.vm.shortcuts, { shortcut: "Ctrl+A", chain_start: true, contexts: ["missing from chain start"] })).to.equal(true)
+
+		wrapper = shallowMount(ShortcutVisualizer, {
+			propsData: {
+				keys_list: keys,
+				layout,
+				shortcuts_list: [
+					{ shortcut: "ctrl+a a", contexts: ["missing from chain start"] },
+					{ shortcut: "ctrl+a b", contexts: ["missing from chain start2"] }
+				]
+			}
+		})
+		expect(exists_entry(wrapper.vm.shortcuts, { shortcut: "Ctrl+A", chain_start: true, contexts: ["missing from chain start", "missing from chain start2"] })).to.equal(true)
+
+		wrapper = shallowMount(ShortcutVisualizer, {
+			propsData: {
+				keys_list: keys,
+				layout,
+				shortcuts_list: [
+					{ shortcut: "ctrl+a a", contexts: ["missing from chain start"] },
+					{ shortcut: "ctrl+a a", contexts: ["missing from chain start2"] }
+				]
+			}
+		})
+		expect(exists_entry(wrapper.vm.shortcuts, { shortcut: "Ctrl+A", chain_start: true, contexts: ["missing from chain start"] })).to.equal(true)
+		expect(exists_entry(wrapper.vm.shortcuts, { shortcut: "Ctrl+A", chain_start: true, contexts: ["missing from chain start2"] })).to.equal(true)
+
+		wrapper = shallowMount(ShortcutVisualizer, {
+			propsData: {
+				keys_list: keys,
+				layout,
+				shortcuts_list: [
+					{ shortcut: "ctrl+a", command: "Custom Chain Start", chain_start: true, contexts: ["missing from chain start"] },
+					{ shortcut: "ctrl+a a", contexts: ["missing from chain start"] },
+					{ shortcut: "ctrl+a", command: "Custom Chain Start2", chain_start: true, contexts: ["missing from chain start2"] },
+					{ shortcut: "ctrl+a a", contexts: ["missing from chain start2"] }
+				]
+			}
+		})
+		expect(exists_entry(wrapper.vm.shortcuts, { shortcut: "Ctrl+A", chain_start: true, contexts: ["missing from chain start"] })).to.equal(true)
+		expect(exists_entry(wrapper.vm.shortcuts, { shortcut: "Ctrl+A", chain_start: true, contexts: ["missing from chain start2"] })).to.equal(true)
+		expect(exists_entry(wrapper.vm.shortcuts, { shortcut: "Ctrl+A A",  contexts: ["missing from chain start"] })).to.equal(true)
+		expect(exists_entry(wrapper.vm.shortcuts, { shortcut: "Ctrl+A A", contexts: ["missing from chain start2"] })).to.equal(true)
+	})
 })
 
 
@@ -810,7 +884,7 @@ describe("init-dev", function() {
 		]
 		wrapper.vm.refresh_options(["shortcuts_list"])
 		expect(wrapper.vm.shortcuts.length).to.equal(1)
-		expect(wrapper.vm.shortcuts[0].command).to.equal("changed")
+		expect(exists_entry(wrapper.vm.shortcuts, { shortcut: "A", command: "changed" })).to.equal(true)
 	})
 	it("should do nothing if refresh_options not called", function() {
 		let wrapper = shallowMount(ShortcutVisualizer, {
@@ -826,7 +900,7 @@ describe("init-dev", function() {
 			{ shortcut: "a", command: "changed" }
 		]
 		expect(wrapper.vm.shortcuts.length).to.equal(1)
-		expect(wrapper.vm.shortcuts[0].command).to.equal("initial")
+		expect(exists_entry(wrapper.vm.shortcuts, { shortcut: "A", command: "initial" })).to.equal(true)
 	})
 	it("should do nothing if refresh_options empty", function() {
 		let wrapper = shallowMount(ShortcutVisualizer, {
@@ -843,7 +917,7 @@ describe("init-dev", function() {
 		]
 		wrapper.vm.refresh_options([])
 		expect(wrapper.vm.shortcuts.length).to.equal(1)
-		expect(wrapper.vm.shortcuts[0].command).to.equal("initial")
+		expect(exists_entry(wrapper.vm.shortcuts, { shortcut: "A", command: "initial" })).to.equal(true)
 	})
 	it("should throw if invalid change key", function() {
 		let wrapper = shallowMount(ShortcutVisualizer, {

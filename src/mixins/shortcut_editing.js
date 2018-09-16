@@ -9,13 +9,13 @@ export default {
 		check_remove_contexts(entries) {
 			for (let entry of entries) {
 				for (let context of entry.contexts) {
-					if (context !== "global") {
-						this.contexts_info[context].count -= 1
-						if (this.contexts_info[context].count <= 0 && this.user_options.delete_empty_contexts) {
+					this.contexts_info[context].count -= 1
+					if (this.contexts_info[context].count <= 0 && this.user_options.delete_empty_contexts) {
 
-							if (this.active_context == context) {
-								this.active_context = "global"
-							}
+						if (this.active_context == context) {
+							this.active_context = "global"
+						}
+						if (context !== "global") {
 							this.$delete(this.contexts_info, context)
 						}
 					}
@@ -25,12 +25,10 @@ export default {
 		check_add_contexts(entries) {
 			for (let entry of entries) {
 				for (let context of entry.contexts) {
-					if (context !== "global") {
-						if (this.contexts_info[context] !== undefined) {
-							this.contexts_info[context].count += 1
-						} else {
-							this.$set(this.contexts_info, context, { count: 1 })
-						}
+					if (this.contexts_info[context] !== undefined) {
+						this.contexts_info[context].count += 1
+					} else {
+						this.$set(this.contexts_info, context, { count: 1 })
 					}
 				}
 			}
@@ -153,10 +151,22 @@ export default {
 		},
 		// for editing any existing entries and/or swapping between them, NOT for adding an entry
 		shortcut_edit({ old_entry, new_entry }, called_internally = false, is_hand_edit = false) {
+
 			if (old_entry.index == undefined) {
 				throw "Old entry index is undefined."
 			} else if (new_entry.index == undefined) {
 				throw "New entry index is undefined."
+			}
+
+			if (old_entry.chained == undefined || old_entry.chain_start == undefined) {
+				throw "Old entry missing chained or chain start property."
+			} else {
+				if (new_entry.chain_start == undefined) {
+					new_entry.chain_start = old_entry.chain_start
+				}
+				if (new_entry.chained == undefined) {
+					new_entry.chained = old_entry.chained
+				}
 			}
 
 			if (!called_internally) { // validate entries
