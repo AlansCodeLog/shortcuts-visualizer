@@ -1,6 +1,6 @@
-# shortcut-visualizer
+<h1>This is an old WIP (I don't remember if it still builds). I'm currently working on a rewrite (which will decouple it from vue) in a private repo.</h1>
 
-This is WIP. It's almost ready for beta!
+# shortcut-visualizer
 
 I prefer to use a custom set of keyboard shortcuts for most of my programs, but for some, there's just soooo many shortcuts to think about, that it's super hard to plan these out. My idea is to create a keyboard shortcut visualizer/organizer that lets you preview them similar to how this [project](http://waldobronchart.github.io/ShortcutMapper/) does it, but that also allows you to easily customize them (through drag/drop and/or a list) similar to how Adobe Premiere now lets you edit keyboard shortcuts (except even that implementation is still super clunky).
 
