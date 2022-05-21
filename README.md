@@ -1,4 +1,4 @@
-<h1>This is an old WIP (I don't remember if it still builds). I'm currently working on a rewrite (which will decouple it from vue) in a private repo.</h1>
+# This is an old WIP. I am working on a rewrite that is decoupled from vue [here](https://github.com/AlansCodeLog/shortcuts-manager).
 
 # shortcut-visualizer
 
